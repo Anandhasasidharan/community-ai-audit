@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "community-ai-audit"
+version = "0.1.0"
+description = "Community-driven AI security audit tool using interpretability techniques"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Community Contributors"},
+]
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0",
+    "numpy>=1.24",
+    "pyyaml>=6.0",
+    "requests>=2.31",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1",
+]
+tf = [
+    "tensorflow>=2.12",
+]
+hf = [
+    "transformers>=4.30",
+]
+all = [
+    "community-ai-audit[tf,hf,dev]",
+]
+
+[project.scripts]
+community-ai-audit = "community_ai_audit.cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["community_ai_audit*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
