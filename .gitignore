@@ -35,3 +35,5 @@ __pycache__/
 *.png
 *.jpg
 *.jpeg
+*.egg-info/
+tesing enviroment/
