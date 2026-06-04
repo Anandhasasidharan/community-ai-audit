@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from community_ai_audit import AuditEngine, ReportGenerator
+from community_ai_audit import AuditEngine, ReportGenerator  # noqa: E402
 
 
 def main():

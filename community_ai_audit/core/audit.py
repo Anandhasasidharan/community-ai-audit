@@ -20,7 +20,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 import yaml
 from datetime import datetime
 
@@ -28,10 +28,11 @@ from .interfaces import (
     ModelAdapter,
     ScanResult,
     InterpretationResult,
-    ModelType,
     Severity,
+    SIEMConnector,
+    SecurityToolConnector,
 )
-from .registry import adapters, connectors, plugins, AdapterRegistry, ConnectorRegistry, PluginRegistry
+from .registry import adapters, connectors, plugins
 
 log = logging.getLogger(__name__)
 
@@ -364,7 +365,6 @@ class AuditEngine:
         connector_names: List[str],
     ) -> Dict[str, Any]:
         """Push audit results to configured connectors."""
-        from .interfaces import SecurityToolConnector
         connector_results = {}
         audit_data = _format_audit_for_connector(scan_results, interpret_results, self._session_id)
 

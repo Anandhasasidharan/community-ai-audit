@@ -2,10 +2,9 @@
 
 import unittest
 from unittest.mock import patch, MagicMock
-import time
 
 from community_ai_audit.connectors.retry import (
-    retry, RetryConfig, retry_on_http, DEFAULT_RETRY_STATUS, DEFAULT_RETRY_EXCEPTIONS,
+    retry, RetryConfig, DEFAULT_RETRY_STATUS, DEFAULT_RETRY_EXCEPTIONS,
 )
 
 

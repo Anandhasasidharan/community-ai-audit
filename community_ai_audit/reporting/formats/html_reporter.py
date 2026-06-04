@@ -1,6 +1,6 @@
 """HTML report format."""
 
-from typing import Any, List
+from typing import Any
 import json as _json
 
 

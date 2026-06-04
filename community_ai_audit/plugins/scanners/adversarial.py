@@ -3,7 +3,7 @@ Adversarial vulnerability scanner.
 Evaluates robustness against FGSM/PGD for white-box torch models.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 import logging
 
 from community_ai_audit.core.interfaces import (
@@ -60,7 +60,6 @@ class AdversarialScanner(ScannerPlugin):
 
         try:
             import torch
-            import torch.nn.functional as F
 
             device = self._get_device(model)
             x = self._build_probe_batch(model, cfg, num_samples=num_samples, device=device)
@@ -194,7 +193,6 @@ class AdversarialScanner(ScannerPlugin):
         return out
 
     def _fgsm(self, model: Any, x, y_ref, epsilon: float):
-        import torch
         import torch.nn.functional as F
 
         x_adv = x.detach().clone().requires_grad_(True)

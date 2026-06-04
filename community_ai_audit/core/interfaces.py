@@ -4,9 +4,8 @@ Every adapter, connector, and plugin implements one of these.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Type, TypeVar, Callable
+from typing import Any, Dict, List, Optional, TypeVar
 from enum import Enum
-import inspect
 
 # ─────────────────────────────────────────────────────────────
 # Enums

@@ -13,10 +13,11 @@ import os
 import sys
 import importlib
 import importlib.util
+import pkgutil
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, TypeVar, get_type_hints, get_origin, get_args
-from importlib.metadata import entry_points, EntryPoint
+from typing import Any, Dict, List, Optional, Type, TypeVar
+from importlib.metadata import entry_points
 
 from .interfaces import (
     ModelAdapter,
@@ -373,9 +374,6 @@ try:
     from importlib.resources import files
 except ImportError:
     files = None
-
-
-import pkgutil
 
 
 def pkgutil_iter_modules(path: Optional[List[str]], prefix: str = ""):

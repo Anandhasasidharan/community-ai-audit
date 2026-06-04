@@ -43,7 +43,6 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
             )
 
         try:
-            import torch
 
             x = self._to_tensor_input(inputs, device=self._get_device(model))
             if x is None:

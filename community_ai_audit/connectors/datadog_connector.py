@@ -6,7 +6,6 @@ validation, and dead-letter queue fallback.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -20,7 +19,6 @@ from community_ai_audit.connectors.base import (
     chunk_list,
     validate_events,
     log_dlq_event,
-    now_iso,
 )
 from community_ai_audit.connectors.retry import RetryConfig
 
@@ -117,8 +115,8 @@ class DatadogConnector(SIEMConnector):
         self, payload: List[Dict], events: List[Dict]
     ) -> tuple[int, int]:
         """Send payload to Datadog with retry."""
-        from community_ai_audit.connectors.retry import retry
-        import time, random
+        import time
+        import random
 
         headers = {
             "Content-Type": "application/json",

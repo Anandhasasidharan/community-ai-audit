@@ -6,7 +6,7 @@ OpenAI adapter — works with OpenAI models via the official API
 from typing import Any, Dict, Optional
 import logging
 
-from community_ai_audit.core.interfaces import ModelAdapter, TextModelAdapter, ModelType
+from community_ai_audit.core.interfaces import TextModelAdapter, ModelType
 
 log = logging.getLogger(__name__)
 

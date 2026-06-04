@@ -5,11 +5,8 @@ and DLQ fallback.
 """
 
 import base64
-import json
-import sys
-import types
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import requests
 

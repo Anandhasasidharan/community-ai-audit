@@ -3,7 +3,7 @@ Base utilities for model adapters.
 Subclasses should inherit from the appropriate core interface directly.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 import logging
 
 log = logging.getLogger(__name__)

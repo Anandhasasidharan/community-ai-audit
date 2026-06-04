@@ -18,7 +18,6 @@ from community_ai_audit.connectors.base import (
     chunk_list,
     validate_events,
     log_dlq_event,
-    now_iso,
 )
 from community_ai_audit.connectors.retry import RetryConfig
 
@@ -52,7 +51,6 @@ class ElasticConnector(SIEMConnector):
         # Lazy import to avoid hard dep if unused
         from elasticsearch import Elasticsearch
 
-        import os
         url = config.get("url") or os.environ.get("ELASTICSEARCH_URL")
         if not url:
             raise ValueError("Set 'url' or ELASTICSEARCH_URL.")
@@ -126,8 +124,8 @@ class ElasticConnector(SIEMConnector):
 
     def _send_bulk_inner(self, body: str, events: List[Dict], event_type: str) -> tuple[int, int]:
         """Execute a single bulk request with retry."""
-        from community_ai_audit.connectors.retry import retry
-        import time, random
+        import time
+        import random
 
         max_attempts = self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
         initial_delay = self._retry_cfg.initial_delay if self._retry_cfg else 1.0

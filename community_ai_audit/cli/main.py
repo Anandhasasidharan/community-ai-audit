@@ -241,7 +241,6 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 def _cmd_discover(engine, args) -> int:
     """List all discovered plugins, adapters, and connectors."""
-    from community_ai_audit.core.registry import adapters, connectors, plugins
 
     caps = engine.list_capabilities()
 

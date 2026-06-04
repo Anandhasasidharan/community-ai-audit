@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from community_ai_audit.core.interfaces import (
-    ModelAdapter,
     TextModelAdapter,
     ImageModelAdapter,
     MultiModalAdapter,
@@ -152,14 +151,12 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
         return self._tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     def get_logits(self, model: Any, tokens: Any, **kwargs) -> Any:
-        import torch
         if hasattr(tokens, "to"):
             tokens = {k: v.to(self._device) for k, v in tokens.items()}
         out = model(**tokens)
         return out.logits if hasattr(out, "logits") else out[0]
 
     def get_attention_weights(self, model: Any, tokens: Any, **kwargs) -> Any:
-        import torch
         handles = []
         attention_weights = []
 

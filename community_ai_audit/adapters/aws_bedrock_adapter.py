@@ -6,7 +6,7 @@ AWS Bedrock adapter — works with models hosted on AWS Bedrock
 from typing import Any, Dict, Optional
 import logging
 
-from community_ai_audit.core.interfaces import ModelAdapter, TextModelAdapter, ModelType
+from community_ai_audit.core.interfaces import TextModelAdapter, ModelType
 
 log = logging.getLogger(__name__)
 

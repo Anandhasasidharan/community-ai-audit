@@ -3,7 +3,7 @@ Default Markdown report plugin.
 This is the built-in reporter used for human-readable output.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from community_ai_audit.core.interfaces import ReporterPlugin
 from community_ai_audit.reporting import ReportGenerator

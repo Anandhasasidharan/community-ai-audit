@@ -5,7 +5,7 @@ Anthropic adapter — works with Claude models via the Anthropic API.
 from typing import Any, Dict, Optional
 import logging
 
-from community_ai_audit.core.interfaces import ModelAdapter, TextModelAdapter, ModelType
+from community_ai_audit.core.interfaces import TextModelAdapter, ModelType
 
 log = logging.getLogger(__name__)
 

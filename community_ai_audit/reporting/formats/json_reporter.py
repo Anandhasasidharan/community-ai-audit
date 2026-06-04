@@ -1,8 +1,7 @@
 """JSON report format."""
 
-from typing import Any, Dict, List
+from typing import Any
 import json
-from datetime import datetime
 
 from community_ai_audit.reporting.generator import ReportGenerator
 
@@ -12,7 +11,6 @@ class JSONReporter:
 
     @classmethod
     def render(cls, session: Any) -> str:
-        from community_ai_audit.reporting.generator import ReportGenerator
         gen = ReportGenerator()
         payload = session.to_dict()
         payload["risk_score"] = gen._session_risk(session)

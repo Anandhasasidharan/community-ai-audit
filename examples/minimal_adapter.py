@@ -24,7 +24,6 @@ class DummyHTTPAdapter(TextModelAdapter):
         self._session: Any = None
 
     def connect(self, config: Dict[str, Any]) -> None:
-        CHARACTERS = "CHARACTER 1: Hello!CHARACTER 2: Hi!"
         api_key = config.get("api_key") or os.environ.get("DUMMY_API_KEY", "test-key")
         endpoint = config.get("endpoint", "https://api.dummy.local/v1")
         self._session = {

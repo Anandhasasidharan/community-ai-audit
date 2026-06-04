@@ -4,7 +4,7 @@ Supports PyTorch (.pt, .pth), SafeTensors (.safetensors), ONNX (.onnx),
 and directory-based model formats (HuggingFace local, FastAI, etc.).
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from pathlib import Path
 import logging
 
@@ -135,7 +135,6 @@ class LocalAdapter(ModelAdapter):
         if safetensors is None:
             raise ImportError("safetensors not installed. Run: pip install safetensors")
         from safetensors.torch import load_file
-        import torch
         tensors = load_file(str(path), device=self._device)
         # Return as a dict (not a model) — caller needs to know the architecture
         return tensors
@@ -155,7 +154,6 @@ class LocalAdapter(ModelAdapter):
         return load_learner(path / "export.pkl")
 
     def predict(self, model: Any, inputs: Any, **kwargs) -> Any:
-        import torch
         if isinstance(model, dict):
             raise ValueError("SafeTensors loaded as tensor dict — requires architecture info.")
         if hasattr(model, "eval"):

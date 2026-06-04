@@ -3,8 +3,15 @@ Report generator — formats ScanResult, InterpretationResult, and AuditSession
 into Markdown and JSON.
 """
 
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import json
+
+if TYPE_CHECKING:
+    from community_ai_audit.core.audit import AuditSession
+
+from community_ai_audit.core.interfaces import ScanResult, InterpretationResult
 
 
 class ReportGenerator:

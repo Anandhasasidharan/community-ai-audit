@@ -20,7 +20,6 @@ from community_ai_audit.connectors.base import (
     chunk_list,
     validate_events,
     log_dlq_event,
-    now_iso,
 )
 from community_ai_audit.connectors.retry import RetryConfig, DEFAULT_RETRY_STATUS
 
@@ -134,8 +133,8 @@ class SplunkConnector(SIEMConnector):
 
     def _send_batch_inner(self, body: str, events: List[Dict], event_type: str):
         """Single HTTP POST to Splunk HEC with retry."""
-        from community_ai_audit.connectors.retry import retry
-        import time, random
+        import time
+        import random
 
         max_attempts = self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
         initial_delay = self._retry_cfg.initial_delay if self._retry_cfg else 1.0

@@ -23,7 +23,6 @@ from community_ai_audit.connectors.base import (
     chunk_list,
     validate_events,
     log_dlq_event,
-    now_iso,
 )
 from community_ai_audit.connectors.retry import RetryConfig
 
@@ -112,8 +111,8 @@ class SentinelConnector(SIEMConnector):
 
     def _post_to_sentinel(self, batch: List[Dict], event_type: str) -> tuple[int, int]:
         """Post a batch to Sentinel with retry."""
-        from community_ai_audit.connectors.retry import retry
-        import time, random
+        import time
+        import random
 
         body = json.dumps([self._transform_event(ev, event_type) for ev in batch])
         method = "POST"

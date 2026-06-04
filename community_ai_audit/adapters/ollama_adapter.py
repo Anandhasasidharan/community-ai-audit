@@ -6,7 +6,7 @@ Ollama adapter — works with local models served by Ollama
 from typing import Any, Dict, Optional
 import logging
 
-from community_ai_audit.core.interfaces import ModelAdapter, TextModelAdapter, ModelType
+from community_ai_audit.core.interfaces import TextModelAdapter, ModelType
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +104,6 @@ class _OllamaModelWrapper:
         self._defaults = defaults
 
     def predict(self, inputs: Dict[str, Any], **kwargs) -> str:
-        import json
         import requests
         merged = {**self._defaults, **kwargs}
         payload = {
