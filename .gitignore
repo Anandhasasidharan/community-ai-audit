@@ -29,4 +29,6 @@ htmlcov/
 Thumbs.db
 
 # Logs
-*.log
+*.log.ruffvenv/
+dist/
+__pycache__/
