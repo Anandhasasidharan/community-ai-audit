@@ -23,6 +23,7 @@ def _lazy_import():
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -122,6 +123,7 @@ class OpenAIAdapter(TextModelAdapter):
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
         import os
+
         return {"api_key": os.environ.get("OPENAI_API_KEY")}
 
 

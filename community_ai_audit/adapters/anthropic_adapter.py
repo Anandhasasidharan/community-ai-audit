@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -41,9 +42,12 @@ class AnthropicAdapter(TextModelAdapter):
         if anthropic is None:
             raise ImportError("anthropic not installed. Run: pip install anthropic")
         import os
+
         api_key = config.get("api_key") or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
-            raise ValueError("Anthropic API key required. Set 'api_key' or ANTHROPIC_API_KEY env var.")
+            raise ValueError(
+                "Anthropic API key required. Set 'api_key' or ANTHROPIC_API_KEY env var."
+            )
 
         anthropic_version = safe_import("anthropic").__version__  # type: ignore
         if anthropic_version and anthropic_version.startswith("0."):
@@ -52,6 +56,7 @@ class AnthropicAdapter(TextModelAdapter):
         else:
             # Anthropic Python SDK v1.x
             from anthropic import Anthropic
+
             self._client = Anthropic(api_key=api_key)
 
         log.info("Anthropic adapter connected")
@@ -100,6 +105,7 @@ class AnthropicAdapter(TextModelAdapter):
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
         import os
+
         return {"api_key": os.environ.get("ANTHROPIC_API_KEY")}
 
 

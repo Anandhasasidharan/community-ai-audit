@@ -9,16 +9,18 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-
 log = logging.getLogger(__name__)
+
 
 def safe_import(module_name: str):
     """Safely import a module, returning None if not available."""
     import importlib
+
     try:
         return importlib.import_module(module_name)
     except ImportError:
         return None
+
 
 # ─────────────────────────────────────────────────────────────
 # Severity normalization
@@ -61,6 +63,7 @@ def severity_rank(severity: str) -> int:
 # List utilities
 # ─────────────────────────────────────────────────────────────
 
+
 def chunk_list(data: List[Any], size: int) -> List[List[Any]]:
     """Split a list into chunks of a specified maximum size.
 
@@ -79,6 +82,7 @@ def chunk_list(data: List[Any], size: int) -> List[List[Any]]:
 # ─────────────────────────────────────────────────────────────
 # Metadata flattening
 # ─────────────────────────────────────────────────────────────
+
 
 def flatten_metadata(metadata: Dict[str, Any], prefix: str = "meta_") -> Dict[str, str]:
     """Flatten a nested metadata dict into flat string key-value pairs.
@@ -105,6 +109,7 @@ def flatten_metadata(metadata: Dict[str, Any], prefix: str = "meta_") -> Dict[st
 # ─────────────────────────────────────────────────────────────
 # Timestamp utilities
 # ─────────────────────────────────────────────────────────────
+
 
 def now_iso() -> str:
     """Return timezone-aware ISO timestamp (UTC)."""
@@ -171,7 +176,10 @@ def validate_events(events: List[Dict[str, Any]], strict: bool = False) -> Dict[
 # Dead-letter / fallback helpers
 # ─────────────────────────────────────────────────────────────
 
-def log_dlq_event(event: Dict[str, Any], reason: str, logger: Optional[logging.Logger] = None) -> None:
+
+def log_dlq_event(
+    event: Dict[str, Any], reason: str, logger: Optional[logging.Logger] = None
+) -> None:
     """Log a failed event to a dead-letter queue (stdout fallback).
 
     In production this should be replaced with a real DLQ (Redis, SQS, etc.).

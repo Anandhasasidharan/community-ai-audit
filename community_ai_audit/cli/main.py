@@ -10,10 +10,10 @@ import os
 import logging
 from typing import List, Optional
 
-
 # ─────────────────────────────────────────────────────────────
 # Logging setup
 # ─────────────────────────────────────────────────────────────
+
 
 def _setup_logging(verbose: bool = False):
     level = logging.DEBUG if verbose else logging.INFO
@@ -27,6 +27,7 @@ def _setup_logging(verbose: bool = False):
 # ─────────────────────────────────────────────────────────────
 # Argument parser
 # ─────────────────────────────────────────────────────────────
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -55,7 +56,9 @@ Environment:
     scan_parser = subparsers.add_parser("scan", help="Run vulnerability scanners on a model")
     scan_parser.add_argument("model", help="Model identifier (local path, HF repo, API model name)")
     scan_parser.add_argument(
-        "--provider", "-p", required=True,
+        "--provider",
+        "-p",
+        required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider / adapter to use",
     )
@@ -66,22 +69,30 @@ Environment:
         help="Run profile to control scanner defaults and intensity",
     )
     scan_parser.add_argument(
-        "--scanners", "-s", nargs="+",
+        "--scanners",
+        "-s",
+        nargs="+",
         default=None,
         help="Scanner plugins to run (default depends on profile)",
     )
     scan_parser.add_argument(
-        "--connectors", "-c", nargs="+",
+        "--connectors",
+        "-c",
+        nargs="+",
         default=None,
         help="SIEM/security tool connectors to push results to",
     )
     scan_parser.add_argument(
-        "--output", "-o", default="markdown",
+        "--output",
+        "-o",
+        default="markdown",
         choices=["markdown", "json", "html"],
         help="Report output format",
     )
     scan_parser.add_argument(
-        "--save", type=str, default=None,
+        "--save",
+        type=str,
+        default=None,
         help="Save report to file path",
     )
     scan_parser.add_argument("--device", help="Device for local models (cpu/cuda/mps)")
@@ -103,29 +114,40 @@ Environment:
     )
 
     # ── interpret command ───────────────────────────────────
-    interp_parser = subparsers.add_parser("interpret", help="Run interpretability methods on a model")
+    interp_parser = subparsers.add_parser(
+        "interpret", help="Run interpretability methods on a model"
+    )
     interp_parser.add_argument("model", help="Model identifier")
     interp_parser.add_argument(
-        "--provider", "-p", required=True,
+        "--provider",
+        "-p",
+        required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider / adapter to use",
     )
     interp_parser.add_argument(
-        "--interpreters", "-i", nargs="+",
+        "--interpreters",
+        "-i",
+        nargs="+",
         default=None,
         help="Interpreter plugins to run (default: all discovered)",
     )
     interp_parser.add_argument(
-        "--input", dest="input_data",
+        "--input",
+        dest="input_data",
         help="Input data to interpret (for text: a string; for image: path)",
     )
     interp_parser.add_argument(
-        "--output", "-o", default="markdown",
+        "--output",
+        "-o",
+        default="markdown",
         choices=["markdown", "json", "html"],
         help="Report output format",
     )
     interp_parser.add_argument(
-        "--save", type=str, default=None,
+        "--save",
+        type=str,
+        default=None,
         help="Save report to file path",
     )
     interp_parser.add_argument("--device", help="Device for local models")
@@ -135,7 +157,9 @@ Environment:
     audit_parser = subparsers.add_parser("audit", help="Run full audit (scan + interpret)")
     audit_parser.add_argument("model", help="Model identifier")
     audit_parser.add_argument(
-        "--provider", "-p", required=True,
+        "--provider",
+        "-p",
+        required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider / adapter to use",
     )
@@ -146,31 +170,42 @@ Environment:
         help="Run profile to control scanner/interpreter defaults and intensity",
     )
     audit_parser.add_argument(
-        "--scanners", "-s", nargs="+",
+        "--scanners",
+        "-s",
+        nargs="+",
         default=None,
         help="Scanner plugins to run (default depends on profile)",
     )
     audit_parser.add_argument(
-        "--interpreters", "-i", nargs="+",
+        "--interpreters",
+        "-i",
+        nargs="+",
         default=None,
         help="Interpreter plugins to run (default depends on profile)",
     )
     audit_parser.add_argument(
-        "--input", dest="input_data",
+        "--input",
+        dest="input_data",
         help="Input data for interpretability (required if using interpreters)",
     )
     audit_parser.add_argument(
-        "--output", "-o", default="markdown",
+        "--output",
+        "-o",
+        default="markdown",
         choices=["markdown", "json", "html"],
         help="Report output format",
     )
     audit_parser.add_argument(
-        "--connectors", "-c", nargs="+",
+        "--connectors",
+        "-c",
+        nargs="+",
         default=None,
         help="SIEM/security tool connectors to push results to",
     )
     audit_parser.add_argument(
-        "--save", type=str, default=None,
+        "--save",
+        type=str,
+        default=None,
         help="Save report to file path",
     )
     audit_parser.add_argument("--device", help="Device for local models")
@@ -192,8 +227,12 @@ Environment:
     )
 
     # ── discover command ──────────────────────────────────────
-    disco_parser = subparsers.add_parser("discover", help="List all discovered plugins and adapters")
-    disco_parser.add_argument("--format", choices=["json", "table"], default="table", help="Output style")
+    disco_parser = subparsers.add_parser(
+        "discover", help="List all discovered plugins and adapters"
+    )
+    disco_parser.add_argument(
+        "--format", choices=["json", "table"], default="table", help="Output style"
+    )
 
     return parser
 
@@ -201,6 +240,7 @@ Environment:
 # ─────────────────────────────────────────────────────────────
 # Main entry point
 # ─────────────────────────────────────────────────────────────
+
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
@@ -298,7 +338,9 @@ def _cmd_scan(engine, args) -> int:
             print(f"Connector {name}: {status}")
 
     # Exit with non-zero if critical/high/medium findings
-    highest = max((r.overall_severity for r in results), key=lambda s: _severity_rank(s), default=None)
+    highest = max(
+        (r.overall_severity for r in results), key=lambda s: _severity_rank(s), default=None
+    )
     if highest is None:
         return 0
     if getattr(highest, "value", str(highest)).lower() == "critical":
@@ -385,7 +427,11 @@ def _cmd_audit(engine, args) -> int:
     if args.save:
         _save_report(report, args.save)
 
-    highest = session.highest_severity.name if hasattr(session.highest_severity, "name") else str(session.highest_severity)
+    highest = (
+        session.highest_severity.name
+        if hasattr(session.highest_severity, "name")
+        else str(session.highest_severity)
+    )
     if highest == "CRITICAL":
         return 2
     if highest in ("HIGH", "MEDIUM"):
@@ -416,7 +462,9 @@ def _parse_input_value(value):
     if not isinstance(value, str):
         return value
     text = value.strip()
-    if (text.startswith("[") and text.endswith("]")) or (text.startswith("{") and text.endswith("}")):
+    if (text.startswith("[") and text.endswith("]")) or (
+        text.startswith("{") and text.endswith("}")
+    ):
         try:
             return json.loads(text)
         except Exception:
@@ -539,8 +587,14 @@ def _apply_profile_defaults(profile: str, scanners=None, interpreters=None):
         "custom": interpreters or [],
     }
 
-    selected_scanners = scanners if scanners else default_scanners.get(profile, default_scanners["standard"])
-    selected_interpreters = interpreters if interpreters else default_interpreters.get(profile, default_interpreters["standard"])
+    selected_scanners = (
+        scanners if scanners else default_scanners.get(profile, default_scanners["standard"])
+    )
+    selected_interpreters = (
+        interpreters
+        if interpreters
+        else default_interpreters.get(profile, default_interpreters["standard"])
+    )
 
     profile_overrides = {}
     if profile == "quick":

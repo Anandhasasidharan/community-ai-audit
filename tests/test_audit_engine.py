@@ -6,16 +6,21 @@ from datetime import datetime
 
 from community_ai_audit.core.audit import AuditEngine, AuditSession
 from community_ai_audit.core.interfaces import (
-    ScanResult, InterpretationResult, Finding, Severity,
+    ScanResult,
+    InterpretationResult,
+    Finding,
+    Severity,
 )
 
 
 class TestAuditEngine(unittest.TestCase):
     def test_load_model_and_audit_flow(self):
         engine = AuditEngine(discovery_on_init=True)
-        with patch.object(engine, '_adapter', None), \
-             patch.object(engine, '_model', None), \
-             patch.object(engine, 'discover', lambda: None):
+        with (
+            patch.object(engine, "_adapter", None),
+            patch.object(engine, "_model", None),
+            patch.object(engine, "discover", lambda: None),
+        ):
             # Mock adapter and plugins
             mock_adapter = MagicMock()
             mock_adapter.name = "huggingface"
@@ -48,11 +53,25 @@ class TestAuditEngine(unittest.TestCase):
                 attributions={"test": 0.5},
             )
 
-            with patch('community_ai_audit.core.registry.plugins.scanners.get', return_value=mock_scanner), \
-                 patch('community_ai_audit.core.registry.plugins.interpreters.get', return_value=mock_interpreter), \
-                 patch('community_ai_audit.core.registry.plugins.list_scanners', return_value=["mock-scanner"]), \
-                 patch('community_ai_audit.core.registry.plugins.list_interpreters', return_value=["mock-interp"]), \
-                 patch.object(engine, 'discover', lambda: None):
+            with (
+                patch(
+                    "community_ai_audit.core.registry.plugins.scanners.get",
+                    return_value=mock_scanner,
+                ),
+                patch(
+                    "community_ai_audit.core.registry.plugins.interpreters.get",
+                    return_value=mock_interpreter,
+                ),
+                patch(
+                    "community_ai_audit.core.registry.plugins.list_scanners",
+                    return_value=["mock-scanner"],
+                ),
+                patch(
+                    "community_ai_audit.core.registry.plugins.list_interpreters",
+                    return_value=["mock-interp"],
+                ),
+                patch.object(engine, "discover", lambda: None),
+            ):
 
                 session = engine.audit(
                     scanners=["mock-scanner"],

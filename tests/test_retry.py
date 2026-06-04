@@ -4,7 +4,10 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from community_ai_audit.connectors.retry import (
-    retry, RetryConfig, DEFAULT_RETRY_STATUS, DEFAULT_RETRY_EXCEPTIONS,
+    retry,
+    RetryConfig,
+    DEFAULT_RETRY_STATUS,
+    DEFAULT_RETRY_EXCEPTIONS,
 )
 
 
@@ -13,6 +16,7 @@ import requests
 
 class FakeRequestException(requests.exceptions.RequestException):
     """Fake requests exception for testing."""
+
     def __init__(self, status_code=None):
         self.status_code = status_code
         self.response = MagicMock() if status_code else None
@@ -22,10 +26,10 @@ class FakeRequestException(requests.exceptions.RequestException):
 
 
 class TestRetry(unittest.TestCase):
-    @patch('time.sleep', return_value=None)  # Don't actually sleep in tests
+    @patch("time.sleep", return_value=None)  # Don't actually sleep in tests
     def test_exponential_backoff(self, mock_sleep):
         attempt_count = [0]
-        
+
         @retry(max_attempts=3, initial_delay=1.0, exponential_base=2.0, jitter=0.0)
         def flaky_function():
             attempt_count[0] += 1
@@ -39,7 +43,7 @@ class TestRetry(unittest.TestCase):
         # Verify backoff: 1.0 * 2.0 = 2.0 for second attempt delay
         self.assertEqual(mock_sleep.call_count, 2)
 
-    @patch('time.sleep', return_value=None)
+    @patch("time.sleep", return_value=None)
     def test_max_attempts_exceeded(self, mock_sleep):
         @retry(max_attempts=2, initial_delay=0.1, jitter=0.0)
         def always_fails():
@@ -48,7 +52,7 @@ class TestRetry(unittest.TestCase):
         with self.assertRaises(Exception):
             always_fails()
 
-    @patch('time.sleep', return_value=None)
+    @patch("time.sleep", return_value=None)
     def test_non_retryable_status_propagates(self, mock_sleep):
         @retry(max_attempts=3, initial_delay=0.1)
         def non_retryable():
@@ -91,6 +95,7 @@ class TestRetry(unittest.TestCase):
 
     def test_default_retry_exceptions(self):
         import requests
+
         self.assertIn(requests.exceptions.RequestException, DEFAULT_RETRY_EXCEPTIONS)
         self.assertIn(requests.exceptions.Timeout, DEFAULT_RETRY_EXCEPTIONS)
         self.assertIn(requests.exceptions.ConnectionError, DEFAULT_RETRY_EXCEPTIONS)

@@ -182,8 +182,11 @@ class BackdoorScanner(ScannerPlugin):
                 def _hook(_mod, _inp, out):
                     if isinstance(out, torch.Tensor):
                         activations[layer_name] = out.detach().cpu()
-                    elif isinstance(out, (tuple, list)) and out and isinstance(out[0], torch.Tensor):
+                    elif (
+                        isinstance(out, (tuple, list)) and out and isinstance(out[0], torch.Tensor)
+                    ):
                         activations[layer_name] = out[0].detach().cpu()
+
                 return _hook
 
             handles.append(module.register_forward_hook(_hook_factory(name)))
@@ -229,6 +232,7 @@ class BackdoorScanner(ScannerPlugin):
 
     def _get_device(self, model: Any):
         import torch
+
         try:
             return next(model.parameters()).device
         except Exception:
@@ -281,6 +285,7 @@ class BackdoorScanner(ScannerPlugin):
 
         try:
             from sklearn.cluster import KMeans
+
             kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init="auto")
             labels = kmeans.fit_predict(X)
             counts = Counter(labels)

@@ -11,7 +11,9 @@ import logging
 from typing import Any, Dict, Optional, List
 
 from community_ai_audit.core.interfaces import (
-    InterpreterPlugin, InterpretationResult, ModelAdapter,
+    InterpreterPlugin,
+    InterpretationResult,
+    ModelAdapter,
 )
 
 log = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ log = logging.getLogger(__name__)
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -98,7 +101,9 @@ class LIMEInterpreter(InterpreterPlugin):
                 error=str(e),
             )
 
-    def _explain_text(self, model: Any, adapter: ModelAdapter, text_input: str, target: Optional[Any]) -> InterpretationResult:
+    def _explain_text(
+        self, model: Any, adapter: ModelAdapter, text_input: str, target: Optional[Any]
+    ) -> InterpretationResult:
         from lime import lime_text
         import numpy as np
 
@@ -139,8 +144,11 @@ class LIMEInterpreter(InterpreterPlugin):
             interpreter_name=self.name,
             interpreter_version=self.version,
             attributions={"lime": feature_importances},
-            summary=f"Top feature: {max(feature_importances, key=feature_importances.get)} ({max(feature_importances.values()):.3f})"
-            if feature_importances else "No feature importances found.",
+            summary=(
+                f"Top feature: {max(feature_importances, key=feature_importances.get)} ({max(feature_importances.values()):.3f})"
+                if feature_importances
+                else "No feature importances found."
+            ),
             metadata={
                 "num_samples": self._num_samples,
                 "kernel_width": self._kernel_width,

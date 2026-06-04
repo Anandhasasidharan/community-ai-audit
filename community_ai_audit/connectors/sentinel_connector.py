@@ -53,17 +53,15 @@ class SentinelConnector(SIEMConnector):
         self._retry_cfg: Optional[RetryConfig] = None
 
     def connect(self, config: Dict[str, Any]) -> None:
-        self._workspace_id = config.get("workspace_id") or os.environ.get("AZURE_LOG_ANALYTICS_WORKSPACE_ID")
+        self._workspace_id = config.get("workspace_id") or os.environ.get(
+            "AZURE_LOG_ANALYTICS_WORKSPACE_ID"
+        )
         if not self._workspace_id:
-            raise ValueError(
-                "Set 'workspace_id' or AZURE_LOG_ANALYTICS_WORKSPACE_ID."
-            )
+            raise ValueError("Set 'workspace_id' or AZURE_LOG_ANALYTICS_WORKSPACE_ID.")
 
         self._shared_key = config.get("shared_key") or os.environ.get("AZURE_LOG_ANALYTICS_KEY")
         if not self._shared_key:
-            raise ValueError(
-                "Set 'shared_key' or AZURE_LOG_ANALYTICS_KEY."
-            )
+            raise ValueError("Set 'shared_key' or AZURE_LOG_ANALYTICS_KEY.")
 
         self._log_type = config.get("log_type", "AIAudit")
         if config.get("endpoint"):
@@ -82,9 +80,7 @@ class SentinelConnector(SIEMConnector):
     def send_event(self, event: Dict[str, Any], event_type: str = "audit") -> bool:
         return self.send_batch([event], event_type=event_type)["success"] == 1
 
-    def send_batch(
-        self, events: List[Dict[str, Any]], event_type: str = "audit"
-    ) -> Dict[str, Any]:
+    def send_batch(self, events: List[Dict[str, Any]], event_type: str = "audit") -> Dict[str, Any]:
         if not events:
             return {"success": 0, "failed": 0}
 
@@ -105,7 +101,10 @@ class SentinelConnector(SIEMConnector):
 
         log.info(
             "Sent %d events to Sentinel (log_type=%s): success=%d failed=%d",
-            len(events), self._log_type, total_success, total_failed,
+            len(events),
+            self._log_type,
+            total_success,
+            total_failed,
         )
         return {"success": total_success, "failed": total_failed}
 
@@ -124,7 +123,9 @@ class SentinelConnector(SIEMConnector):
         string_to_hash = f"{method}\n{content_length}\n{content_type}\nx-ms-date:{date}\n{resource}"
         bytes_to_hash = bytes(string_to_hash, "utf-8")
         decoded_key = base64.b64decode(self._shared_key)
-        encoded_hash = base64.b64encode(hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()).decode("utf-8")
+        encoded_hash = base64.b64encode(
+            hmac.new(decoded_key, bytes_to_hash, digestmod=hashlib.sha256).digest()
+        ).decode("utf-8")
         authorization = f"SharedKey {self._workspace_id}:{encoded_hash}"
 
         headers = {
@@ -134,7 +135,9 @@ class SentinelConnector(SIEMConnector):
             "x-ms-date": date,
         }
 
-        max_attempts = self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        max_attempts = (
+            self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        )
         initial_delay = self._retry_cfg.initial_delay if self._retry_cfg else 1.0
         max_delay = self._retry_cfg.max_delay if self._retry_cfg else 60.0
         exp_base = self._retry_cfg.exponential_base if self._retry_cfg else 2.0
@@ -163,9 +166,8 @@ class SentinelConnector(SIEMConnector):
                     return 0, len(batch)
 
                 # Determine if retryable (429, 5xx, or timeout/conn error)
-                retryable = (
-                    status in {429, 500, 502, 503, 504}
-                    or isinstance(exc, (requests.exceptions.Timeout, requests.exceptions.ConnectionError))
+                retryable = status in {429, 500, 502, 503, 504} or isinstance(
+                    exc, (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
                 )
 
                 if retryable:
@@ -173,7 +175,8 @@ class SentinelConnector(SIEMConnector):
                     delay = min(delay * exp_base, max_delay)
                     log.warning(
                         "Sentinel retry %d/%d after %s: %s",
-                        attempt, max_attempts,
+                        attempt,
+                        max_attempts,
                         f"HTTP {status}" if status else type(exc).__name__,
                         exc,
                     )
@@ -234,4 +237,3 @@ class SentinelConnector(SIEMConnector):
                 },
             },
         }
-

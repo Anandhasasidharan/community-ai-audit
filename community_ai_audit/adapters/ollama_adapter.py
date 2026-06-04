@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -47,6 +48,7 @@ class OllamaAdapter(TextModelAdapter):
         # Verify Ollama is reachable
         try:
             import requests
+
             resp = requests.get(f"{self._base_url}/api/tags", timeout=5)
             resp.raise_for_status()
             log.info("Ollama adapter connected (base_url: %s)", self._base_url)
@@ -105,6 +107,7 @@ class _OllamaModelWrapper:
 
     def predict(self, inputs: Dict[str, Any], **kwargs) -> str:
         import requests
+
         merged = {**self._defaults, **kwargs}
         payload = {
             "model": self.model_id,

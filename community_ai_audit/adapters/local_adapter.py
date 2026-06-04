@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -123,7 +124,11 @@ class LocalAdapter(ModelAdapter):
         device = kwargs.get("device", self._device)
         weights_only = kwargs.get("weights_only", False)
         obj = torch.load(path, map_location=device, weights_only=weights_only)
-        if isinstance(obj, dict) and "state_dict" in obj and not kwargs.get("allow_state_dict", False):
+        if (
+            isinstance(obj, dict)
+            and "state_dict" in obj
+            and not kwargs.get("allow_state_dict", False)
+        ):
             raise ValueError(
                 "Loaded checkpoint contains only a state_dict. "
                 "Provide a full model file, or pass allow_state_dict=True and reconstruct architecture manually."
@@ -135,6 +140,7 @@ class LocalAdapter(ModelAdapter):
         if safetensors is None:
             raise ImportError("safetensors not installed. Run: pip install safetensors")
         from safetensors.torch import load_file
+
         tensors = load_file(str(path), device=self._device)
         # Return as a dict (not a model) — caller needs to know the architecture
         return tensors
@@ -151,6 +157,7 @@ class LocalAdapter(ModelAdapter):
         if fastai is None:
             raise ImportError("fastai not installed. Run: pip install fastai")
         from fastai.learner import load_learner
+
         return load_learner(path / "export.pkl")
 
     def predict(self, model: Any, inputs: Any, **kwargs) -> Any:
@@ -191,7 +198,10 @@ class LocalAdapter(ModelAdapter):
             "type": "object",
             "properties": {
                 "device": {"type": "string", "enum": ["auto", "cpu", "cuda", "mps"]},
-                "torch_dtype": {"type": "string", "enum": ["auto", "float32", "float16", "bfloat16"]},
+                "torch_dtype": {
+                    "type": "string",
+                    "enum": ["auto", "float32", "float16", "bfloat16"],
+                },
                 "load_in_8bit": {"type": "boolean"},
             },
         }
@@ -199,11 +209,13 @@ class LocalAdapter(ModelAdapter):
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
         import torch
+
         return {"device": "cuda" if torch.cuda.is_available() else "cpu"}
 
     @staticmethod
     def _resolve_device(device: str) -> str:
         import torch
+
         if device == "auto":
             if torch.cuda.is_available():
                 return "cuda"
@@ -215,6 +227,7 @@ class LocalAdapter(ModelAdapter):
 
 def _lazy_import(module_name: str):
     import importlib
+
     try:
         importlib.import_module(module_name)
     except ImportError:

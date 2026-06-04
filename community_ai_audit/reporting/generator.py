@@ -45,19 +45,25 @@ class ReportGenerator:
 
         return "\n".join(lines)
 
-    def render_interpret_results(self, results: List["InterpretationResult"], fmt: str = "markdown") -> str:
+    def render_interpret_results(
+        self, results: List["InterpretationResult"], fmt: str = "markdown"
+    ) -> str:
         if fmt == "json":
             return json.dumps([r.to_dict() for r in results], indent=2, default=str)
 
         lines = []
         for result in results:
-            lines.append(f"## Interpreter: {result.interpreter_name} (v{result.interpreter_version})")
+            lines.append(
+                f"## Interpreter: {result.interpreter_name} (v{result.interpreter_version})"
+            )
             if result.error:
                 lines.append(f"**Error:** {result.error}")
             else:
                 lines.append(f"**Summary:** {result.summary}")
                 if result.attributions:
-                    lines.append(f"**Attributions (top):** {self._truncate_text(str(result.attributions), 1200)}")
+                    lines.append(
+                        f"**Attributions (top):** {self._truncate_text(str(result.attributions), 1200)}"
+                    )
             lines.append("\n---\n")
 
         return "\n".join(lines)

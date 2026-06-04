@@ -82,9 +82,7 @@ class DatadogConnector(SIEMConnector):
     def send_event(self, event: Dict[str, Any], event_type: str = "audit") -> bool:
         return self.send_batch([event], event_type=event_type)["success"] == 1
 
-    def send_batch(
-        self, events: List[Dict[str, Any]], event_type: str = "audit"
-    ) -> Dict[str, Any]:
+    def send_batch(self, events: List[Dict[str, Any]], event_type: str = "audit") -> Dict[str, Any]:
         if not events:
             return {"success": 0, "failed": 0}
 
@@ -107,13 +105,14 @@ class DatadogConnector(SIEMConnector):
 
         log.info(
             "Sent %d events to Datadog (site=%s): success=%d failed=%d",
-            len(events), self._site, total_success, total_failed,
+            len(events),
+            self._site,
+            total_success,
+            total_failed,
         )
         return {"success": total_success, "failed": total_failed}
 
-    def _send_payload_inner(
-        self, payload: List[Dict], events: List[Dict]
-    ) -> tuple[int, int]:
+    def _send_payload_inner(self, payload: List[Dict], events: List[Dict]) -> tuple[int, int]:
         """Send payload to Datadog with retry."""
         import time
         import random
@@ -124,7 +123,9 @@ class DatadogConnector(SIEMConnector):
         }
         intake_url = f"https://http-intake.logs.{self._site}"
 
-        max_attempts = self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        max_attempts = (
+            self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        )
         initial_delay = self._retry_cfg.initial_delay if self._retry_cfg else 1.0
         max_delay = self._retry_cfg.max_delay if self._retry_cfg else 60.0
         exp_base = self._retry_cfg.exponential_base if self._retry_cfg else 2.0
@@ -154,7 +155,10 @@ class DatadogConnector(SIEMConnector):
                     delay = min(delay * exp_base, max_delay)
                     log.warning(
                         "Datadog retry %d/%d after HTTP %s: %s",
-                        attempt, max_attempts, status, exc,
+                        attempt,
+                        max_attempts,
+                        status,
+                        exc,
                     )
                 else:
                     # non-retryable -> DLQ
@@ -179,6 +183,7 @@ class DatadogConnector(SIEMConnector):
         else:
             # simple parser: -24h, -7d, etc.
             import re
+
             m = re.match(r"\-(\d+)([dhms])", time_range)
             if m:
                 val = int(m.group(1))
@@ -267,4 +272,3 @@ class DatadogConnector(SIEMConnector):
                 },
             },
         }
-

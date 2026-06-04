@@ -62,7 +62,12 @@ class Registry:
         if extra_paths:
             self._discover_paths(extra_paths)
         self._discovered = True
-        log.debug("Discovered %d %s plugins: %s", len(self._plugins), self.base_type.__name__, list(self._plugins.keys()))
+        log.debug(
+            "Discovered %d %s plugins: %s",
+            len(self._plugins),
+            self.base_type.__name__,
+            list(self._plugins.keys()),
+        )
 
     def _discover_builtins(self) -> None:
         """Auto-import all subclasses from the builtin module subtree."""
@@ -73,7 +78,9 @@ class Registry:
         except ImportError:
             return
 
-        for importer, mod_name, is_pkg in pkgutil_iter_modules(pkg.__path__, f"{self.builtin_module_prefix}."):
+        for importer, mod_name, is_pkg in pkgutil_iter_modules(
+            pkg.__path__, f"{self.builtin_module_prefix}."
+        ):
             try:
                 mod = importlib.import_module(mod_name)
             except ImportError as e:
@@ -163,12 +170,12 @@ class Registry:
             if not issubclass(obj, self.base_type) or obj is self.base_type:
                 continue
             # Verify the type is actually defined in this module (not imported)
-            defined_in = getattr(obj, '__module__', '')
-            if defined_in.startswith('typing') or defined_in.startswith('builtins'):
+            defined_in = getattr(obj, "__module__", "")
+            if defined_in.startswith("typing") or defined_in.startswith("builtins"):
                 continue
             # Only register types defined in the adapter/plugin package (not core.interfaces)
-            mod_name = getattr(mod, '__name__', '')
-            if defined_in != mod_name and not defined_in.startswith(mod_name + '.'):
+            mod_name = getattr(mod, "__name__", "")
+            if defined_in != mod_name and not defined_in.startswith(mod_name + "."):
                 continue
             # Use class attribute or name derived from class name
             plugin_name = getattr(obj, "name", None) or _snake_to_kebab(name)
@@ -179,7 +186,9 @@ class Registry:
     def register(self, name: str, cls: Type, replace: bool = False) -> None:
         """Register a plugin class under a given name."""
         if name in self._plugins and not replace:
-            log.debug("Plugin '%s' already registered, skipping (use replace=True to override)", name)
+            log.debug(
+                "Plugin '%s' already registered, skipping (use replace=True to override)", name
+            )
             return
         self._plugins[name] = cls
         log.debug("Registered plugin: %s -> %s", name, cls.__name__)
@@ -226,19 +235,22 @@ class Registry:
         """Return plugins with their metadata."""
         result = []
         for name, cls in self._plugins.items():
-            result.append({
-                "name": name,
-                "class": cls.__name__,
-                "module": cls.__module__,
-                "description": getattr(cls, "description", ""),
-                "version": getattr(cls, "version", "unknown"),
-            })
+            result.append(
+                {
+                    "name": name,
+                    "class": cls.__name__,
+                    "module": cls.__module__,
+                    "description": getattr(cls, "description", ""),
+                    "version": getattr(cls, "version", "unknown"),
+                }
+            )
         return result
 
 
 # ─────────────────────────────────────────────────────────────
 # Sub-Registries
 # ─────────────────────────────────────────────────────────────
+
 
 class AdapterRegistry(Registry):
     """Registry for ModelAdapter plugins."""
@@ -290,9 +302,21 @@ class PluginRegistry(Registry):
 
     def __init__(self):
         super().__init__()
-        self.scanners = _SubRegistry(ScannerPlugin, "community_ai_audit.plugins.scanners", "community_ai_audit.plugins.scanners")
-        self.interpreters = _SubRegistry(InterpreterPlugin, "community_ai_audit.plugins.interpreters", "community_ai_audit.plugins.interpreters")
-        self.reporters = _SubRegistry(ReporterPlugin, "community_ai_audit.plugins.reporters", "community_ai_audit.plugins.reporters")
+        self.scanners = _SubRegistry(
+            ScannerPlugin,
+            "community_ai_audit.plugins.scanners",
+            "community_ai_audit.plugins.scanners",
+        )
+        self.interpreters = _SubRegistry(
+            InterpreterPlugin,
+            "community_ai_audit.plugins.interpreters",
+            "community_ai_audit.plugins.interpreters",
+        )
+        self.reporters = _SubRegistry(
+            ReporterPlugin,
+            "community_ai_audit.plugins.reporters",
+            "community_ai_audit.plugins.reporters",
+        )
 
     def discover(self, extra_paths: Optional[List[str]] = None) -> None:
         self.scanners.discover(extra_paths)
@@ -336,8 +360,10 @@ class _SubRegistry(Registry):
                 pkg = importlib.import_module(self.builtin_module_prefix)
                 self._register_from_module(pkg)
                 # Also try iterating submodules
-                if hasattr(pkg, '__path__'):
-                    for importer, mod_name, is_pkg in pkgutil.iter_modules(pkg.__path__, f"{self.builtin_module_prefix}."):
+                if hasattr(pkg, "__path__"):
+                    for importer, mod_name, is_pkg in pkgutil.iter_modules(
+                        pkg.__path__, f"{self.builtin_module_prefix}."
+                    ):
                         try:
                             mod = importlib.import_module(mod_name)
                             self._register_from_module(mod)
@@ -362,9 +388,11 @@ plugins = PluginRegistry()
 # Utilities
 # ─────────────────────────────────────────────────────────────
 
+
 def _snake_to_kebab(s: str) -> str:
     """Convert SnakeCase class name to kebab-case plugin name."""
     import re
+
     s = re.sub(r"(?<!^)(?=[A-Z])", "-", s).lower()
     return s
 

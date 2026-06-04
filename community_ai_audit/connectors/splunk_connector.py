@@ -55,15 +55,11 @@ class SplunkConnector(SIEMConnector):
     def connect(self, config: Dict[str, Any]) -> None:
         self._url = config.get("hec_url") or os.environ.get("SPLUNK_HEC_URL")
         if not self._url:
-            raise ValueError(
-                "Splunk HEC URL required. Set 'hec_url' or SPLUNK_HEC_URL."
-            )
+            raise ValueError("Splunk HEC URL required. Set 'hec_url' or SPLUNK_HEC_URL.")
 
         self._token = config.get("hec_token") or os.environ.get("SPLUNK_HEC_TOKEN")
         if not self._token:
-            raise ValueError(
-                "Splunk HEC token required. Set 'hec_token' or SPLUNK_HEC_TOKEN."
-            )
+            raise ValueError("Splunk HEC token required. Set 'hec_token' or SPLUNK_HEC_TOKEN.")
 
         self._index = config.get("index", "security")
         self._sourcetype = config.get("sourcetype", "ai:audit")
@@ -72,10 +68,12 @@ class SplunkConnector(SIEMConnector):
         self._retry_cfg = RetryConfig.from_dict(config.get("retry"))
 
         self._session = requests.Session()
-        self._session.headers.update({
-            "Authorization": f"Splunk {self._token}",
-            "Content-Type": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "Authorization": f"Splunk {self._token}",
+                "Content-Type": "application/json",
+            }
+        )
 
         # Optional health check
         health_url = f"{self._url}/services/collector/health"
@@ -94,9 +92,7 @@ class SplunkConnector(SIEMConnector):
     def send_event(self, event: Dict[str, Any], event_type: str = "audit") -> bool:
         return self.send_batch([event], event_type=event_type)["success"] == 1
 
-    def send_batch(
-        self, events: List[Dict[str, Any]], event_type: str = "audit"
-    ) -> Dict[str, Any]:
+    def send_batch(self, events: List[Dict[str, Any]], event_type: str = "audit") -> Dict[str, Any]:
         if not events:
             return {"success": 0, "failed": 0}
 
@@ -127,7 +123,10 @@ class SplunkConnector(SIEMConnector):
 
         log.info(
             "Sent %d events to Splunk (index=%s): success=%d failed=%d",
-            len(events), self._index, total_success, total_failed,
+            len(events),
+            self._index,
+            total_success,
+            total_failed,
         )
         return {"success": total_success, "failed": total_failed}
 
@@ -136,7 +135,9 @@ class SplunkConnector(SIEMConnector):
         import time
         import random
 
-        max_attempts = self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        max_attempts = (
+            self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        )
         initial_delay = self._retry_cfg.initial_delay if self._retry_cfg else 1.0
         max_delay = self._retry_cfg.max_delay if self._retry_cfg else 60.0
         exp_base = self._retry_cfg.exponential_base if self._retry_cfg else 2.0
@@ -160,12 +161,12 @@ class SplunkConnector(SIEMConnector):
                 status = None
                 if exc.response is not None:
                     status = exc.response.status_code
-                
+
                 if attempt == max_attempts:
                     for ev in events:
                         log_dlq_event(ev, f"splunk_max_retries:{status or 'error'}")
                     return 0, len(events)
-                
+
                 # Check if status warrants retry (from DEFAULT_RETRY_STATUS)
                 should_retry = (
                     status in DEFAULT_RETRY_STATUS
@@ -178,7 +179,10 @@ class SplunkConnector(SIEMConnector):
                     delay = min(delay * exp_base, max_delay)
                     log.warning(
                         "Splunk retry %d/%d after HTTP %s: %s",
-                        attempt, max_attempts, status, exc,
+                        attempt,
+                        max_attempts,
+                        status,
+                        exc,
                     )
                 else:
                     # non-retryable -> DLQ
@@ -205,7 +209,11 @@ class SplunkConnector(SIEMConnector):
             "index": self._index,
             "sourcetype": self._sourcetype,
             "source": f"community-ai-audit-{event_type}",
-            "event": {k: v for k, v in event.items() if k not in ("time", "host", "index", "sourcetype", "source")},
+            "event": {
+                k: v
+                for k, v in event.items()
+                if k not in ("time", "host", "index", "sourcetype", "source")
+            },
         }
 
         # Ensure key audit fields are embedded
@@ -242,4 +250,3 @@ class SplunkConnector(SIEMConnector):
                 },
             },
         }
-

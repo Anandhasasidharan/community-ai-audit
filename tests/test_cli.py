@@ -6,6 +6,7 @@ import unittest
 class TestCLI(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.cli.main import build_parser
+
         self.parser = build_parser()
 
     def test_scan_command(self):
@@ -28,16 +29,23 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(args.command, "discover")
 
     def test_scan_with_probe_file(self):
-        args = self.parser.parse_args([
-            "scan", "my_model.pt", "--provider", "local", "--probe-file", "examples/data/toy_probe.json"
-        ])
+        args = self.parser.parse_args(
+            [
+                "scan",
+                "my_model.pt",
+                "--provider",
+                "local",
+                "--probe-file",
+                "examples/data/toy_probe.json",
+            ]
+        )
         self.assertEqual(args.command, "scan")
         self.assertEqual(args.probe_file, "examples/data/toy_probe.json")
 
     def test_audit_with_profile(self):
-        args = self.parser.parse_args([
-            "audit", "my_model.pt", "--provider", "local", "--profile", "deep"
-        ])
+        args = self.parser.parse_args(
+            ["audit", "my_model.pt", "--provider", "local", "--profile", "deep"]
+        )
         self.assertEqual(args.command, "audit")
         self.assertEqual(args.profile, "deep")
 

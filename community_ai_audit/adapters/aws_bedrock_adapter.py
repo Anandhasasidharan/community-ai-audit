@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -53,9 +54,12 @@ class AWSBedrockAdapter(TextModelAdapter):
             session_kwargs["profile_name"] = profile
 
         import os
+
         boto_session = boto3.Session(**session_kwargs)
 
-        kwargs: Dict[str, Any] = {"region_name": config.get("region_name", os.environ.get("AWS_REGION", "us-east-1"))}
+        kwargs: Dict[str, Any] = {
+            "region_name": config.get("region_name", os.environ.get("AWS_REGION", "us-east-1"))
+        }
         if config.get("aws_access_key_id") and config.get("aws_secret_access_key"):
             kwargs["aws_access_key_id"] = config["aws_access_key_id"]
             kwargs["aws_secret_access_key"] = config["aws_secret_access_key"]
@@ -66,7 +70,11 @@ class AWSBedrockAdapter(TextModelAdapter):
             **kwargs,
         )
         self._model_family = config.get("model_family", "anthropic")
-        log.info("AWS Bedrock adapter connected (region: %s, family: %s)", kwargs["region_name"], self._model_family)
+        log.info(
+            "AWS Bedrock adapter connected (region: %s, family: %s)",
+            kwargs["region_name"],
+            self._model_family,
+        )
 
     def disconnect(self) -> None:
         self._client = None
@@ -117,6 +125,7 @@ class AWSBedrockAdapter(TextModelAdapter):
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
         import os
+
         return {
             "region_name": os.environ.get("AWS_REGION", "us-east-1"),
             "profile_name": os.environ.get("AWS_PROFILE"),
@@ -134,6 +143,7 @@ class _BedrockModelWrapper:
 
     def predict(self, inputs: Dict[str, Any], **kwargs) -> Any:
         import json
+
         merged = {**self._defaults, **kwargs}
         prompt = inputs.get("prompt", "")
 

@@ -32,7 +32,7 @@ class TestRegistry(unittest.TestCase):
         reg.discover()
         self.assertTrue(len(reg.list_available()) > 0)
 
-    @patch('community_ai_audit.core.registry.entry_points')
+    @patch("community_ai_audit.core.registry.entry_points")
     def test_entry_point_discovery(self, mock_entry_points):
         """Simulate plugin loaded via entry points."""
         from community_ai_audit.core.interfaces import SIEMConnector
@@ -42,14 +42,19 @@ class TestRegistry(unittest.TestCase):
 
             def connect(self, config):
                 pass
+
             def disconnect(self):
                 pass
+
             def send_event(self, event, event_type="audit"):
                 return True
+
             def send_batch(self, events, event_type="audit"):
                 return {"success": 0, "failed": 0}
+
             def query(self, query, time_range=None):
                 return []
+
             @classmethod
             def get_config_schema(cls):
                 return {}

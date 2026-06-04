@@ -11,6 +11,7 @@ from enum import Enum
 # Enums
 # ─────────────────────────────────────────────────────────────
 
+
 class ModelType(Enum):
     TEXT = "text"
     IMAGE = "image"
@@ -38,6 +39,7 @@ T = TypeVar("T", bound="ModelAdapter")
 # ─────────────────────────────────────────────────────────────
 # Model Adapter Interface
 # ─────────────────────────────────────────────────────────────
+
 
 class ModelAdapter(ABC):
     """Abstract base for all model provider adapters.
@@ -151,7 +153,9 @@ class ImageModelAdapter(ModelAdapter):
         raise NotImplementedError
 
     @abstractmethod
-    def get_layer_activations(self, model: Any, image: Any, layer_names: List[str]) -> Dict[str, Any]:
+    def get_layer_activations(
+        self, model: Any, image: Any, layer_names: List[str]
+    ) -> Dict[str, Any]:
         """Extract intermediate layer activations."""
         raise NotImplementedError
 
@@ -171,6 +175,7 @@ class MultiModalAdapter(ModelAdapter):
 # ─────────────────────────────────────────────────────────────
 # SIEM Connector Interface
 # ─────────────────────────────────────────────────────────────
+
 
 class SIEMConnector(ABC):
     """Abstract base for SIEM (Security Information and Event Management) integrations.
@@ -240,6 +245,7 @@ class SIEMConnector(ABC):
 # Security Tool Connector Interface
 # ─────────────────────────────────────────────────────────────
 
+
 class SecurityToolConnector(ABC):
     """Abstract base for integrations with security tools
     (SOAR, CVE feeds, threat intel, vulnerability scanners, etc.).
@@ -298,6 +304,7 @@ class ThreatIntelConnector(SecurityToolConnector):
 # Result Types (defined before plugins that use them)
 # ─────────────────────────────────────────────────────────────
 
+
 class Finding:
     """A single vulnerability / anomaly finding from a scanner."""
 
@@ -307,10 +314,10 @@ class Finding:
         description: str,
         severity: Severity,
         evidence: Optional[Dict[str, Any]] = None,
-        cwe_id: Optional[str] = None,       # MITRE CWE
-        mitre_id: Optional[str] = None,     # ATLAS / ATT&CK ID
-        nist_id: Optional[str] = None,      # NIST AI RMF category
-        confidence: float = 0.5,            # 0.0–1.0
+        cwe_id: Optional[str] = None,  # MITRE CWE
+        mitre_id: Optional[str] = None,  # ATLAS / ATT&CK ID
+        nist_id: Optional[str] = None,  # NIST AI RMF category
+        confidence: float = 0.5,  # 0.0–1.0
         recommendation: Optional[str] = None,
         raw_data: Optional[Dict[str, Any]] = None,
     ):
@@ -365,7 +372,13 @@ class ScanResult:
         """Return the highest severity across all findings."""
         if not self.findings:
             return Severity.UNKNOWN
-        priority = {Severity.CRITICAL: 4, Severity.HIGH: 3, Severity.MEDIUM: 2, Severity.LOW: 1, Severity.INFO: 0}
+        priority = {
+            Severity.CRITICAL: 4,
+            Severity.HIGH: 3,
+            Severity.MEDIUM: 2,
+            Severity.LOW: 1,
+            Severity.INFO: 0,
+        }
         return max(self.findings, key=lambda f: priority.get(f.severity, 0)).severity
 
     def to_dict(self) -> Dict[str, Any]:
@@ -416,6 +429,7 @@ class InterpretationResult:
 # Scanner Plugin Interface
 # ─────────────────────────────────────────────────────────────
 
+
 class ScannerPlugin(ABC):
     """Abstract base for vulnerability scanner plugins.
 
@@ -457,6 +471,7 @@ class ScannerPlugin(ABC):
 # Interpreter Plugin Interface
 # ─────────────────────────────────────────────────────────────
 
+
 class InterpreterPlugin(ABC):
     """Abstract base for interpretability method plugins."""
 
@@ -497,6 +512,7 @@ class InterpreterPlugin(ABC):
 # Reporter Plugin Interface
 # ─────────────────────────────────────────────────────────────
 
+
 class ReporterPlugin(ABC):
     """Abstract base for report format plugins."""
 
@@ -512,4 +528,3 @@ class ReporterPlugin(ABC):
     ) -> str:
         """Render audit results into the target format."""
         raise NotImplementedError
-

@@ -49,6 +49,16 @@ python_files = ["test_*.py"]
 
 [tool.black]
 line-length = 100
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.ruffvenv
+  | \bdist
+  | \bbuild
+  | _vendor
+)/
+'''
 
 [tool.ruff]
 line-length = 100

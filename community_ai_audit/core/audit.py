@@ -184,7 +184,11 @@ class AuditEngine:
             return "anthropic"
         if "/" in model_id or model_id in ("llama", "llama2", "llama3"):
             return "huggingface"
-        if model_id.startswith("s3://") or model_id.startswith("gs://") or model_id.startswith("https://"):
+        if (
+            model_id.startswith("s3://")
+            or model_id.startswith("gs://")
+            or model_id.startswith("https://")
+        ):
             return "local"  # cloud URI or direct URL
         if os.path.exists(model_id) or model_id.endswith((".pt", ".pth", ".onnx", ".safetensors")):
             return "local"
@@ -226,11 +230,13 @@ class AuditEngine:
                 log.info("Scanner '%s' completed: %d findings", name, len(result.findings))
             except Exception as e:
                 log.error("Scanner '%s' failed: %s", name, e)
-                results.append(ScanResult(
-                    scanner_name=name,
-                    scanner_version=getattr(plugins.scanners.get(name), "version", "unknown"),
-                    error=str(e),
-                ))
+                results.append(
+                    ScanResult(
+                        scanner_name=name,
+                        scanner_version=getattr(plugins.scanners.get(name), "version", "unknown"),
+                        error=str(e),
+                    )
+                )
 
         return results
 
@@ -279,11 +285,15 @@ class AuditEngine:
                 log.info("Interpreter '%s' completed", name)
             except Exception as e:
                 log.error("Interpreter '%s' failed: %s", name, e)
-                results.append(InterpretationResult(
-                    interpreter_name=name,
-                    interpreter_version=getattr(plugins.interpreters.get(name), "version", "unknown"),
-                    error=str(e),
-                ))
+                results.append(
+                    InterpretationResult(
+                        interpreter_name=name,
+                        interpreter_version=getattr(
+                            plugins.interpreters.get(name), "version", "unknown"
+                        ),
+                        error=str(e),
+                    )
+                )
 
         return results
 
@@ -414,14 +424,18 @@ class AuditEngine:
         if self._model is None:
             raise RuntimeError("No model loaded. Call load_model() first.")
 
-    def _get_scanner_config(self, name: str, overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _get_scanner_config(
+        self, name: str, overrides: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         base = self.config.get("scanners", {})
         cfg = base.get(name, base.get(name.replace("-", "_"), {})).copy()
         if overrides:
             cfg.update(overrides)
         return cfg
 
-    def _get_interpreter_config(self, name: str, overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _get_interpreter_config(
+        self, name: str, overrides: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         base = self.config.get("interpreters", {})
         cfg = base.get(name, base.get(name.replace("-", "_"), {})).copy()
         if overrides:
@@ -433,12 +447,10 @@ class AuditEngine:
         return {
             "adapters": adapters.list_available(),
             "siem_connectors": [
-                n for n in connectors.list_available()
-                if n in _get_siem_connector_names()
+                n for n in connectors.list_available() if n in _get_siem_connector_names()
             ],
             "security_tools": [
-                n for n in connectors.list_available()
-                if n not in _get_siem_connector_names()
+                n for n in connectors.list_available() if n not in _get_siem_connector_names()
             ],
             "scanners": plugins.list_scanners(),
             "interpreters": plugins.list_interpreters(),
@@ -477,7 +489,9 @@ class AuditSession:
         """The most severe finding across all scanners."""
         severities = [r.overall_severity for r in self.scan_results]
         priority = {Severity.CRITICAL: 4, Severity.HIGH: 3, Severity.MEDIUM: 2, Severity.LOW: 1}
-        return max(severities, key=lambda s: priority.get(s, -1)) if severities else Severity.UNKNOWN
+        return (
+            max(severities, key=lambda s: priority.get(s, -1)) if severities else Severity.UNKNOWN
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -516,19 +530,15 @@ def _format_audit_for_connector(
     return {
         "session_id": session_id,
         "timestamp": datetime.utcnow().isoformat(),
-        "events": [
-            {**r.to_dict(), "event_type": "scan_result"}
-            for r in scan_results
-        ] + [
-            {**r.to_dict(), "event_type": "interpretation_result"}
-            for r in interpret_results
-        ],
+        "events": [{**r.to_dict(), "event_type": "scan_result"} for r in scan_results]
+        + [{**r.to_dict(), "event_type": "interpretation_result"} for r in interpret_results],
     }
 
 
 def _get_siem_connector_names() -> set:
     """Names of all SIEM-type connectors (heuristic by class inheritance)."""
     from .interfaces import SIEMConnector
+
     siem_names = set()
     for name, cls in connectors._plugins.items():
         try:

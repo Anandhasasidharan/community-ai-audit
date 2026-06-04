@@ -33,7 +33,9 @@ class AdversarialScanner(ScannerPlugin):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
 
-    def scan(self, model: Any, adapter: ModelAdapter, config: Optional[Dict[str, Any]] = None) -> ScanResult:
+    def scan(
+        self, model: Any, adapter: ModelAdapter, config: Optional[Dict[str, Any]] = None
+    ) -> ScanResult:
         cfg = {**self.config, **(config or {})}
         epsilon = float(cfg.get("epsilon", 0.1))
         alpha = float(cfg.get("alpha", 0.01))
@@ -149,6 +151,7 @@ class AdversarialScanner(ScannerPlugin):
 
     def _get_device(self, model: Any):
         import torch
+
         try:
             p = next(model.parameters())
             return p.device

@@ -27,7 +27,10 @@ class MinimalConnector(SIEMConnector):
 
     def connect(self, config: Dict[str, Any]) -> None:
         import os
-        self._out_file = config.get("out_file") or os.environ.get("MINIMAL_OUT_FILE", "/tmp/minimal_audit.jsonl")
+
+        self._out_file = config.get("out_file") or os.environ.get(
+            "MINIMAL_OUT_FILE", "/tmp/minimal_audit.jsonl"
+        )
         log.info("Connected to minimal connector (output: %s)", self._out_file)
 
     def disconnect(self) -> None:
@@ -52,7 +55,7 @@ class MinimalConnector(SIEMConnector):
         # Persist to file (in production, you'd call an API instead)
         if self._out_file:
             with open(self._out_file, "a") as f:
-                for entry in self._events[-len(events):]:
+                for entry in self._events[-len(events) :]:
                     f.write(_json.dumps(entry) + "\n")
 
         return {"success": len(events), "failed": 0}

@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 def resolve_device(device: str = "auto") -> str:
     """Resolve the best compute device available."""
     import torch
+
     if device == "auto":
         if torch.cuda.is_available():
             return "cuda"
@@ -24,6 +25,7 @@ def resolve_device(device: str = "auto") -> str:
 def safe_import(module_name: str, package: Optional[str] = None) -> Any:
     """Try to import a module, return None if not available."""
     import importlib
+
     try:
         return importlib.import_module(module_name, package=package)
     except ImportError:

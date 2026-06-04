@@ -9,12 +9,10 @@ from .interfaces import (
     TextModelAdapter,
     ImageModelAdapter,
     MultiModalAdapter,
-
     # SIEM / Security connectors
     SIEMConnector,
     SecurityToolConnector,
     ThreatIntelConnector,
-
     # Scanner / Interpreter plugins
     ScannerPlugin,
     InterpreterPlugin,

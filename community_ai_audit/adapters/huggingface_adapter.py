@@ -24,15 +24,15 @@ def _lazy_import():
     global torch, transformers, tokenizer_utils
     if torch is None:
         import torch
+
         transformers = safe_import("transformers")
         if transformers is None:
-            raise ImportError(
-                "transformers not installed. Run: pip install transformers torch"
-            )
+            raise ImportError("transformers not installed. Run: pip install transformers torch")
 
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -88,6 +88,7 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
         config_only = kwargs.get("config_only", False)
         if config_only:
             from transformers import AutoConfig
+
             return AutoConfig.from_pretrained(
                 model_id,
                 token=token,
@@ -124,6 +125,7 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
 
     def predict(self, model: Any, inputs: Any, **kwargs) -> Any:
         import torch
+
         with torch.no_grad():
             return model(**inputs) if isinstance(inputs, dict) else model(inputs)
 
@@ -184,13 +186,19 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
             return self._tokenizer.image_processor(image, return_tensors="pt")
         raise NotImplementedError("Image preprocessing requires a vision processor")
 
-    def get_layer_activations(self, model: Any, image: Any, layer_names: List[str]) -> Dict[str, Any]:
+    def get_layer_activations(
+        self, model: Any, image: Any, layer_names: List[str]
+    ) -> Dict[str, Any]:
         import torch
+
         activations: Dict[str, Any] = {}
 
         def hook_fn(name):
             def fn(module, input, output):
-                activations[name] = output.detach() if isinstance(output, torch.Tensor) else output[0].detach()
+                activations[name] = (
+                    output.detach() if isinstance(output, torch.Tensor) else output[0].detach()
+                )
+
             return fn
 
         handles = []
@@ -213,6 +221,7 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
     @staticmethod
     def _resolve_device(device: str) -> str:
         import torch
+
         if device == "auto":
             if torch.cuda.is_available():
                 return "cuda"
@@ -226,9 +235,15 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
         return {
             "type": "object",
             "properties": {
-                "token": {"type": "string", "description": "HuggingFace API token (optional for public models)"},
+                "token": {
+                    "type": "string",
+                    "description": "HuggingFace API token (optional for public models)",
+                },
                 "device": {"type": "string", "enum": ["auto", "cpu", "cuda", "mps"]},
-                "torch_dtype": {"type": "string", "enum": ["auto", "float32", "float16", "bfloat16"]},
+                "torch_dtype": {
+                    "type": "string",
+                    "enum": ["auto", "float32", "float16", "bfloat16"],
+                },
                 "trust_remote_code": {"type": "boolean", "default": False},
                 "cache_dir": {"type": "string"},
             },
@@ -237,4 +252,5 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
         import os
+
         return {"token": os.environ.get("HF_TOKEN")}

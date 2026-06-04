@@ -86,9 +86,7 @@ class ElasticConnector(SIEMConnector):
     def send_event(self, event: Dict[str, Any], event_type: str = "audit") -> bool:
         return self.send_batch([event], event_type=event_type)["success"] == 1
 
-    def send_batch(
-        self, events: List[Dict[str, Any]], event_type: str = "audit"
-    ) -> Dict[str, Any]:
+    def send_batch(self, events: List[Dict[str, Any]], event_type: str = "audit") -> Dict[str, Any]:
         if not events:
             return {"success": 0, "failed": 0}
         if not self._client:
@@ -118,7 +116,10 @@ class ElasticConnector(SIEMConnector):
 
         log.info(
             "Sent %d events to Elastic (index=%s): success=%d failed=%d",
-            len(events), self._index, total_success, total_failed,
+            len(events),
+            self._index,
+            total_success,
+            total_failed,
         )
         return {"success": total_success, "failed": total_failed}
 
@@ -127,7 +128,9 @@ class ElasticConnector(SIEMConnector):
         import time
         import random
 
-        max_attempts = self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        max_attempts = (
+            self._retry_cfg.max_attempts if self._retry_cfg and self._retry_cfg.enabled else 1
+        )
         initial_delay = self._retry_cfg.initial_delay if self._retry_cfg else 1.0
         max_delay = self._retry_cfg.max_delay if self._retry_cfg else 60.0
         exp_base = self._retry_cfg.exponential_base if self._retry_cfg else 2.0
@@ -198,10 +201,23 @@ class ElasticConnector(SIEMConnector):
         }
 
         # Flatten other top-level fields under ai.audit.extra for now
-        extra = {k: v for k, v in event.items() if k not in {
-            "title", "description", "severity", "confidence", "model_id",
-            "scanner_name", "evidence", "recommendation", "cwe_id", "mitre_id"
-        }}
+        extra = {
+            k: v
+            for k, v in event.items()
+            if k
+            not in {
+                "title",
+                "description",
+                "severity",
+                "confidence",
+                "model_id",
+                "scanner_name",
+                "evidence",
+                "recommendation",
+                "cwe_id",
+                "mitre_id",
+            }
+        }
         if extra:
             doc["ai"]["audit"]["extra"] = extra
 
@@ -235,4 +251,3 @@ class ElasticConnector(SIEMConnector):
                 },
             },
         }
-

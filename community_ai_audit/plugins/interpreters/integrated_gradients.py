@@ -103,6 +103,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
 
     def _get_device(self, model: Any):
         import torch
+
         try:
             return next(model.parameters()).device
         except Exception:
@@ -110,6 +111,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
 
     def _build_baseline(self, x, mode: str):
         import torch
+
         if mode == "random":
             return torch.randn_like(x) * 0.01
         if mode == "mean":
@@ -119,6 +121,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
 
     def _resolve_target(self, model: Any, x, target: Optional[Any]) -> int:
         import torch
+
         if target is not None:
             return int(target)
         with torch.no_grad():
@@ -162,6 +165,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
 
     def _summarize(self, attributions) -> str:
         import torch
+
         abs_attr = attributions.abs().flatten()
         mean_mag = float(abs_attr.mean().item())
         max_mag = float(abs_attr.max().item())

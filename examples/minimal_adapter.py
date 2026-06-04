@@ -40,6 +40,7 @@ class DummyHTTPAdapter(TextModelAdapter):
 
     def predict(self, model: Any, inputs: Any, **kwargs) -> Any:
         import random
+
         # In production: call the actual API here
         # resp = requests.post(url, json=payload, headers=headers)
         # return resp.json()
@@ -59,10 +60,12 @@ class DummyHTTPAdapter(TextModelAdapter):
 
     def get_logits(self, model: Any, tokens: Any, **kwargs) -> Any:
         import random
+
         return {"logits": [random.random() for _ in range(100)]}
 
     def get_attention_weights(self, model: Any, tokens: Any, **kwargs) -> Any:
         import random
+
         return {"heads": [[random.random() for _ in range(10)] for _ in range(4)]}
 
     def get_config_schema(self) -> Dict[str, Any]:

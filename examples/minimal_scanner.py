@@ -37,7 +37,9 @@ class MinimalScanner(ScannerPlugin):
             outputs = pred.get("outputs", [0.5])
             predictions.append(outputs[0])
 
-        variance = sum((p - (sum(predictions) / len(predictions))) ** 2 for p in predictions) / len(predictions)
+        variance = sum((p - (sum(predictions) / len(predictions))) ** 2 for p in predictions) / len(
+            predictions
+        )
         print(f"[scan] Measured variance: {variance:.4f} (threshold: {threshold})")
 
         findings = []
@@ -46,10 +48,14 @@ class MinimalScanner(ScannerPlugin):
                 Finding(
                     title="High output variance detected",
                     description=f"Model predictions show high variance ({variance:.3f} > threshold {threshold}). "
-                                f"This may indicate instability or adversarial sensitivity.",
+                    f"This may indicate instability or adversarial sensitivity.",
                     severity=Severity.HIGH,
                     confidence=min(variance, 0.95),
-                    evidence={"variance": variance, "threshold": threshold, "num_samples": num_samples},
+                    evidence={
+                        "variance": variance,
+                        "threshold": threshold,
+                        "num_samples": num_samples,
+                    },
                     recommendation="Retrain with data augmentation or add adversarial training.",
                 )
             )

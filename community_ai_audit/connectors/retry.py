@@ -55,7 +55,9 @@ def retry(
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             statuses = retry_statuses if retry_statuses is not None else DEFAULT_RETRY_STATUS
-            exceptions = retry_exceptions if retry_exceptions is not None else DEFAULT_RETRY_EXCEPTIONS
+            exceptions = (
+                retry_exceptions if retry_exceptions is not None else DEFAULT_RETRY_EXCEPTIONS
+            )
 
             delay = initial_delay
             last_exc: Optional[Exception] = None
@@ -74,7 +76,9 @@ def retry(
                     if attempt == max_attempts:
                         log.error(
                             "All %d retry attempts exhausted for %s: %s",
-                            max_attempts, func.__name__, exc,
+                            max_attempts,
+                            func.__name__,
+                            exc,
                         )
                         raise
 
@@ -85,7 +89,11 @@ def retry(
 
                     log.warning(
                         "Retry %d/%d for %s in %.1fs — %s",
-                        attempt, max_attempts, func.__name__, actual_delay, exc,
+                        attempt,
+                        max_attempts,
+                        func.__name__,
+                        actual_delay,
+                        exc,
                     )
                     if on_retry:
                         on_retry(exc, attempt)
