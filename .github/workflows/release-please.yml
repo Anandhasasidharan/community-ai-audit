@@ -1,0 +1,26 @@
+name: Release Please
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        with:
+          release-type: python
+          package-name: community-ai-audit
+          changelog-sections: |
+            [
+              {"type": "feat", "section": "Features"},
+              {"type": "fix", "section": "Bug Fixes"},
+              {"type": "docs", "section": "Documentation"},
+              {"type": "test", "section": "Tests"},
+              {"type": "ci", "section": "CI/CD"}
+            ]

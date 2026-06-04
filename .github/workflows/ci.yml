@@ -24,33 +24,39 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip build
+        run: python -m pip install --upgrade pip build
 
       - name: Install dev dependencies
-        run: |
-          pip install ruff black mypy pytest
+        run: pip install ruff black mypy pytest pytest-cov bandit pip-audit
 
       - name: Lint (ruff)
-        run: |
-          ruff check .
+        run: ruff check .
 
       - name: Format check (black)
-        run: |
-          black --check community_ai_audit/ tests/ examples/
+        run: black --check community_ai_audit/ tests/ examples/
 
       - name: Type check (mypy)
-        run: |
-          mypy --install-types --non-interactive . || true
+        run: mypy --install-types --non-interactive community_ai_audit/ || true
+
+      - name: Security scan (bandit)
+        run: bandit -r community_ai_audit/ -x tests,examples -ll || true
+
+      - name: Dependency audit (pip-audit)
+        run: pip-audit --strict --progress-spinner=off || true
 
       - name: Install package
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
 
-      - name: Run tests
-        run: |
-          python -m pytest -q
+      - name: Run tests with coverage
+        run: python -m pytest -q --cov=community_ai_audit --cov-report=xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-latest
@@ -66,12 +72,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip build
+        run: python -m pip install --upgrade pip build
 
       - name: Build artifacts
-        run: |
-          python -m build --sdist --wheel
+        run: python -m build --sdist --wheel
 
       - name: Validate install in isolated venv
         run: |
@@ -96,19 +100,16 @@ jobs:
           python-version: '3.11'
 
       - name: Install build & publish tools
-        run: |
-          python -m pip install --upgrade pip build twine
+        run: python -m pip install --upgrade pip build twine
 
       - name: Build artifacts
-        run: |
-          python -m build --sdist --wheel
+        run: python -m build --sdist --wheel
 
       - name: Publish to TestPyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: |
-          twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        run: twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
   publish-pypi:
     name: Publish to PyPI
@@ -125,16 +126,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install build & publish tools
-        run: |
-          python -m pip install --upgrade pip build twine
+        run: python -m pip install --upgrade pip build twine
 
       - name: Build artifacts
-        run: |
-          python -m build --sdist --wheel
+        run: python -m build --sdist --wheel
 
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          twine upload dist/*
+        run: twine upload dist/*
