@@ -32,3 +32,6 @@ Thumbs.db
 *.log.ruffvenv/
 dist/
 __pycache__/
+*.png
+*.jpg
+*.jpeg
