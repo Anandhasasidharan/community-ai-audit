@@ -15,7 +15,7 @@ Plugins:
     Interpreters — integrated-gradients, lime
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Community Contributors"
 
 from community_ai_audit.core.audit import AuditEngine
