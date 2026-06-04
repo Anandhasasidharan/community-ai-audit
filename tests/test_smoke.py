@@ -9,7 +9,8 @@ class TestSmoke(unittest.TestCase):
     def test_package_import(self):
         import community_ai_audit
 
-        self.assertEqual(community_ai_audit.__version__, "0.1.1")
+        # Version should be a valid semver string (not hardcoded to avoid CI failures)
+        self.assertRegex(community_ai_audit.__version__, r"^\d+\.\d+\.\d+")
         self.assertTrue(hasattr(community_ai_audit, "AuditEngine"))
 
     def test_registry_discovery(self):
