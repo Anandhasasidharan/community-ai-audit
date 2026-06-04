@@ -142,6 +142,3 @@ class _OpenAIModelWrapper:
             **merged,
         )
         return response
-
-
-import os

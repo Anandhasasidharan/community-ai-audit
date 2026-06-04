@@ -1,0 +1,22 @@
+# HuggingFace adapter configuration
+# Used with: --provider huggingface
+
+model:
+  cache_dir: ~/.cache/community_ai_audit/models
+  device: auto   # cpu, cuda, mps
+  dtype: auto    # float32, float16, bfloat16
+
+scanners:
+  backdoor:
+    enabled: true
+    activation_threshold: 0.85
+  adversarial:
+    enabled: true
+    epsilon: 0.1
+
+interpreters:
+  integrated-gradients:
+    enabled: true
+    steps: 50
+
+connectors: []

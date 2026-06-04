@@ -1,0 +1,32 @@
+# Local model adapter configuration
+# Used with: --provider local
+# Supports: PyTorch, TensorFlow, ONNX
+
+model:
+  device: cpu         # cpu, cuda, mps
+  dtype: float32    # float32, float16
+  compile: false    # PyTorch compile (jit)
+
+scanners:
+  backdoor:
+    enabled: true
+    clustering_method: kmeans
+    activation_threshold: 0.85
+    num_clusters: 5
+  adversarial:
+    enabled: true
+    epsilon: 0.1
+    alpha: 0.01
+    pgd_steps: 10
+    num_samples: 100
+
+interpreters:
+  integrated-gradients:
+    enabled: true
+    steps: 50
+    baseline: zero
+  lime:
+    enabled: true
+    num_samples: 500
+
+connectors: []

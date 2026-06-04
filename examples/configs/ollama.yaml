@@ -1,0 +1,19 @@
+# Ollama adapter configuration
+# Used with: --provider ollama
+# Requires: Ollama server running locally (default: http://localhost:11434)
+
+model:
+  base_url: http://localhost:11434  # Ollama API endpoint
+
+scanners:
+  adversarial:
+    enabled: true
+    num_samples: 20  # Fewer for local inference
+  backdoor:
+    enabled: false  # Not supported for Ollama models
+
+interpreters:
+  integrated-gradients:
+    enabled: false  # Not supported for Ollama models
+
+connectors: []

@@ -1,0 +1,22 @@
+# Anthropic adapter configuration
+# Used with: --provider anthropic
+# Requires: ANTHROPIC_API_KEY env var
+
+model:
+  api_key: ${ANTHROPIC_API_KEY}
+  base_url: https://api.anthropic.com/v1
+
+scanners:
+  adversarial:
+    enabled: true
+    num_samples: 50
+  backdoor:
+    enabled: false  # API-only models don't support backdoor scanning
+
+interpreters:
+  integrated-gradients:
+    enabled: false  # API models don't support gradient extraction
+  lime:
+    enabled: true    # Works with API predict
+
+connectors: []

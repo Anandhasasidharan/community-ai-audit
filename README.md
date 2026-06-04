@@ -1,3 +1,7 @@
+[![CI](https://img.shields.io/badge/ci-pending-lightgrey.svg)](#)
+[![PyPI](https://img.shields.io/badge/pypi-unreleased-lightgrey.svg)](#)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 # Community AI Security Audit Tool
 
 A community-driven tool for auditing AI models for security vulnerabilities using interpretability techniques. Built for cybersecurity researchers, ML engineers, and AI safety enthusiasts.
@@ -6,16 +10,11 @@ A community-driven tool for auditing AI models for security vulnerabilities usin
 
 - **Vulnerability Scanning** — Detect backdoors, adversarial vulnerabilities, data poisoning, model stealing risks, and membership inference.
 - **Interpretability Analysis** — Apply integrated gradients, LIME, activation clustering, and more to explain model behavior.
-- **Risk Scoring & Reporting** — Generate actionable reports (Markdown, JSON, HTML) with severity scores and mitigation suggestions.
+- **Risk Scoring & Reporting** — Generate actionable reports (Markdown, JSON, HTML, SARIF) with severity scores and mitigation suggestions.
+- **Plug & Play** — Swap any model provider, SIEM, or scanner without touching the core.
 - **Community Sharing** — Share audit results, signatures, and detection rules via a lightweight database or git-based sharing.
 
 ## Installation
-
-```bash
-pip install community-ai-audit
-```
-
-*(Not yet published — install from source for now)*
 
 ```bash
 git clone https://github.com/your-org/community-ai-audit.git
@@ -26,42 +25,74 @@ pip install -e .
 ## Quick Start
 
 ```bash
-# Discover built-in adapters/connectors/plugins
+# Discover all components
 community-ai-audit discover
 
-# Scan a local model
+# Scan a local PyTorch model
 community-ai-audit scan my_model.pt --provider local --scanners adversarial --probe-file examples/data/toy_probe.json
 
-# Full audit
-community-ai-audit audit my_model.pt --provider local --profile standard --scanners adversarial backdoor --interpreters integrated-gradients --probe-file examples/data/toy_probe.json --input '[0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]'
+# Full audit with interpretability
+community-ai-audit audit my_model.pt --provider local --profile standard --scanners adversarial backdoor --interpreters integrated-gradients --probe-file examples/data/toy_probe.json --input '[0.1,...'
 
-# Interpret model predictions
-community-ai-audit interpret my_model.pt --provider local --interpreters integrated-gradients --input '[0.2,0.1,0.0,0.3]'
+# Generate report in HTML
+community-ai-audit audit my_model.pt --provider local --output html --save report.html
 ```
 
-## Phase 1 demo (toy model)
+## Supported Providers
 
-```bash
-# Create a reproducible toy model artifact
-python3 examples/create_toy_model.py --out artifacts/toy_model.pt --in-features 16 --classes 3
+| Adapter | Type | Works Offline | Setup |
+|---------|------|--------------|-------|
+| `local` | PyTorch, TF, ONNX | ✅ Yes | Install torch/tensorflow |
+| `huggingface` | transformers, diffusers | ✅ Yes | Install transformers |
+| `openai` | GPT-4o, o1, etc. | ❌ No | Set OPENAI_API_KEY |
+| `anthropic` | Claude-3, etc. | ❌ No | Set ANTHROPIC_API_KEY |
+| `aws_bedrock` | All Bedrock models | ❌ No | Set AWS creds |
+| `ollama` | Local LLMs | ✅ Yes | Install ollama |
 
-# Run API-based toy demo
-python3 examples/phase1_toy_demo.py
+## Supported SIEMs
+
+| Connector | Platform | Auth |
+|-----------|----------|------|
+| `splunk` | Splunk HEC | Token |
+| `elastic` | Elastic Security | API Key |
+| `datadog` | Datadog Logs | API Key |
+| `sentinel` | Microsoft Sentinel | Shared Key |
+
+## Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Model     │────→│  Scanner(s)  │────→│  Findings   │
+│   Adapter   │     └──────────────┘     └─────────────┘
+│             │
+│             │────→│ Interpreter  │────→│Attributions │
+│             │     └──────────────┘     └─────────────┘
+└─────────────┘              │                   │
+                              ↓                   ↓
+                         ┌────────────┐
+                         │  Reporter  │
+                         │ (md/json/  │
+                         │  html/sf)  │
+                         └────────────┘
+
+[CLI] → [AuditEngine] → [Plugins] → [SIEM Connector]
 ```
 
-For full CLI benchmark commands, see: `docs/PHASE1_BENCHMARK.md`
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture.
 
-To save reproducible benchmark artifacts (markdown + JSON):
+## Documentation
 
-```bash
-python3 examples/run_phase1_benchmark.py --model artifacts/toy_model.pt --probe-file examples/data/toy_probe.json --profile standard --out-dir reports/phase1
-```
-
-## Supported Frameworks
-
-- PyTorch
-- TensorFlow
-- HuggingFace Transformers
+| Guide | Purpose |
+|-------|---------|
+| [ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) | Add a new model provider (30 min) |
+| [SCANNER_GUIDE.md](docs/SCANNER_GUIDE.md) | Add a new vulnerability scanner (30 min) |
+| [CONNECTOR_GUIDE.md](docs/CONNECTOR_GUIDE.md) | Add a new SIEM connector (30 min) |
+| [INTERPRETER_GUIDE.md](docs/INTERPRETER_GUIDE.md) | Add a new interpreter (30 min) |
+| [PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md) | Quick reference for all plugins |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and data flow |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Setup, workflow, PR checklist |
+| [PHASE1_BENCHMARK.md](docs/PHASE1_BENCHMARK.md) | Benchmark reproducibility |
+| [PHASE2_CONNECTORS.md](docs/PHASE2_CONNECTORS.md) | SIEM integration guide |
 
 ## Project Status
 
@@ -69,7 +100,7 @@ python3 examples/run_phase1_benchmark.py --model artifacts/toy_model.pt --probe-
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for setup instructions and guidelines.
 
 ## License
 
