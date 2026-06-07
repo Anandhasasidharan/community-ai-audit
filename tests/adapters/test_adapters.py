@@ -9,7 +9,14 @@ from community_ai_audit.core.interfaces import ModelAdapter, TextModelAdapter
 class TestAdapterBaseInterface(unittest.TestCase):
     def test_model_adapter_abstract_methods(self):
         """ModelAdapter ABC requires connect, disconnect, get_model, predict, get_input_spec, supports_model_type."""
-        methods = ["connect", "disconnect", "get_model", "predict", "get_input_spec", "supports_model_type"]
+        methods = [
+            "connect",
+            "disconnect",
+            "get_model",
+            "predict",
+            "get_input_spec",
+            "supports_model_type",
+        ]
         for m in methods:
             self.assertTrue(
                 hasattr(ModelAdapter, m),
@@ -59,6 +66,7 @@ class TestLocalAdapter(unittest.TestCase):
 
     def test_get_model_unsupported_extension(self):
         from pathlib import Path
+
         with patch.object(Path, "exists", return_value=True):
             with patch.object(Path, "is_dir", return_value=False):
                 with patch.object(Path, "suffix", ".xyz"):
@@ -75,6 +83,7 @@ class TestLocalAdapter(unittest.TestCase):
 
     def test_get_config_schema(self):
         from community_ai_audit.adapters.local_adapter import LocalAdapter
+
         schema = LocalAdapter.get_config_schema()
         self.assertIsInstance(schema, dict)
 
@@ -102,11 +111,13 @@ class TestHuggingFaceAdapter(unittest.TestCase):
 
     def test_supported_types(self):
         from community_ai_audit.core.interfaces import ModelType
+
         expected = {ModelType.TEXT, ModelType.IMAGE, ModelType.MULTIMODAL, ModelType.EMBEDDING}
         self.assertEqual(set(self.adapter.supported_types), expected)
 
     def test_get_config_schema(self):
         from community_ai_audit.adapters.huggingface_adapter import HuggingFaceAdapter
+
         schema = HuggingFaceAdapter.get_config_schema()
         self.assertIsInstance(schema, dict)
 
@@ -147,11 +158,13 @@ class TestOpenAIAdapter(unittest.TestCase):
 
     def test_supports_model_type_text(self):
         from community_ai_audit.core.interfaces import ModelType
+
         self.assertTrue(self.adapter.supports_model_type(ModelType.TEXT))
         self.assertFalse(self.adapter.supports_model_type(ModelType.IMAGE))
 
     def test_get_config_schema(self):
         from community_ai_audit.adapters.openai_adapter import OpenAIAdapter
+
         schema = OpenAIAdapter.get_config_schema()
         self.assertIsInstance(schema, dict)
 
@@ -188,6 +201,7 @@ class TestAnthropicAdapter(unittest.TestCase):
 
     def test_get_config_schema(self):
         from community_ai_audit.adapters.anthropic_adapter import AnthropicAdapter
+
         schema = AnthropicAdapter.get_config_schema()
         self.assertIsInstance(schema, dict)
 
@@ -222,6 +236,7 @@ class TestAWSBedrockAdapter(unittest.TestCase):
 
     def test_get_config_schema(self):
         from community_ai_audit.adapters.aws_bedrock_adapter import AWSBedrockAdapter
+
         schema = AWSBedrockAdapter.get_config_schema()
         self.assertIsInstance(schema, dict)
 
@@ -254,10 +269,12 @@ class TestOllamaAdapter(unittest.TestCase):
 
     def test_supports_model_type_text(self):
         from community_ai_audit.core.interfaces import ModelType
+
         self.assertTrue(self.adapter.supports_model_type(ModelType.TEXT))
 
     def test_get_config_schema(self):
         from community_ai_audit.adapters.ollama_adapter import OllamaAdapter
+
         schema = OllamaAdapter.get_config_schema()
         self.assertIsInstance(schema, dict)
 
@@ -265,6 +282,7 @@ class TestOllamaAdapter(unittest.TestCase):
 class TestRegistryResolution(unittest.TestCase):
     def test_all_adapters_discoverable(self):
         from community_ai_audit.core.registry import adapters
+
         adapters.discover()
         available = adapters.list_available()
         for name in ("local", "huggingface", "openai", "anthropic", "aws_bedrock", "ollama"):
@@ -273,6 +291,7 @@ class TestRegistryResolution(unittest.TestCase):
     def test_adapter_get_returns_instance(self):
         from community_ai_audit.core.interfaces import ModelAdapter
         from community_ai_audit.core.registry import adapters
+
         adapters.discover()
         for name in adapters.list_available():
             inst = adapters.get(name)

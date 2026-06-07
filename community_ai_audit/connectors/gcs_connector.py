@@ -77,7 +77,9 @@ class GCSConnector(SIEMConnector):
                 log_dlq_event(ev, f"gcs_upload_error:{e}")
                 total_failed += 1
 
-        log.info("Uploaded %d/%d events to GCS bucket '%s'", total_success, len(events), self._bucket)
+        log.info(
+            "Uploaded %d/%d events to GCS bucket '%s'", total_success, len(events), self._bucket
+        )
         return {"success": total_success, "failed": total_failed}
 
     def query(self, query: str, time_range: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -123,6 +125,9 @@ class GCSConnector(SIEMConnector):
 def _lazy_import():
     try:
         from google.cloud import storage
+
         return storage
     except ImportError:
-        raise ImportError("google-cloud-storage not installed. Run: pip install google-cloud-storage")
+        raise ImportError(
+            "google-cloud-storage not installed. Run: pip install google-cloud-storage"
+        )

@@ -85,8 +85,11 @@ class TestBackdoorScanner(unittest.TestCase):
 
     def test_run_clustering_returns_outliers(self):
         import numpy as np
+
         vectors = np.random.randn(100, 5).tolist()
-        scores = self.scanner._run_clustering(vectors, n_clusters=5, threshold=0.85, sample_size=100)
+        scores = self.scanner._run_clustering(
+            vectors, n_clusters=5, threshold=0.85, sample_size=100
+        )
         self.assertIsInstance(scores, list)
 
     def test_build_probe_batch_text_model(self):
@@ -146,7 +149,15 @@ class TestAdversarialScanner(unittest.TestCase):
         model = _DummyNonTextModel()
         adapter = _DummyAdapter()
         result = self.scanner.scan(
-            model, adapter, config={"num_samples": 4, "epsilon": 0.05, "alpha": 0.01, "pgd_steps": 3, "input_shape": [10]}
+            model,
+            adapter,
+            config={
+                "num_samples": 4,
+                "epsilon": 0.05,
+                "alpha": 0.01,
+                "pgd_steps": 3,
+                "input_shape": [10],
+            },
         )
         self.assertIsNotNone(result)
         self.assertGreaterEqual(len(result.findings), 1)

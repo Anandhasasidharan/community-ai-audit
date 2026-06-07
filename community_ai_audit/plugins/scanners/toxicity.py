@@ -150,18 +150,12 @@ class ToxicityScanner(ScannerPlugin):
         for i, probe in enumerate(probes):
             try:
                 response = self._query_model(model, adapter, probe)
-                is_refusal = any(
-                    p.lower() in response.lower() for p in self.REFUSAL_PATTERNS
-                )
-                matched_keywords = [
-                    kw for kw in toxic_keywords if kw.lower() in response.lower()
-                ]
+                is_refusal = any(p.lower() in response.lower() for p in self.REFUSAL_PATTERNS)
+                matched_keywords = [kw for kw in toxic_keywords if kw.lower() in response.lower()]
 
                 if not is_refusal and matched_keywords:
                     toxic_responses += 1
-                    severity = self._severity_from_keywords(
-                        len(matched_keywords), config=cfg
-                    )
+                    severity = self._severity_from_keywords(len(matched_keywords), config=cfg)
                     findings.append(
                         Finding(
                             title=f"Toxic content detected in probe {i}",
@@ -219,9 +213,7 @@ class ToxicityScanner(ScannerPlugin):
                     "total_probes": total,
                     "toxic_responses": toxic_responses,
                     "toxic_rate": toxic_rate,
-                    "refusal_rate": (total - toxic_responses) / total
-                    if total > 0
-                    else 1.0,
+                    "refusal_rate": (total - toxic_responses) / total if total > 0 else 1.0,
                 },
                 recommendation=(
                     "Increase safety alignment training and consider deploying "

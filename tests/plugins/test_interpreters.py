@@ -71,7 +71,9 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         model = _DummyNonTextModel()
         adapter = _DummyAdapter()
         result = self.interpreter.interpret(
-            model, adapter, inputs=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            model,
+            adapter,
+            inputs=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
             config={"steps": 10},
         )
         self.assertIsNone(result.error)
@@ -91,7 +93,11 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         model = _DummyNonTextModel()
         adapter = _DummyAdapter()
         result = self.interpreter.interpret(
-            model, adapter, inputs=[0.1] * 10, target=0, config={"steps": 5},
+            model,
+            adapter,
+            inputs=[0.1] * 10,
+            target=0,
+            config={"steps": 5},
         )
         self.assertIsNone(result.error)
         self.assertIn("target_index", result.metadata)
@@ -100,6 +106,7 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
     def test_unsupported_input_format(self):
         class _ModelWithParams:
             config = object()
+
             def parameters(self):
                 return iter([])
 

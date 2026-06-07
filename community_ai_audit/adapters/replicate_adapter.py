@@ -23,6 +23,7 @@ def _lazy_import():
 
 def safe_import(name, package=None):
     import importlib
+
     try:
         return importlib.import_module(name, package=package)
     except ImportError:
@@ -51,7 +52,9 @@ class ReplicateAdapter(TextModelAdapter):
 
         api_token = config.get("api_token") or os.environ.get("REPLICATE_API_TOKEN")
         if not api_token:
-            raise ValueError("Replicate API token required. Set 'api_token' or REPLICATE_API_TOKEN.")
+            raise ValueError(
+                "Replicate API token required. Set 'api_token' or REPLICATE_API_TOKEN."
+            )
 
         os.environ["REPLICATE_API_TOKEN"] = api_token
         self._timeout = int(config.get("timeout", 60))
@@ -103,6 +106,7 @@ class ReplicateAdapter(TextModelAdapter):
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
         import os
+
         return {"api_token": os.environ.get("REPLICATE_API_TOKEN")}
 
 

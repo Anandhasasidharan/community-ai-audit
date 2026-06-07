@@ -73,9 +73,7 @@ class DslScanner(ScannerPlugin):
         self, model: Any, adapter: ModelAdapter, config: Optional[Dict[str, Any]] = None
     ) -> ScanResult:
         cfg = {**self.config, **(config or {})}
-        thresholds = cfg.get(
-            "severity_thresholds", self._definition.get("severity_thresholds", {})
-        )
+        thresholds = cfg.get("severity_thresholds", self._definition.get("severity_thresholds", {}))
         findings: List[Finding] = []
 
         for probe in self._probes:
@@ -97,9 +95,7 @@ class DslScanner(ScannerPlugin):
                     continue
 
                 for check in checks:
-                    finding = self._evaluate_check(
-                        check, input_text, output_str, thresholds
-                    )
+                    finding = self._evaluate_check(check, input_text, output_str, thresholds)
                     if finding:
                         findings.append(finding)
 
@@ -124,17 +120,13 @@ class DslScanner(ScannerPlugin):
             metadata={"definition": self._definition.get("name", self.name)},
         )
 
-    def _run_probe(
-        self, model: Any, adapter: ModelAdapter, input_text: str, cfg: Dict
-    ) -> Any:
+    def _run_probe(self, model: Any, adapter: ModelAdapter, input_text: str, cfg: Dict) -> Any:
         if hasattr(adapter, "generate"):
             return adapter.generate(model, input_text)
         if hasattr(adapter, "predict"):
             result = adapter.predict(model, {"prompt": input_text})
             if hasattr(result, "choices"):
-                return (
-                    result.choices[0].message.content if result.choices else str(result)
-                )
+                return result.choices[0].message.content if result.choices else str(result)
             return str(result)
         return None
 

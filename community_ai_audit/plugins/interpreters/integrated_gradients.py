@@ -105,12 +105,10 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
         import torch
 
         # Check if model is a text/language model
-        is_text_model = (
-            model is not None and (
-                hasattr(model.config, "vocab_size")
-                or hasattr(model, "vocab_size")
-                or hasattr(model, "wte")  # GPT-2 style
-            )
+        is_text_model = model is not None and (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
         )
 
         if isinstance(inputs, torch.Tensor):
@@ -129,7 +127,12 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
             # explicit tensor wrapper
             if "tensor" in inputs:
                 tensor_data = inputs["tensor"]
-                if is_text_model and isinstance(tensor_data, (list, tuple)) and tensor_data and isinstance(tensor_data[0], int):
+                if (
+                    is_text_model
+                    and isinstance(tensor_data, (list, tuple))
+                    and tensor_data
+                    and isinstance(tensor_data[0], int)
+                ):
                     return torch.tensor(tensor_data, dtype=torch.long, device=device)
                 return torch.tensor(tensor_data, dtype=torch.float32, device=device)
             if "input" in inputs and isinstance(inputs["input"], (list, tuple)):
@@ -152,12 +155,10 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
         import torch
 
         # Check if model is a text/language model
-        is_text_model = (
-            model is not None and (
-                hasattr(model.config, "vocab_size")
-                or hasattr(model, "vocab_size")
-                or hasattr(model, "wte")  # GPT-2 style
-            )
+        is_text_model = model is not None and (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
         )
 
         if is_text_model:

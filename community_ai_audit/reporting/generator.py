@@ -71,6 +71,7 @@ class ReportGenerator:
     def render_session(self, session: "AuditSession", fmt: str = "markdown") -> str:
         if fmt == "dashboard":
             from community_ai_audit.plugins.reporters.dashboard import DashboardReporter
+
             risk_score = self._session_risk(session)
             risk_level = self._risk_level(risk_score)
             metadata = {
@@ -82,7 +83,9 @@ class ReportGenerator:
                 "started_at": session.started_at.isoformat() if session.started_at else "",
                 "duration_seconds": session.duration_seconds,
             }
-            return DashboardReporter().render(session.scan_results, session.interpret_results, metadata)
+            return DashboardReporter().render(
+                session.scan_results, session.interpret_results, metadata
+            )
 
         if fmt == "json":
             payload = session.to_dict()
@@ -130,9 +133,13 @@ class ReportGenerator:
 
         if fmt == "html":
             markdown_scan = self.render_scan_results(session.scan_results, fmt="markdown")
-            markdown_interp = self.render_interpret_results(session.interpret_results, fmt="markdown")
+            markdown_interp = self.render_interpret_results(
+                session.interpret_results, fmt="markdown"
+            )
             body = "\n".join(lines)
-            return self._markdown_to_html(body, markdown_scan, markdown_interp, risk_score, risk_level, session)
+            return self._markdown_to_html(
+                body, markdown_scan, markdown_interp, risk_score, risk_level, session
+            )
 
         lines.append(self.render_scan_results(session.scan_results, fmt=fmt))
         lines.append(self.render_interpret_results(session.interpret_results, fmt=fmt))
@@ -144,8 +151,15 @@ class ReportGenerator:
 
         return "\n".join(lines)
 
-    def _markdown_to_html(self, header_md: str, scan_md: str, interp_md: str,
-                          risk_score: float, risk_level: str, session) -> str:
+    def _markdown_to_html(
+        self,
+        header_md: str,
+        scan_md: str,
+        interp_md: str,
+        risk_score: float,
+        risk_level: str,
+        session,
+    ) -> str:
         def _md_to_html(text: str) -> str:
             lines_out = []
             for line in text.split("\n"):
@@ -165,7 +179,11 @@ class ReportGenerator:
                     lines_out.append(f"<p>{rendered}</p>")
             return "".join(lines_out)
 
-        risk_class = f"severity-{risk_level}" if risk_level in ("critical", "high", "medium", "low", "info") else "severity-info"
+        risk_class = (
+            f"severity-{risk_level}"
+            if risk_level in ("critical", "high", "medium", "low", "info")
+            else "severity-info"
+        )
         total_findings = session.total_findings if hasattr(session, "total_findings") else 0
 
         return f"""<!DOCTYPE html>

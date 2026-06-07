@@ -15,7 +15,6 @@ from typing import Any, Dict, List, Optional
 
 from community_ai_audit.core.interfaces import ReporterPlugin, ScanResult, InterpretationResult
 
-
 _severity_colors = {
     "critical": "#dc2626",
     "high": "#ea580c",
@@ -33,7 +32,14 @@ def _severity_color(sev: str) -> str:
 def _scanner_risk(result: ScanResult) -> float:
     if not result.findings:
         return 0.0
-    weights = {"critical": 1.00, "high": 0.80, "medium": 0.55, "low": 0.30, "info": 0.10, "unknown": 0.0}
+    weights = {
+        "critical": 1.00,
+        "high": 0.80,
+        "medium": 0.55,
+        "low": 0.30,
+        "info": 0.10,
+        "unknown": 0.0,
+    }
     scores = []
     for f in result.findings:
         sev = getattr(f.severity, "value", str(f.severity)).lower()
@@ -66,12 +72,18 @@ def _build_dashboard_html(
     scanner_data = []
     for sr in scan_results:
         risk = _scanner_risk(sr)
-        scanner_data.append({
-            "name": sr.scanner_name,
-            "risk": risk,
-            "severity": sr.overall_severity.value if hasattr(sr.overall_severity, "value") else str(sr.overall_severity),
-            "findings": len(sr.findings),
-        })
+        scanner_data.append(
+            {
+                "name": sr.scanner_name,
+                "risk": risk,
+                "severity": (
+                    sr.overall_severity.value
+                    if hasattr(sr.overall_severity, "value")
+                    else str(sr.overall_severity)
+                ),
+                "findings": len(sr.findings),
+            }
+        )
 
     scanner_colors = [_severity_color(s["severity"]) for s in scanner_data]
     findings_json = __import__("json").dumps(severity_counts)
@@ -103,7 +115,9 @@ def _build_dashboard_html(
     interpret_rows = []
     for ir in interpret_results:
         if ir.error:
-            interpret_rows.append(f"<div class='finding'><p><strong>{ir.interpreter_name}:</strong> Error — {ir.error}</p></div>")
+            interpret_rows.append(
+                f"<div class='finding'><p><strong>{ir.interpreter_name}:</strong> Error — {ir.error}</p></div>"
+            )
         else:
             interpret_rows.append(f"""
             <div class="finding">

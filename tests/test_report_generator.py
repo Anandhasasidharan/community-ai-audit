@@ -13,7 +13,9 @@ from community_ai_audit.core.interfaces import (
 
 
 class _FakeSession:
-    def __init__(self, scan_results=None, interpret_results=None, connector_results=None, metadata=None):
+    def __init__(
+        self, scan_results=None, interpret_results=None, connector_results=None, metadata=None
+    ):
         self.session_id = "test-session"
         self.model_id = "test-model"
         self.adapter_name = "local"
@@ -34,7 +36,11 @@ class _FakeSession:
             "completed_at": self.completed_at.isoformat(),
             "duration_seconds": self.duration_seconds,
             "total_findings": self.total_findings,
-            "highest_severity": self.highest_severity.value if hasattr(self.highest_severity, "value") else str(self.highest_severity),
+            "highest_severity": (
+                self.highest_severity.value
+                if hasattr(self.highest_severity, "value")
+                else str(self.highest_severity)
+            ),
             "scan_results": [r.to_dict() for r in self.scan_results],
             "interpret_results": [r.to_dict() for r in self.interpret_results],
             "connector_results": self.connector_results,
@@ -92,6 +98,7 @@ class TestReportGenerator(unittest.TestCase):
         self.assertIn("backdoor", output)
         self.assertIn("Test Finding", output)
         import json
+
         parsed = json.loads(output)
         self.assertEqual(len(parsed), 1)
 
@@ -104,6 +111,7 @@ class TestReportGenerator(unittest.TestCase):
         output = self.generator.render_interpret_results([self.interpret_result], fmt="json")
         self.assertIn("integrated-gradients", output)
         import json
+
         parsed = json.loads(output)
         self.assertEqual(len(parsed), 1)
 
@@ -132,6 +140,7 @@ class TestReportGenerator(unittest.TestCase):
         output = self.generator.render_session(session, fmt="json")
         self.assertIn("test-session", output)
         import json
+
         parsed = json.loads(output)
         self.assertEqual(parsed["session_id"], "test-session")
         self.assertIn("risk_score", parsed)
@@ -225,12 +234,16 @@ class TestScanResult(unittest.TestCase):
     def test_has_findings(self):
         r = ScanResult(scanner_name="s", scanner_version="1.0")
         self.assertFalse(r.has_findings)
-        r.findings.append(Finding(title="t", description="d", severity=Severity.LOW, confidence=0.3))
+        r.findings.append(
+            Finding(title="t", description="d", severity=Severity.LOW, confidence=0.3)
+        )
         self.assertTrue(r.has_findings)
 
     def test_to_dict(self):
         r = ScanResult(scanner_name="s", scanner_version="1.0")
-        r.findings.append(Finding(title="t", description="d", severity=Severity.MEDIUM, confidence=0.5))
+        r.findings.append(
+            Finding(title="t", description="d", severity=Severity.MEDIUM, confidence=0.5)
+        )
         d = r.to_dict()
         self.assertEqual(d["scanner"], "s")
         self.assertEqual(d["finding_count"], 1)
@@ -239,9 +252,14 @@ class TestScanResult(unittest.TestCase):
 class TestFinding(unittest.TestCase):
     def test_to_dict(self):
         f = Finding(
-            title="test", description="desc", severity=Severity.HIGH, confidence=0.9,
-            cwe_id="CWE-1", mitre_id="AI-1",
-            evidence={"key": "val"}, recommendation="fix",
+            title="test",
+            description="desc",
+            severity=Severity.HIGH,
+            confidence=0.9,
+            cwe_id="CWE-1",
+            mitre_id="AI-1",
+            evidence={"key": "val"},
+            recommendation="fix",
         )
         d = f.to_dict()
         self.assertEqual(d["title"], "test")
@@ -266,24 +284,38 @@ class TestHTMLReporter(unittest.TestCase):
         self.assertIn("html", self.reporter.supported_formats)
 
     def test_render_empty(self):
-        result = self.reporter.render([], [], {
-            "session_id": "test", "model_id": "m",
-            "risk_score": 0, "risk_level": "info",
-            "total_findings": 0,
-        })
+        result = self.reporter.render(
+            [],
+            [],
+            {
+                "session_id": "test",
+                "model_id": "m",
+                "risk_score": 0,
+                "risk_level": "info",
+                "total_findings": 0,
+            },
+        )
         self.assertIn("<!DOCTYPE html>", result)
         self.assertIn("test", result)
 
     def test_render_with_findings(self):
         from community_ai_audit.core.interfaces import ScanResult, Finding, Severity
 
-        finding = Finding(title="XSS Vuln", description="desc", severity=Severity.HIGH, confidence=0.8)
+        finding = Finding(
+            title="XSS Vuln", description="desc", severity=Severity.HIGH, confidence=0.8
+        )
         scan = ScanResult(scanner_name="backdoor", scanner_version="1.0", findings=[finding])
-        result = self.reporter.render([scan], [], {
-            "session_id": "s1", "model_id": "m1",
-            "risk_score": 50, "risk_level": "medium",
-            "total_findings": 1,
-        })
+        result = self.reporter.render(
+            [scan],
+            [],
+            {
+                "session_id": "s1",
+                "model_id": "m1",
+                "risk_score": 50,
+                "risk_level": "medium",
+                "total_findings": 1,
+            },
+        )
         self.assertIn("XSS Vuln", result)
         self.assertIn("risk-badge", result)
 
@@ -291,14 +323,21 @@ class TestHTMLReporter(unittest.TestCase):
         from community_ai_audit.core.interfaces import InterpretationResult
 
         interp = InterpretationResult(
-            interpreter_name="ig", interpreter_version="1.0",
+            interpreter_name="ig",
+            interpreter_version="1.0",
             summary="Feature attribution analysis",
         )
-        result = self.reporter.render([], [interp], {
-            "session_id": "s2", "model_id": "m2",
-            "risk_score": 20, "risk_level": "low",
-            "total_findings": 0,
-        })
+        result = self.reporter.render(
+            [],
+            [interp],
+            {
+                "session_id": "s2",
+                "model_id": "m2",
+                "risk_score": 20,
+                "risk_level": "low",
+                "total_findings": 0,
+            },
+        )
         self.assertIn("Feature attribution", result)
 
 

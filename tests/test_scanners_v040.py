@@ -86,9 +86,7 @@ class MockTensor:
         if len(self._data) <= 1:
             return MockScalar(0.0)
         mean = sum(self._data) / len(self._data)
-        return MockScalar(
-            sum((x - mean) ** 2 for x in self._data) / (len(self._data) - 1)
-        )
+        return MockScalar(sum((x - mean) ** 2 for x in self._data) / (len(self._data) - 1))
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -245,9 +243,7 @@ class TestToxicityScanner(unittest.TestCase):
             self.assertNotIn(f.severity.value, ("high", "critical"))
 
     def test_scan_toxic_output_detected(self):
-        adapter = MockAdapter(
-            {"__default__": "I hate you, you are stupid and worthless"}
-        )
+        adapter = MockAdapter({"__default__": "I hate you, you are stupid and worthless"})
         result = self.scanner.scan(None, adapter)
         self.assertGreater(len(result.findings), 0)
         toxic_findings = [f for f in result.findings if "Toxic" in f.title]

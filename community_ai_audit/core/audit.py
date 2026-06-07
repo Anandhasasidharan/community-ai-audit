@@ -186,9 +186,13 @@ class AuditEngine:
 
         # Wrap predict with cache if enabled (unwrap first to avoid double-wrapping)
         if self.cache.enabled:
-            raw_predict = getattr(self._adapter.predict, '__wrapped__', self._adapter.predict)
+            raw_predict = getattr(self._adapter.predict, "__wrapped__", self._adapter.predict)
             self._adapter.predict = self.cache.make_predict_wrapper(raw_predict)
-            log.debug("Predict caching enabled (max_size=%d, ttl=%ds)", self.cache.max_size, self.cache.ttl_seconds)
+            log.debug(
+                "Predict caching enabled (max_size=%d, ttl=%ds)",
+                self.cache.max_size,
+                self.cache.ttl_seconds,
+            )
 
         log.info("Loaded model '%s' with adapter '%s'", model_id, provider)
         return self._model
@@ -335,7 +339,9 @@ class AuditEngine:
 
             try:
                 scanner = plugins.scanners.get(scanner_name)
-                cfg = self._get_scanner_config(scanner_name, overrides=config_overrides.get(scanner_name))
+                cfg = self._get_scanner_config(
+                    scanner_name, overrides=config_overrides.get(scanner_name)
+                )
 
                 all_findings: List[Finding] = []
                 total_duration = 0.0
@@ -352,17 +358,25 @@ class AuditEngine:
                     scanner_name=scanner_name,
                     scanner_version=scanner.version,
                     findings=all_findings,
-                    metadata={"batches": (len(probe_inputs) + batch_size - 1) // batch_size,
-                              "total_probes": len(probe_inputs),
-                              "total_duration_s": round(total_duration, 3)},
+                    metadata={
+                        "batches": (len(probe_inputs) + batch_size - 1) // batch_size,
+                        "total_probes": len(probe_inputs),
+                        "total_duration_s": round(total_duration, 3),
+                    },
                 )
-                log.info("Batch scan '%s' completed: %d findings across %d probes",
-                         scanner_name, len(all_findings), len(probe_inputs))
+                log.info(
+                    "Batch scan '%s' completed: %d findings across %d probes",
+                    scanner_name,
+                    len(all_findings),
+                    len(probe_inputs),
+                )
             except Exception as e:
                 log.error("Batch scan '%s' failed: %s", scanner_name, e)
                 aggregated[scanner_name] = ScanResult(
                     scanner_name=scanner_name,
-                    scanner_version=getattr(plugins.scanners.get(scanner_name), "version", "unknown"),
+                    scanner_version=getattr(
+                        plugins.scanners.get(scanner_name), "version", "unknown"
+                    ),
                     error=str(e),
                 )
 
@@ -418,8 +432,11 @@ class AuditEngine:
         if connectors:
             if parallel_connectors:
                 results.connector_results = self._push_to_connectors_parallel(
-                    results.scan_results, results.interpret_results,
-                    connectors, connector_configs, max_workers=connector_max_workers,
+                    results.scan_results,
+                    results.interpret_results,
+                    connectors,
+                    connector_configs,
+                    max_workers=connector_max_workers,
                 )
             else:
                 results.connector_results = self._push_to_connectors(
@@ -673,53 +690,59 @@ def _format_audit_for_connector(
     session_id: str,
 ) -> Dict[str, Any]:
     """Format audit results into a normalized structure for SIEM/tools.
-    
+
     Each finding becomes a separate event with required fields (title, severity).
     """
     events = []
     timestamp = datetime.now(timezone.utc).isoformat()
-    
+
     # Emit each finding as a separate event
     for scan_result in scan_results:
         for finding in scan_result.findings:
             finding_dict = finding.to_dict()
-            finding_dict.update({
-                "event_type": "scan_finding",
+            finding_dict.update(
+                {
+                    "event_type": "scan_finding",
+                    "session_id": session_id,
+                    "scanner": scan_result.scanner_name,
+                    "scanner_version": scan_result.scanner_version,
+                    "model_id": getattr(scan_result, "model_id", None),
+                    "timestamp": timestamp,
+                }
+            )
+            events.append(finding_dict)
+
+    # Also emit scan summary events
+    for scan_result in scan_results:
+        events.append(
+            {
+                "event_type": "scan_summary",
                 "session_id": session_id,
                 "scanner": scan_result.scanner_name,
                 "scanner_version": scan_result.scanner_version,
-                "model_id": getattr(scan_result, 'model_id', None),
+                "overall_severity": scan_result.overall_severity.value,
+                "finding_count": len(scan_result.findings),
+                "error": scan_result.error,
+                "metadata": scan_result.metadata,
                 "timestamp": timestamp,
-            })
-            events.append(finding_dict)
-    
-    # Also emit scan summary events
-    for scan_result in scan_results:
-        events.append({
-            "event_type": "scan_summary",
-            "session_id": session_id,
-            "scanner": scan_result.scanner_name,
-            "scanner_version": scan_result.scanner_version,
-            "overall_severity": scan_result.overall_severity.value,
-            "finding_count": len(scan_result.findings),
-            "error": scan_result.error,
-            "metadata": scan_result.metadata,
-            "timestamp": timestamp,
-        })
-    
+            }
+        )
+
     # Interpretation results
     for interp_result in interpret_results:
-        events.append({
-            "event_type": "interpretation_result",
-            "session_id": session_id,
-            "interpreter": interp_result.interpreter_name,
-            "interpreter_version": interp_result.interpreter_version,
-            "summary": interp_result.summary,
-            "error": interp_result.error,
-            "metadata": interp_result.metadata,
-            "timestamp": timestamp,
-        })
-    
+        events.append(
+            {
+                "event_type": "interpretation_result",
+                "session_id": session_id,
+                "interpreter": interp_result.interpreter_name,
+                "interpreter_version": interp_result.interpreter_version,
+                "summary": interp_result.summary,
+                "error": interp_result.error,
+                "metadata": interp_result.metadata,
+                "timestamp": timestamp,
+            }
+        )
+
     return {
         "session_id": session_id,
         "timestamp": timestamp,

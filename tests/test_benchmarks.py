@@ -39,7 +39,9 @@ class TestCacheBenchmarks(unittest.TestCase):
                 self.cache.get(k)
             durations.append(time.perf_counter() - start)
         ops_per_second = [batch / dur for batch, dur in zip((10, 100, 500), durations)]
-        self.assertGreater(ops_per_second[-1], 100, f"Throughput too low: {ops_per_second[-1]:.0f} ops/s")
+        self.assertGreater(
+            ops_per_second[-1], 100, f"Throughput too low: {ops_per_second[-1]:.0f} ops/s"
+        )
 
     def test_cache_eviction_speed(self):
         small_cache = ModelCache(max_size=50, ttl_seconds=3600, enabled=True)
@@ -80,7 +82,9 @@ class TestBatchScanBenchmarks(unittest.TestCase):
                 else:
                     _ = "info"
         elapsed = time.perf_counter() - start
-        self.assertLess(elapsed, 0.5, f"Severity resolution too slow: {elapsed:.3f}s for 50000 lookups")
+        self.assertLess(
+            elapsed, 0.5, f"Severity resolution too slow: {elapsed:.3f}s for 50000 lookups"
+        )
 
 
 class TestParallelDispatchBenchmarks(unittest.TestCase):
@@ -112,8 +116,13 @@ class TestDiffBenchmarks(unittest.TestCase):
         from community_ai_audit.core.interfaces import Finding, Severity
 
         findings = [
-            Finding(title=f"Finding {i}", description=f"Desc {i}", severity=Severity.MEDIUM,
-                    cwe_id=f"CWE-{i}", mitre_id=f"AI-A{i}")
+            Finding(
+                title=f"Finding {i}",
+                description=f"Desc {i}",
+                severity=Severity.MEDIUM,
+                cwe_id=f"CWE-{i}",
+                mitre_id=f"AI-A{i}",
+            )
             for i in range(1000)
         ]
         start = time.perf_counter()
@@ -129,11 +138,15 @@ class TestDiffBenchmarks(unittest.TestCase):
         from community_ai_audit.core.interfaces import Finding, Severity
 
         findings_a = {
-            _finding_key(Finding(title=f"F{i}", description=f"D{i}", severity=Severity.LOW)): f"value_{i}"
+            _finding_key(
+                Finding(title=f"F{i}", description=f"D{i}", severity=Severity.LOW)
+            ): f"value_{i}"
             for i in range(500)
         }
         findings_b = {
-            _finding_key(Finding(title=f"F{i}", description=f"D{i}", severity=Severity.LOW)): f"value_{i}"
+            _finding_key(
+                Finding(title=f"F{i}", description=f"D{i}", severity=Severity.LOW)
+            ): f"value_{i}"
             for i in range(500)
         }
         start = time.perf_counter()
@@ -144,7 +157,9 @@ class TestDiffBenchmarks(unittest.TestCase):
             _ = keys_a - keys_b
             _ = keys_a & keys_b
         elapsed = time.perf_counter() - start
-        self.assertLess(elapsed, 0.5, f"Diff matching too slow: {elapsed:.3f}s for 500 findings x 100 runs")
+        self.assertLess(
+            elapsed, 0.5, f"Diff matching too slow: {elapsed:.3f}s for 500 findings x 100 runs"
+        )
 
 
 if __name__ == "__main__":

@@ -93,7 +93,12 @@ class WeaviateConnector(SIEMConnector):
                 log_dlq_event(ev, f"weaviate_send_error:{e}")
                 total_failed += 1
 
-        log.info("Sent %d events to Weaviate: success=%d failed=%d", len(events), total_success, total_failed)
+        log.info(
+            "Sent %d events to Weaviate: success=%d failed=%d",
+            len(events),
+            total_success,
+            total_failed,
+        )
         return {"success": total_success, "failed": total_failed}
 
     def query(self, query: str, time_range: Optional[str] = None) -> List[Dict[str, Any]]:

@@ -111,9 +111,7 @@ class BackdoorScanner(ScannerPlugin):
                 confidence = min(max(outliers), 0.99)
                 thresholds = cfg.get("severity_thresholds", {})
                 high_thresh = thresholds.get("high", 0.75)
-                severity = (
-                    Severity.HIGH if confidence >= high_thresh else Severity.MEDIUM
-                )
+                severity = Severity.HIGH if confidence >= high_thresh else Severity.MEDIUM
                 findings.append(
                     Finding(
                         title=f"Activation anomaly detected in {layer_name}",
@@ -159,9 +157,7 @@ class BackdoorScanner(ScannerPlugin):
             metadata={"layers_analyzed": len(activations)},
         )
 
-    def _extract_activations(
-        self, model: Any, cfg: Dict[str, Any], adapter=None
-    ) -> Dict[str, Any]:
+    def _extract_activations(self, model: Any, cfg: Dict[str, Any], adapter=None) -> Dict[str, Any]:
         import torch
 
         device = self._get_device(model)
@@ -189,9 +185,7 @@ class BackdoorScanner(ScannerPlugin):
                     if isinstance(out, torch.Tensor):
                         activations[layer_name] = out.detach().cpu()
                     elif (
-                        isinstance(out, (tuple, list))
-                        and out
-                        and isinstance(out[0], torch.Tensor)
+                        isinstance(out, (tuple, list)) and out and isinstance(out[0], torch.Tensor)
                     ):
                         activations[layer_name] = out[0].detach().cpu()
 
@@ -243,9 +237,7 @@ class BackdoorScanner(ScannerPlugin):
             if is_text_model:
                 # For text models, create random token IDs
                 vocab_size = getattr(model.config, "vocab_size", 50257)
-                return torch.randint(
-                    0, vocab_size, full, device=device, dtype=torch.long
-                )
+                return torch.randint(0, vocab_size, full, device=device, dtype=torch.long)
             return torch.randn(full, device=device)
 
         in_features = None
@@ -260,9 +252,7 @@ class BackdoorScanner(ScannerPlugin):
         # Default: if text model, use token IDs
         if is_text_model:
             vocab_size = getattr(model.config, "vocab_size", 50257)
-            return torch.randint(
-                0, vocab_size, (num_samples, 16), device=device, dtype=torch.long
-            )
+            return torch.randint(0, vocab_size, (num_samples, 16), device=device, dtype=torch.long)
 
         return None
 

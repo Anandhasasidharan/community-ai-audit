@@ -1,4 +1,5 @@
 """Integration verification — exercises every component with real code paths."""
+
 # ruff: noqa: E402
 
 import sys
@@ -67,7 +68,10 @@ section("3. Adapter Instantiation")
 for name in sorted(anames):
     inst = adapters.get(name)
     test(f"adapter {name}", lambda i=inst: True)
-    test(f"adapter {name} connect/disconnect", lambda i=inst: hasattr(i, "connect") and hasattr(i, "disconnect"))
+    test(
+        f"adapter {name} connect/disconnect",
+        lambda i=inst: hasattr(i, "connect") and hasattr(i, "disconnect"),
+    )
 
 # ── 4. Connectors ──
 section("4. Connector Instantiation")
@@ -77,7 +81,15 @@ for name in sorted(cnames):
     test(
         f"connector {name} has required methods",
         lambda i=inst: all(
-            hasattr(i, m) for m in ("connect", "disconnect", "send_event", "send_batch", "query", "get_config_schema")
+            hasattr(i, m)
+            for m in (
+                "connect",
+                "disconnect",
+                "send_event",
+                "send_batch",
+                "query",
+                "get_config_schema",
+            )
         ),
     )
     schema = inst.get_config_schema()
@@ -125,13 +137,22 @@ from community_ai_audit.core.interfaces import InterpretationResult
 for name in sorted(inames):
     inst = plugins.interpreters.get(name)
     result = inst.interpret(_DummyModel(), _DummyAdapter(), [0.1] * 10)
-    test(f"interpreter {name} -> InterpretationResult", lambda r=result: isinstance(r, InterpretationResult))
+    test(
+        f"interpreter {name} -> InterpretationResult",
+        lambda r=result: isinstance(r, InterpretationResult),
+    )
 
 # ── 7. Reporters ──
 section("7. Reporter Render Test")
 for name in sorted(rnames):
     inst = plugins.reporters.get(name)
-    meta = {"session_id": "s1", "model_id": "m1", "risk_score": 50, "risk_level": "medium", "total_findings": 1}
+    meta = {
+        "session_id": "s1",
+        "model_id": "m1",
+        "risk_score": 50,
+        "risk_level": "medium",
+        "total_findings": 1,
+    }
     out = inst.render([], [], meta)
     test(f"reporter {name} returns str", lambda o=out: isinstance(o, str))
     test(f"reporter {name} non-empty", lambda o=out: len(o) > 0)
@@ -170,7 +191,9 @@ class _FakeSession:
         ScanResult(
             scanner_name="b",
             scanner_version="1.0",
-            findings=[Finding(title="XSS", description="t", severity=Severity.HIGH, confidence=0.8)],
+            findings=[
+                Finding(title="XSS", description="t", severity=Severity.HIGH, confidence=0.8)
+            ],
         )
     ]
     interpret_results = []

@@ -61,11 +61,13 @@ class QRadarConnector(SIEMConnector):
         self._retry_cfg = RetryConfig.from_dict(config.get("retry"))
 
         self._session = requests.Session()
-        self._session.headers.update({
-            "SEC": api_token,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "SEC": api_token,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+        )
 
         log.info("QRadar connector configured for %s", self._url)
 
@@ -97,7 +99,12 @@ class QRadarConnector(SIEMConnector):
             total_success += success
             total_failed += failed
 
-        log.info("Sent %d events to QRadar: success=%d failed=%d", len(events), total_success, total_failed)
+        log.info(
+            "Sent %d events to QRadar: success=%d failed=%d",
+            len(events),
+            total_success,
+            total_failed,
+        )
         return {"success": total_success, "failed": total_failed}
 
     def _send_batch_inner(self, payload: Dict, events: List[Dict]) -> tuple:

@@ -65,9 +65,7 @@ class TestAccessControl(unittest.TestCase):
     def test_viewer_restricted(self):
         from community_ai_audit.core.rbac import User
 
-        self.ac.config.users["viewer_user"] = User(
-            username="viewer_user", role="viewer"
-        )
+        self.ac.config.users["viewer_user"] = User(username="viewer_user", role="viewer")
         self.assertFalse(self.ac.check_permission("viewer_user", "scan:run"))
         self.assertFalse(self.ac.check_permission("viewer_user", "audit:run"))
         self.assertFalse(self.ac.check_permission("viewer_user", "schedule:manage"))

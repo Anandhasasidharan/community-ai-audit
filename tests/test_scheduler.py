@@ -86,9 +86,7 @@ class TestAuditScheduler(unittest.TestCase):
         now = datetime.now(timezone.utc)
         self.scheduler.add_schedule("due_now", "* * * * *", "m", "p")
         # Override last_run to a time in the past so get_next returns <= now
-        self.scheduler._schedules["due_now"]["last_run"] = (
-            now - timedelta(minutes=5)
-        ).isoformat()
+        self.scheduler._schedules["due_now"]["last_run"] = (now - timedelta(minutes=5)).isoformat()
         self.scheduler.save()
         due = self.scheduler.get_due_schedules(now=now)
         self.assertEqual(len(due), 1)

@@ -38,7 +38,9 @@ class AzureBlobConnector(SIEMConnector):
         _lazy_import()
         from azure.storage.blob import BlobServiceClient
 
-        conn_str = config.get("connection_string") or os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+        conn_str = config.get("connection_string") or os.environ.get(
+            "AZURE_STORAGE_CONNECTION_STRING"
+        )
         if not conn_str:
             raise ValueError(
                 "Azure connection string required. Set 'connection_string' or AZURE_STORAGE_CONNECTION_STRING."
@@ -84,7 +86,12 @@ class AzureBlobConnector(SIEMConnector):
                 log_dlq_event(ev, f"azure_blob_upload_error:{e}")
                 total_failed += 1
 
-        log.info("Uploaded %d/%d events to Azure container '%s'", total_success, len(events), self._container)
+        log.info(
+            "Uploaded %d/%d events to Azure container '%s'",
+            total_success,
+            len(events),
+            self._container,
+        )
         return {"success": total_success, "failed": total_failed}
 
     def query(self, query: str, time_range: Optional[str] = None) -> List[Dict[str, Any]]:

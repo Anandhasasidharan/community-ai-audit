@@ -41,12 +41,16 @@ class AuditDiff:
     def severity_trend(self) -> str:
         """Return 'improved', 'worsened', or 'stable' based on severity shifts."""
         worsened = sum(
-            1 for s in self.severity_shifts.values()
-            if _severity_rank(s.get("old", Severity.UNKNOWN)) < _severity_rank(s.get("new", Severity.UNKNOWN))
+            1
+            for s in self.severity_shifts.values()
+            if _severity_rank(s.get("old", Severity.UNKNOWN))
+            < _severity_rank(s.get("new", Severity.UNKNOWN))
         )
         improved = sum(
-            1 for s in self.severity_shifts.values()
-            if _severity_rank(s.get("old", Severity.UNKNOWN)) > _severity_rank(s.get("new", Severity.UNKNOWN))
+            1
+            for s in self.severity_shifts.values()
+            if _severity_rank(s.get("old", Severity.UNKNOWN))
+            > _severity_rank(s.get("new", Severity.UNKNOWN))
         )
         if worsened > improved:
             return "worsened"
@@ -79,10 +83,16 @@ class AuditDiff:
 def _severity_rank(sev: Any) -> int:
     if isinstance(sev, str):
         sev = sev.lower()
-        return {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0, "unknown": -1}.get(sev, -1)
+        return {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0, "unknown": -1}.get(
+            sev, -1
+        )
     return {
-        Severity.CRITICAL: 4, Severity.HIGH: 3, Severity.MEDIUM: 2, Severity.LOW: 1,
-        Severity.INFO: 0, Severity.UNKNOWN: -1,
+        Severity.CRITICAL: 4,
+        Severity.HIGH: 3,
+        Severity.MEDIUM: 2,
+        Severity.LOW: 1,
+        Severity.INFO: 0,
+        Severity.UNKNOWN: -1,
     }.get(sev, -1)
 
 
@@ -120,8 +130,10 @@ def audit_diff(
     if match_by == "key":
         key_fn = _finding_key
     else:
+
         def _key_by_title(f: Finding) -> str:
             return f.title
+
         key_fn = _key_by_title
 
     map_a: Dict[str, Finding] = {key_fn(f): f for f in findings_a}
@@ -152,10 +164,12 @@ def audit_diff(
             changes["confidence"] = (f_a.confidence, f_b.confidence)
 
         if changes:
-            changed_findings.append({
-                "title": f_a.title,
-                "changes": {k: {"from": v[0], "to": v[1]} for k, v in changes.items()},
-            })
+            changed_findings.append(
+                {
+                    "title": f_a.title,
+                    "changes": {k: {"from": v[0], "to": v[1]} for k, v in changes.items()},
+                }
+            )
 
     metrics = {
         "findings_before": len(findings_a),

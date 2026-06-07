@@ -72,7 +72,9 @@ class WebhookConnector(SIEMConnector):
         payload = {
             "event_type": event_type,
             "events": events,
-            "timestamp": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "timestamp": __import__("datetime")
+            .datetime.now(__import__("datetime").timezone.utc)
+            .isoformat(),
         }
         success = self._send(payload)
         return {"success": len(events) if success else 0, "failed": 0 if success else len(events)}

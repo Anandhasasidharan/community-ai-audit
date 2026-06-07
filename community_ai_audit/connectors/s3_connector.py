@@ -88,7 +88,9 @@ class S3Connector(SIEMConnector):
                 log_dlq_event(ev, f"s3_upload_error:{e}")
                 total_failed += 1
 
-        log.info("Uploaded %d/%d events to S3 bucket '%s'", total_success, len(events), self._bucket)
+        log.info(
+            "Uploaded %d/%d events to S3 bucket '%s'", total_success, len(events), self._bucket
+        )
         return {"success": total_success, "failed": total_failed}
 
     def query(self, query: str, time_range: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -136,6 +138,7 @@ class S3Connector(SIEMConnector):
 def _lazy_import():
     try:
         import boto3
+
         return boto3
     except ImportError:
         raise ImportError("boto3 not installed. Run: pip install boto3")

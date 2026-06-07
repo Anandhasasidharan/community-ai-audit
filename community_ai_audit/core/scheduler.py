@@ -15,10 +15,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
+
 def _get_croniter():
     """Lazy import of croniter to avoid breaking module imports."""
     try:
         from croniter import croniter as _ci
+
         return _ci
     except ImportError:
         raise ImportError(
@@ -48,9 +50,7 @@ class AuditScheduler:
                 Defaults to ``~/.community-ai-audit/schedules.json``.
         """
         self.schedules_path: Path = (
-            Path(schedules_path).expanduser()
-            if schedules_path
-            else DEFAULT_SCHEDULES_PATH
+            Path(schedules_path).expanduser() if schedules_path else DEFAULT_SCHEDULES_PATH
         )
         self._schedules: Dict[str, Dict[str, Any]] = {}
 
@@ -98,9 +98,7 @@ class AuditScheduler:
         try:
             _get_croniter()(cron, datetime.now(timezone.utc))
         except (ValueError, KeyError) as exc:
-            raise ValueError(
-                f"Invalid cron expression '{cron}': {exc}"
-            ) from exc
+            raise ValueError(f"Invalid cron expression '{cron}': {exc}") from exc
 
         schedule: Dict[str, Any] = {
             "name": name,
@@ -282,11 +280,13 @@ class AuditScheduler:
 
                 self.mark_run(schedule["name"])
 
-                results.append({
-                    "schedule": schedule["name"],
-                    "session": session.to_dict(),
-                    "report": report,
-                })
+                results.append(
+                    {
+                        "schedule": schedule["name"],
+                        "session": session.to_dict(),
+                        "report": report,
+                    }
+                )
 
                 log.info(
                     "Schedule '%s' completed: %d findings",
@@ -300,10 +300,12 @@ class AuditScheduler:
                     schedule["name"],
                     exc,
                 )
-                results.append({
-                    "schedule": schedule["name"],
-                    "error": str(exc),
-                })
+                results.append(
+                    {
+                        "schedule": schedule["name"],
+                        "error": str(exc),
+                    }
+                )
 
         return results
 

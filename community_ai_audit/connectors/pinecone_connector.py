@@ -48,9 +48,7 @@ class PineconeConnector(SIEMConnector):
     def connect(self, config: Dict[str, Any]) -> None:
         api_key = config.get("api_key") or os.environ.get("PINECONE_API_KEY")
         if not api_key:
-            raise ValueError(
-                "Pinecone API key required. Set 'api_key' or PINECONE_API_KEY."
-            )
+            raise ValueError("Pinecone API key required. Set 'api_key' or PINECONE_API_KEY.")
 
         environment = config.get("environment") or os.environ.get("PINECONE_ENVIRONMENT")
         if not environment:
@@ -125,7 +123,9 @@ class PineconeConnector(SIEMConnector):
                 log_dlq_event(ev, f"pinecone_upsert_error:{exc}")
             return {"success": 0, "failed": len(events)}
 
-    def query(self, embedding_vector: List[float], top_k: int = 10, **kwargs) -> List[Dict[str, Any]]:
+    def query(
+        self, embedding_vector: List[float], top_k: int = 10, **kwargs
+    ) -> List[Dict[str, Any]]:
         """Perform similarity search against the index.
 
         Args:
@@ -148,11 +148,13 @@ class PineconeConnector(SIEMConnector):
 
         matches = []
         for match in results.matches:
-            matches.append({
-                "id": match.id,
-                "score": match.score,
-                "metadata": match.metadata or {},
-            })
+            matches.append(
+                {
+                    "id": match.id,
+                    "score": match.score,
+                    "metadata": match.metadata or {},
+                }
+            )
 
         return matches
 
@@ -160,6 +162,7 @@ class PineconeConnector(SIEMConnector):
         """Lazily import the pinecone package."""
         try:
             import pinecone  # noqa: F811
+
             return pinecone
         except ImportError:
             raise ImportError(
@@ -180,9 +183,7 @@ class PineconeConnector(SIEMConnector):
         vector: List[float] = []
         salt = 0
         while len(vector) < self._dimension:
-            h_salted = hashlib.sha256(
-                text.encode("utf-8") + struct.pack(">I", salt)
-            )
+            h_salted = hashlib.sha256(text.encode("utf-8") + struct.pack(">I", salt))
             hash_bytes = h_salted.digest()
             for i in range(0, len(hash_bytes), 4):
                 if len(vector) >= self._dimension:

@@ -98,9 +98,7 @@ class RBACConfig:
         self.users: Dict[str, User] = {}
 
         self._config_path: Path = (
-            Path(config_path).expanduser()
-            if config_path
-            else DEFAULT_CONFIG_PATH
+            Path(config_path).expanduser() if config_path else DEFAULT_CONFIG_PATH
         )
 
         if self._config_path.exists():

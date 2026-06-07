@@ -105,8 +105,7 @@ class WatermarkScanner(ScannerPlugin):
                         # Look for suspiciously regular patterns via autocorrelation
                         center = weight_flat[: weight_flat.numel() // 2]
                         shifted = weight_flat[
-                            weight_flat.numel() // 2 : weight_flat.numel() // 2
-                            + len(center)
+                            weight_flat.numel() // 2 : weight_flat.numel() // 2 + len(center)
                         ]
                         if len(center) == len(shifted):
                             correlation = torch.nn.functional.cosine_similarity(
@@ -130,9 +129,7 @@ class WatermarkScanner(ScannerPlugin):
                         description=f"{watermarked_params}/{total_params} parameter groups show anomalous patterns "
                         f"(sparsity ≥{threshold}, variance <{weight_var_threshold}, "
                         f"or high autocorrelation).",
-                        severity=Severity.HIGH
-                        if len(suspicious_layers) > 2
-                        else Severity.MEDIUM,
+                        severity=Severity.HIGH if len(suspicious_layers) > 2 else Severity.MEDIUM,
                         confidence=min(0.9, 0.3 + 0.1 * len(suspicious_layers)),
                         mitre_id="AI-A1005",
                         evidence={

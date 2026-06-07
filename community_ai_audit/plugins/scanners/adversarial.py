@@ -227,9 +227,7 @@ class AdversarialScanner(ScannerPlugin):
             if is_text_model:
                 # For text models, create random token IDs
                 vocab_size = getattr(model.config, "vocab_size", 50257)
-                return torch.randint(
-                    0, vocab_size, full_shape, device=device, dtype=torch.long
-                )
+                return torch.randint(0, vocab_size, full_shape, device=device, dtype=torch.long)
             return torch.randn(full_shape, device=device)
 
         # best effort inference for simple MLPs
@@ -244,9 +242,7 @@ class AdversarialScanner(ScannerPlugin):
         # Default: if text model, use token IDs
         if is_text_model:
             vocab_size = getattr(model.config, "vocab_size", 50257)
-            return torch.randint(
-                0, vocab_size, (num_samples, 16), device=device, dtype=torch.long
-            )
+            return torch.randint(0, vocab_size, (num_samples, 16), device=device, dtype=torch.long)
 
         return None
 

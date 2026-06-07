@@ -59,10 +59,12 @@ class LogRhythmConnector(SIEMConnector):
         self._retry_cfg = RetryConfig.from_dict(config.get("retry"))
 
         self._session = requests.Session()
-        self._session.headers.update({
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+        )
 
         log.info("LogRhythm connector configured for %s", self._url)
 
@@ -87,16 +89,23 @@ class LogRhythmConnector(SIEMConnector):
         for batch in chunk_list(events, self._max_batch):
             payload = {
                 "logSourceName": self._log_source,
-                "logMessage": json.dumps({
-                    "audit_type": event_type,
-                    "events": [self._transform_event(ev, event_type) for ev in batch],
-                }),
+                "logMessage": json.dumps(
+                    {
+                        "audit_type": event_type,
+                        "events": [self._transform_event(ev, event_type) for ev in batch],
+                    }
+                ),
             }
             success, failed = self._send_batch_inner(payload, batch)
             total_success += success
             total_failed += failed
 
-        log.info("Sent %d events to LogRhythm: success=%d failed=%d", len(events), total_success, total_failed)
+        log.info(
+            "Sent %d events to LogRhythm: success=%d failed=%d",
+            len(events),
+            total_success,
+            total_failed,
+        )
         return {"success": total_success, "failed": total_failed}
 
     def _send_batch_inner(self, payload: Dict, events: List[Dict]) -> tuple:
@@ -139,7 +148,9 @@ class LogRhythmConnector(SIEMConnector):
                 if should_retry:
                     time.sleep(delay + delay * jitter * random.random())
                     delay = min(delay * exp_base, max_delay)
-                    log.warning("LogRhythm retry %d/%d after HTTP %s", attempt, max_attempts, status)
+                    log.warning(
+                        "LogRhythm retry %d/%d after HTTP %s", attempt, max_attempts, status
+                    )
                 else:
                     for ev in events:
                         log_dlq_event(ev, f"logrhythm_http_{status}")
