@@ -220,13 +220,16 @@ class HuggingFaceAdapter(TextModelAdapter, ImageModelAdapter, MultiModalAdapter)
 
     @staticmethod
     def _resolve_device(device: str) -> str:
-        import torch
-
         if device == "auto":
-            if torch.cuda.is_available():
-                return "cuda"
-            if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-                return "mps"
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    return "cuda"
+                if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                    return "mps"
+            except ImportError:
+                pass
             return "cpu"
         return device
 
