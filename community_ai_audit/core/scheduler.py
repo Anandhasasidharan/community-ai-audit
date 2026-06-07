@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import logging
+from concurrent.futures import TimeoutError
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -227,18 +229,21 @@ class AuditScheduler:
         self,
         engine: Any,
         now: Optional[datetime] = None,
+        model_timeout: int = 300,
+        audit_timeout: int = 3600,
     ) -> List[Dict[str, Any]]:
         """Run all due schedules using an AuditEngine instance.
 
-        For each due schedule the engine is configured with the
-        schedule's model, scanners, interpreters, and connectors.
-        After the audit completes, ``mark_run`` is called so the
-        schedule advances to its next interval.
+        Each step (model load, audit, report generation) is run with
+        a configurable timeout so a hanging API call or model download
+        does not block the scheduler indefinitely.
 
         Args:
             engine: An ``AuditEngine`` instance ready for ``load_model``
                 and ``audit`` calls.
             now: Current datetime. Defaults to UTC now.
+            model_timeout: Seconds to wait for model loading (default 300).
+            audit_timeout: Seconds to wait for a full audit run (default 3600).
 
         Returns:
             List of result dicts — one per executed schedule — each
@@ -262,21 +267,28 @@ class AuditScheduler:
             )
 
             try:
-                engine.load_model(
-                    model_id=schedule["model_id"],
-                    provider=schedule["provider"],
-                )
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    load_future = pool.submit(
+                        engine.load_model,
+                        model_id=schedule["model_id"],
+                        provider=schedule["provider"],
+                    )
+                    load_future.result(timeout=model_timeout)
 
-                session = engine.audit(
-                    scanners=schedule.get("scanners") or None,
-                    interpreters=schedule.get("interpreters") or None,
-                    connectors=schedule.get("connectors") or None,
-                )
+                    audit_future = pool.submit(
+                        engine.audit,
+                        scanners=schedule.get("scanners") or None,
+                        interpreters=schedule.get("interpreters") or None,
+                        connectors=schedule.get("connectors") or None,
+                    )
+                    session = audit_future.result(timeout=audit_timeout)
 
-                report = engine.generate_report(
-                    session,
-                    format=schedule.get("output_format", "markdown"),
-                )
+                    report_future = pool.submit(
+                        engine.generate_report,
+                        session,
+                        format=schedule.get("output_format", "markdown"),
+                    )
+                    report = report_future.result(timeout=audit_timeout)
 
                 self.mark_run(schedule["name"])
 
@@ -293,6 +305,21 @@ class AuditScheduler:
                     schedule["name"],
                     session.total_findings,
                 )
+
+            except TimeoutError:
+                log.error(
+                    "Schedule '%s' timed out (model=%ds, audit=%ds)",
+                    schedule["name"],
+                    model_timeout,
+                    audit_timeout,
+                )
+                results.append(
+                    {
+                        "schedule": schedule["name"],
+                        "error": f"timed out after {audit_timeout}s",
+                    }
+                )
+                self.mark_run(schedule["name"])
 
             except Exception as exc:
                 log.error(
@@ -314,7 +341,7 @@ class AuditScheduler:
         try:
             cron_iter = _get_croniter()(cron_expr, datetime.now(timezone.utc))
             return cron_iter.get_next(datetime)
-        except Exception:
+        except (ValueError, KeyError):
             return None
 
     # ── Internal Helpers ─────────────────────────────────────────

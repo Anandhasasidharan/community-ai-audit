@@ -95,12 +95,14 @@ class ModelCache:
             if not self.enabled:
                 return predict_fn(model, inputs, **kwargs)
             try:
+                model_id = getattr(model, "model_id", None) or str(id(model))
+                key = (model_id,)
                 if isinstance(inputs, dict):
-                    key = tuple(sorted((k, str(v)) for k, v in inputs.items()))
+                    key = key + tuple(sorted((k, str(v)) for k, v in inputs.items()))
                 elif isinstance(inputs, (list, tuple)):
-                    key = tuple(str(x) for x in inputs)
+                    key = key + tuple(str(x) for x in inputs)
                 else:
-                    key = (str(inputs),)
+                    key = key + (str(inputs),)
                 if kwargs:
                     key = key + tuple(sorted((k, str(v)) for k, v in kwargs.items()))
             except (TypeError, ValueError):

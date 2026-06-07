@@ -97,19 +97,20 @@ class Registry:
             pkg = importlib.import_module(pkg_name)
         except ImportError:
             return
-        if not hasattr(pkg, "__path__"):
+        if not hasattr(pkg, "__path__") or pkg.__file__ is None:
             return
-        for item in os.listdir(os.path.dirname(pkg.__file__ or "")):
+        pkg_dir = os.path.dirname(pkg.__file__)
+        for item in os.listdir(pkg_dir):
             if item.startswith("_") or item.startswith("."):
                 continue
-            item_path = os.path.join(os.path.dirname(pkg.__file__ or ""), item)
+            item_path = os.path.join(pkg_dir, item)
             if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, "__init__.py")):
                 submod_name = f"{pkg_name}.{item}"
                 try:
                     submod = importlib.import_module(submod_name)
                     self._register_from_module(submod)
                 except ImportError:
-                    pass
+                    log.debug("Could not import submodule '%s'", submod_name)
 
     def _discover_entry_points(self) -> None:
         """Load plugins registered via setuptools/pip entry points."""
@@ -147,6 +148,7 @@ class Registry:
         module_name = f"external_{path.stem}"
         spec = importlib.util.spec_from_file_location(module_name, path)
         if spec is None or spec.loader is None:
+            log.warning("Could not load plugin from %s (spec=%s)", path, spec)
             return
         try:
             mod = importlib.util.module_from_spec(spec)

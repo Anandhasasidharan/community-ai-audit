@@ -330,6 +330,9 @@ class AuditEngine:
         self._ensure_model_loaded()
         scanner_names = scanners or plugins.list_scanners()
         config_overrides = config_overrides or {}
+        if batch_size < 1:
+            raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+
         aggregated: Dict[str, ScanResult] = {}
 
         for scanner_name in scanner_names:
@@ -533,8 +536,13 @@ class AuditEngine:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
             futures = {pool.submit(_push_one, name): name for name in connector_names}
             for future in concurrent.futures.as_completed(futures):
-                name, result = future.result()
-                connector_results[name] = result
+                try:
+                    name, result = future.result(timeout=300)
+                    connector_results[name] = result
+                except concurrent.futures.TimeoutError:
+                    log.error("Connector push timed out after 300s")
+                except Exception as e:
+                    log.error("Connector push failed: %s", e)
 
         return connector_results
 
@@ -760,5 +768,5 @@ def _get_siem_connector_names() -> set:
             if issubclass(cls, SIEMConnector):
                 siem_names.add(name)
         except TypeError:
-            pass
+            log.debug("Skipping non-class entry '%s'", name)
     return siem_names

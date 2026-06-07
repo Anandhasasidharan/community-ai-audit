@@ -116,11 +116,6 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def timestamp_now() -> str:
-    """Alias for now_iso() for backward compatibility."""
-    return now_iso()
-
-
 # ─────────────────────────────────────────────────────────────
 # Event schema validation
 # ─────────────────────────────────────────────────────────────

@@ -8,7 +8,9 @@ import sys
 import json
 import os
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
+
+from community_ai_audit.core.rbac import PermissionError as RBACPermError
 
 # ─────────────────────────────────────────────────────────────
 # Logging setup
@@ -103,7 +105,11 @@ Environment:
         help="Save report to file path",
     )
     scan_parser.add_argument("--device", help="Device for local models (cpu/cuda/mps)")
-    scan_parser.add_argument("--api-key", help="API key for cloud providers (or set env var)")
+    scan_parser.add_argument(
+        "--api-key",
+        help="API key for cloud providers (WARNING: visible in process list; prefer --api-key-file or COMMUNITY_AI_AUDIT_API_KEY env var)",
+    )
+    scan_parser.add_argument("--api-key-file", help="Read API key from file (safer than --api-key)")
     scan_parser.add_argument(
         "--input-shape",
         default=None,
@@ -169,7 +175,13 @@ Environment:
         help="Save report to file path",
     )
     interp_parser.add_argument("--device", help="Device for local models")
-    interp_parser.add_argument("--api-key", help="API key for cloud providers")
+    interp_parser.add_argument(
+        "--api-key",
+        help="API key for cloud providers (WARNING: visible in process list; prefer --api-key-file or COMMUNITY_AI_AUDIT_API_KEY env var)",
+    )
+    interp_parser.add_argument(
+        "--api-key-file", help="Read API key from file (safer than --api-key)"
+    )
     interp_parser.add_argument("--user", help="Username for RBAC authentication")
     interp_parser.add_argument(
         "--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication"
@@ -238,7 +250,13 @@ Environment:
         help="Save report to file path",
     )
     audit_parser.add_argument("--device", help="Device for local models")
-    audit_parser.add_argument("--api-key", help="API key for cloud providers")
+    audit_parser.add_argument(
+        "--api-key",
+        help="API key for cloud providers (WARNING: visible in process list; prefer --api-key-file or COMMUNITY_AI_AUDIT_API_KEY env var)",
+    )
+    audit_parser.add_argument(
+        "--api-key-file", help="Read API key from file (safer than --api-key)"
+    )
     audit_parser.add_argument("--user", help="Username for RBAC authentication")
     audit_parser.add_argument(
         "--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication"
@@ -372,13 +390,18 @@ def _rbac_check(args) -> None:
     rbac_config = RBACConfig()
     ac = AccessControl(rbac_config)
     if api_key and not ac.authenticate(user, api_key):
-        raise PermissionError(f"Authentication failed for user '{user}'")
+        raise RBACPermError(user, "authenticate")
     if not ac.authenticate(user, None):
-        raise PermissionError(f"User '{user}' not found or disabled")
+        raise RBACPermError(user, "authenticate")
 
 
 def _cmd_schedule(engine, args) -> int:
     """Manage and run recurring audit schedules."""
+    try:
+        _rbac_check(args)
+    except (PermissionError, RBACPermError) as e:
+        print(f"Access denied: {e}")
+        return 1
     from community_ai_audit.core.scheduler import AuditScheduler
 
     scheduler = AuditScheduler()
@@ -485,7 +508,7 @@ def _cmd_scan(engine, args) -> int:
 
     try:
         _rbac_check(args)
-    except PermissionError as e:
+    except (PermissionError, RBACPermError) as e:
         print(f"Access denied: {e}")
         return 1
 
@@ -547,7 +570,7 @@ def _cmd_interpret(engine, args) -> int:
 
     try:
         _rbac_check(args)
-    except PermissionError as e:
+    except (PermissionError, RBACPermError) as e:
         print(f"Access denied: {e}")
         return 1
 
@@ -586,7 +609,7 @@ def _cmd_audit(engine, args) -> int:
 
     try:
         _rbac_check(args)
-    except PermissionError as e:
+    except (PermissionError, RBACPermError) as e:
         print(f"Access denied: {e}")
         return 1
 
@@ -643,13 +666,43 @@ def _cmd_audit(engine, args) -> int:
     return 0
 
 
+def _read_api_key(args) -> Optional[str]:
+    """Read API key from env var, --api-key-file, or --api-key (in order of preference).
+
+    --api-key-file and --api-key both warn about security.
+    """
+    env_key = os.environ.get("COMMUNITY_AI_AUDIT_API_KEY")
+    if env_key:
+        return env_key
+
+    api_key_file = getattr(args, "api_key_file", None)
+    if api_key_file:
+        try:
+            with open(api_key_file) as f:
+                return f.read().strip()
+        except OSError as exc:
+            print(f"Warning: could not read --api-key-file '{api_key_file}': {exc}")
+
+    api_key = getattr(args, "api_key", None)
+    if api_key:
+        print(
+            "Warning: --api-key is visible in process listings. "
+            "Use COMMUNITY_AI_AUDIT_API_KEY env var or --api-key-file instead."
+        )
+        return api_key
+
+    return None
+
+
 def _build_adapter_config(args, engine_config: dict | None = None) -> dict:
     """Build adapter config from CLI args + environment + config file."""
     config = {}
     if hasattr(args, "device") and args.device:
         config["device"] = args.device
-    if hasattr(args, "api_key") and args.api_key:
-        config["api_key"] = args.api_key
+
+    api_key = _read_api_key(args)
+    if api_key:
+        config["api_key"] = api_key
 
     # Also pull adapter-specific config from config file
     if engine_config and "adapters" in engine_config:
@@ -666,7 +719,7 @@ def _save_report(report: str, path: str) -> None:
     print(f"Report saved to: {path}")
 
 
-def _parse_input_value(value):
+def _parse_input_value(value: Any) -> Any:
     """Parse CLI input value as JSON when possible; otherwise return raw string."""
     if value is None:
         return None
@@ -721,7 +774,7 @@ def _build_connector_configs(args, engine_config: dict | None) -> dict:
     return configs
 
 
-def _load_probe_file(path: str):
+def _load_probe_file(path: str) -> List[List[float]]:
     """Load probe inputs from .json/.jsonl/.csv.
 
     Returns a nested list suitable for scanner `probe_inputs`.
@@ -732,6 +785,13 @@ def _load_probe_file(path: str):
     p = Path(path).expanduser()
     if not p.exists() or not p.is_file():
         raise FileNotFoundError(f"Probe file not found: {p}")
+
+    allowed_suffixes = {".json", ".jsonl", ".ndjson", ".csv"}
+    if p.suffix.lower() not in allowed_suffixes:
+        raise ValueError(
+            f"Unsupported probe file extension '{p.suffix}'; "
+            f"allowed: {', '.join(sorted(allowed_suffixes))}"
+        )
 
     suffix = p.suffix.lower()
 
@@ -773,7 +833,7 @@ def _load_probe_file(path: str):
     raise ValueError(f"Unsupported probe file type: {suffix}")
 
 
-def _normalize_probe_rows(data):
+def _normalize_probe_rows(data: Any) -> List[List[float]]:
     """Normalize flexible JSON probe format to List[List[float]]."""
     if isinstance(data, list):
         if not data:

@@ -189,8 +189,6 @@ class AccessControl:
         acl.require_permission("bob", "admin:manage")
     """
 
-    DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_PATH
-
     def __init__(self, config: RBACConfig) -> None:
         """Initialise the access control layer.
 
