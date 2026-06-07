@@ -207,19 +207,25 @@ class LocalAdapter(ModelAdapter):
 
     @classmethod
     def auto_config(cls) -> Dict[str, Any]:
-        import torch
+        try:
+            import torch
 
-        return {"device": "cuda" if torch.cuda.is_available() else "cpu"}
+            return {"device": "cuda" if torch.cuda.is_available() else "cpu"}
+        except ImportError:
+            return {"device": "cpu"}
 
     @staticmethod
     def _resolve_device(device: str) -> str:
-        import torch
-
         if device == "auto":
-            if torch.cuda.is_available():
-                return "cuda"
-            if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-                return "mps"
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    return "cuda"
+                if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                    return "mps"
+            except ImportError:
+                pass
             return "cpu"
         return device
 

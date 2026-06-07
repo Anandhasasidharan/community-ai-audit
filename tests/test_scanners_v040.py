@@ -4,6 +4,15 @@ import unittest
 import tempfile
 from pathlib import Path
 
+try:
+    import torch  # noqa: F401
+
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
+skip_if_no_torch = unittest.skipIf(not HAS_TORCH, "torch not installed")
+
 # ─────────────────────────────────────────────────────────────
 # Mock adapter — used by all scanner tests
 # ─────────────────────────────────────────────────────────────
@@ -255,6 +264,7 @@ class TestToxicityScanner(unittest.TestCase):
 # ═════════════════════════════════════════════════════════════
 
 
+@skip_if_no_torch
 class TestWatermarkScanner(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.plugins.scanners.watermark import WatermarkScanner

@@ -5,7 +5,17 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+try:
+    from croniter import croniter  # noqa: F401
 
+    HAS_CRONITER = True
+except ImportError:
+    HAS_CRONITER = False
+
+skip_if_no_croniter = unittest.skipIf(not HAS_CRONITER, "croniter not installed")
+
+
+@skip_if_no_croniter
 class TestAuditScheduler(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.core.scheduler import AuditScheduler
