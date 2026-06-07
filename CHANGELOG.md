@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.1.2...v0.2.0) (2026-06-07)
+
+
+### Features
+
+* v0.5.0 - production readiness with advanced scanners, SIEM connectors, scheduling, RBAC, Helm chart, Docker, and air-gapped install ([94836b9](https://github.com/Anandhasasidharan/community-ai-audit/commit/94836b9a6812e8b53ff013e9f5f6f19ff2520a53))
+
+
+### Bug Fixes
+
+* huggingface_adapter _resolve_device handles missing torch ([f389ff7](https://github.com/Anandhasasidharan/community-ai-audit/commit/f389ff72fae0ddfabe1e82b3e382613ee73faf36))
+* make local_adapter, scheduler tests, watermark tests optional-dep-safe ([3f6f6d1](https://github.com/Anandhasasidharan/community-ai-audit/commit/3f6f6d101a3446f95d6c13869cf41aabff2158b3))
+* make torch-dependent test collection work without torch ([eb4773b](https://github.com/Anandhasasidharan/community-ai-audit/commit/eb4773bb7909379867d5d14eff7226756a914c4d))
+
 ## [0.1.2](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.1.1...v0.1.2) (2026-06-04)
 
 
