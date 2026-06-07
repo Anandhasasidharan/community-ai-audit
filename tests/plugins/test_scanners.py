@@ -3,19 +3,18 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+    torch = None
+    nn = None
 
 
-class _DummyModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc = nn.Linear(10, 5)
-        self.config = MagicMock()
-        self.config.vocab_size = 100
-
-    def forward(self, x):
-        return self.fc(x.float() if x.dtype == torch.long else x)
+skip_if_no_torch = unittest.skipIf(not HAS_TORCH, "torch not installed")
 
 
 class _DummyAdapter:
@@ -32,6 +31,7 @@ class _DummyAdapter:
         return True
 
 
+@skip_if_no_torch
 class TestBackdoorScanner(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.plugins.scanners.backdoor import BackdoorScanner
@@ -50,6 +50,16 @@ class TestBackdoorScanner(unittest.TestCase):
         self.assertIn("limited", result.findings[0].title.lower())
 
     def test_scan_with_mock_model_produces_findings(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = _DummyAdapter()
         result = self.scanner.scan(model, adapter, config={"sample_size": 32, "num_clusters": 3})
@@ -57,12 +67,32 @@ class TestBackdoorScanner(unittest.TestCase):
         self.assertGreaterEqual(len(result.findings), 1)
 
     def test_scan_handles_activation_exception(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = _DummyAdapter()
         result = self.scanner.scan(model, adapter, config={"input_shape": [16]})
         self.assertIsNotNone(result)
 
     def test_scan_no_activations_fallback(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = _DummyAdapter()
         with patch.object(self.scanner, "_extract_activations", return_value={}):
@@ -71,6 +101,16 @@ class TestBackdoorScanner(unittest.TestCase):
             self.assertIn("No activations", result.findings[0].title)
 
     def test_get_device(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         device = self.scanner._get_device(model)
         self.assertEqual(device, torch.device("cpu"))
@@ -93,6 +133,16 @@ class TestBackdoorScanner(unittest.TestCase):
         self.assertIsInstance(scores, list)
 
     def test_build_probe_batch_text_model(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         device = torch.device("cpu")
         batch = self.scanner._build_probe_batch(
@@ -103,6 +153,16 @@ class TestBackdoorScanner(unittest.TestCase):
         self.assertEqual(batch.dtype, torch.long)
 
     def test_build_probe_batch_with_input_shape(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         device = torch.device("cpu")
         batch = self.scanner._build_probe_batch(
@@ -112,6 +172,7 @@ class TestBackdoorScanner(unittest.TestCase):
         self.assertEqual(batch.shape[0], 8)
 
 
+@skip_if_no_torch
 class TestAdversarialScanner(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.plugins.scanners.adversarial import AdversarialScanner
@@ -123,6 +184,16 @@ class TestAdversarialScanner(unittest.TestCase):
         self.assertEqual(self.scanner.version, "0.2.0")
 
     def test_scan_blackbox_adapter_returns_limited_finding(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = MagicMock()
         adapter.provider = "openai"
@@ -131,6 +202,16 @@ class TestAdversarialScanner(unittest.TestCase):
         self.assertIn("limited", result.findings[0].title.lower())
 
     def test_scan_text_model_returns_limited_finding(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = _DummyAdapter()
         result = self.scanner.scan(model, adapter)
@@ -163,6 +244,16 @@ class TestAdversarialScanner(unittest.TestCase):
         self.assertGreaterEqual(len(result.findings), 1)
 
     def test_supports_gradients(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         self.assertTrue(self.scanner._supports_gradients(_DummyAdapter(), model))
 
@@ -180,6 +271,16 @@ class TestAdversarialScanner(unittest.TestCase):
         self.assertEqual(self.scanner._severity_from_success(0.05), Severity.INFO)
 
     def test_fgsm_runs(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         x = torch.randn(2, 10)
         y = torch.tensor([0, 1])
@@ -187,6 +288,16 @@ class TestAdversarialScanner(unittest.TestCase):
         self.assertEqual(adv.shape, x.shape)
 
     def test_pgd_runs(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 5)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         x = torch.randn(2, 10)
         y = torch.tensor([0, 1])

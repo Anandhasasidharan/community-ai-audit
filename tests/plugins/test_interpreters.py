@@ -3,19 +3,18 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+    torch = None
+    nn = None
 
 
-class _DummyModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc = nn.Linear(10, 2)
-        self.config = MagicMock()
-        self.config.vocab_size = 100
-
-    def forward(self, x):
-        return self.fc(x.float() if x.dtype == torch.long else x)
+skip_if_no_torch = unittest.skipIf(not HAS_TORCH, "torch not installed")
 
 
 class _DummyAdapter:
@@ -32,6 +31,7 @@ class _DummyAdapter:
         return True
 
 
+@skip_if_no_torch
 class TestIntegratedGradientsInterpreter(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.plugins.interpreters.integrated_gradients import (
@@ -45,6 +45,16 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         self.assertEqual(self.interpreter.version, "0.2.0")
 
     def test_interpret_blackbox_adapter_returns_error(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 2)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = MagicMock()
         adapter.provider = "openai"
@@ -52,6 +62,16 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         self.assertIsNotNone(result.error)
 
     def test_interpret_text_model_returns_error(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 2)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = _DummyAdapter()
         result = self.interpreter.interpret(model, adapter, inputs=[0.1, 0.2])
@@ -122,6 +142,16 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         self.assertIn("mean", summary.lower())
 
     def test_can_compute_gradients(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 2)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         self.assertTrue(self.interpreter._can_compute_gradients(_DummyAdapter(), model))
         remote = MagicMock()
@@ -129,6 +159,16 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         self.assertFalse(self.interpreter._can_compute_gradients(remote, model))
 
     def test_forward_logits(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 2)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         x = torch.randn(1, 10)
         logits = self.interpreter._forward_logits(model, x)
@@ -176,6 +216,7 @@ class TestIntegratedGradientsInterpreter(unittest.TestCase):
         self.assertIsNotNone(t3)
 
 
+@skip_if_no_torch
 class TestLIMEInterpreter(unittest.TestCase):
     def setUp(self):
         from community_ai_audit.plugins.interpreters.lime import LIMEInterpreter
@@ -197,6 +238,16 @@ class TestLIMEInterpreter(unittest.TestCase):
         self.assertIn("text model", result.error.lower())
 
     def test_interpret_text_model_without_lime_installed(self):
+        class _DummyModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc = nn.Linear(10, 2)
+                self.config = MagicMock()
+                self.config.vocab_size = 100
+
+            def forward(self, x):
+                return self.fc(x.float() if x.dtype == torch.long else x)
+
         model = _DummyModel()
         adapter = _DummyAdapter()
         with patch("community_ai_audit.plugins.interpreters.lime.safe_import", return_value=None):
