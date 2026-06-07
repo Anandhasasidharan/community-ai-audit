@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "community-ai-audit.fullname" . }}
+  labels:
+    {{- include "community-ai-audit.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "community-ai-audit.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "community-ai-audit.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: COMMUNITY_AI_AUDIT_CONFIG
+              value: {{ .Values.config.mountPath | quote }}/default.yaml
+          volumeMounts:
+            - name: config
+              mountPath: {{ .Values.config.mountPath | quote }}
+      volumes:
+        - name: config
+          {{- if .Values.config.existingConfigMap }}
+          configMap:
+            name: {{ .Values.config.existingConfigMap }}
+          {{- else }}
+          configMap:
+            name: {{ include "community-ai-audit.fullname" . }}-config
+          {{- end }}

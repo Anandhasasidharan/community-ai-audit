@@ -123,11 +123,12 @@ class LocalAdapter(ModelAdapter):
             raise ImportError("torch not installed")
         device = kwargs.get("device", self._device)
         weights_only = kwargs.get("weights_only", False)
+        allow_state_dict = kwargs.get("allow_state_dict", self.config.get("allow_state_dict", False))
         obj = torch.load(path, map_location=device, weights_only=weights_only)
         if (
             isinstance(obj, dict)
             and "state_dict" in obj
-            and not kwargs.get("allow_state_dict", False)
+            and not allow_state_dict
         ):
             raise ValueError(
                 "Loaded checkpoint contains only a state_dict. "

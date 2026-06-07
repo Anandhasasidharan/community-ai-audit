@@ -42,9 +42,27 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
                 error="Integrated Gradients requires white-box gradient access.",
             )
 
+        # Check if model is a text/language model
+        is_text_model = (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
+        )
+
+        if is_text_model:
+            return InterpretationResult(
+                interpreter_name=self.name,
+                interpreter_version=self.version,
+                error=(
+                    "Integrated Gradients on token IDs (discrete) is not supported for text models. "
+                    "IG requires differentiable inputs; for text models, use embedding-space IG "
+                    "which requires access to the model's input embeddings layer."
+                ),
+            )
+
         try:
 
-            x = self._to_tensor_input(inputs, device=self._get_device(model))
+            x = self._to_tensor_input(inputs, device=self._get_device(model), model=model)
             if x is None:
                 return InterpretationResult(
                     interpreter_name=self.name,
@@ -58,7 +76,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
             if x.dim() == 1:
                 x = x.unsqueeze(0)
 
-            baseline = self._build_baseline(x, mode=baseline_mode)
+            baseline = self._build_baseline(x, mode=baseline_mode, model=model)
             target_idx = self._resolve_target(model, x, target)
             attributions = self._integrated_gradients(model, x, baseline, target_idx, steps)
 
@@ -83,21 +101,42 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
                 error=str(e),
             )
 
-    def _to_tensor_input(self, inputs: Any, device):
+    def _to_tensor_input(self, inputs: Any, device, model=None):
         import torch
 
+        # Check if model is a text/language model
+        is_text_model = (
+            model is not None and (
+                hasattr(model.config, "vocab_size")
+                or hasattr(model, "vocab_size")
+                or hasattr(model, "wte")  # GPT-2 style
+            )
+        )
+
         if isinstance(inputs, torch.Tensor):
+            if is_text_model and inputs.dtype.is_floating_point:
+                return inputs.detach().clone().to(device).long()
             return inputs.detach().clone().to(device).float()
 
         if isinstance(inputs, (list, tuple)):
+            if is_text_model:
+                # Check if it's token IDs (integers)
+                if inputs and isinstance(inputs[0], int):
+                    return torch.tensor(inputs, dtype=torch.long, device=device)
             return torch.tensor(inputs, dtype=torch.float32, device=device)
 
         if isinstance(inputs, dict):
             # explicit tensor wrapper
             if "tensor" in inputs:
-                return torch.tensor(inputs["tensor"], dtype=torch.float32, device=device)
+                tensor_data = inputs["tensor"]
+                if is_text_model and isinstance(tensor_data, (list, tuple)) and tensor_data and isinstance(tensor_data[0], int):
+                    return torch.tensor(tensor_data, dtype=torch.long, device=device)
+                return torch.tensor(tensor_data, dtype=torch.float32, device=device)
             if "input" in inputs and isinstance(inputs["input"], (list, tuple)):
-                return torch.tensor(inputs["input"], dtype=torch.float32, device=device)
+                input_data = inputs["input"]
+                if is_text_model and input_data and isinstance(input_data[0], int):
+                    return torch.tensor(input_data, dtype=torch.long, device=device)
+                return torch.tensor(input_data, dtype=torch.float32, device=device)
 
         return None
 
@@ -109,8 +148,27 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
         except Exception:
             return torch.device("cpu")
 
-    def _build_baseline(self, x, mode: str):
+    def _build_baseline(self, x, mode: str, model=None):
         import torch
+
+        # Check if model is a text/language model
+        is_text_model = (
+            model is not None and (
+                hasattr(model.config, "vocab_size")
+                or hasattr(model, "vocab_size")
+                or hasattr(model, "wte")  # GPT-2 style
+            )
+        )
+
+        if is_text_model:
+            # For text models, use padding token (0) or special token as baseline
+            if mode == "random":
+                # Random tokens near padding
+                return torch.randint(0, 10, x.shape, device=x.device, dtype=torch.long)
+            if mode == "mean":
+                return torch.full_like(x, 0, dtype=torch.long)
+            # zero baseline default = padding token
+            return torch.zeros_like(x, dtype=torch.long)
 
         if mode == "random":
             return torch.randn_like(x) * 0.01

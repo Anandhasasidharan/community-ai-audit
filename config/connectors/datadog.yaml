@@ -1,0 +1,25 @@
+# Datadog Connector Configuration
+# 
+# To use this connector:
+# 1. Get your Datadog API key from Organization Settings > API Keys
+# 2. (Optional) Get Application Key for querying logs
+# 3. Set the site and keys below or via environment variables
+
+datadog:
+  dd_site: "datadoghq.com"  # or datadoghq.eu, us3.datadoghq.com, etc.
+  dd_api_key: ""  # Your Datadog API key
+  # dd_app_key: ""  # Optional: for querying logs
+  service: "ai-audit"
+  tags:
+    - "team:security"
+    - "source:community-ai-audit"
+  max_batch_size: 100
+  # retry:
+  #   max_attempts: 3
+  #   initial_delay: 1.0
+  #   max_delay: 60.0
+
+# Environment variable fallbacks:
+# DD_API_KEY
+# DD_APP_KEY
+# DD_SITE

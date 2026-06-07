@@ -78,6 +78,28 @@ class LIMEInterpreter(InterpreterPlugin):
         if config:
             self.config = {**self.config, **config}
 
+        # Check if model is a text/language model
+        is_text_model = (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
+        )
+
+        if not is_text_model:
+            return InterpretationResult(
+                interpreter_name=self.name,
+                interpreter_version=self.version,
+                error="LIME text explainer only supports text models. For image/tabular models, use lime_image or lime_tabular.",
+            )
+
+        # Check adapter has tokenize — required for LIME text perturbations
+        if not hasattr(adapter, "tokenize"):
+            return InterpretationResult(
+                interpreter_name=self.name,
+                interpreter_version=self.version,
+                error="This adapter does not support tokenization required by LIME. Use a TextModelAdapter (e.g. huggingface, local).",
+            )
+
         # Try importing LIME, fall back if not available
         lime = safe_import("lime.lime_text")
         if lime is None:
@@ -88,17 +110,14 @@ class LIMEInterpreter(InterpreterPlugin):
             )
 
         try:
-            # For text, we use lime_text. For images, lime_image, etc.
-            # This is a simplified wrapper — full implementation would
-            # dispatch based on input type.
             return self._explain_text(model, adapter, inputs, target)
 
         except Exception as e:
-            log.error("LIME failed: %s", e)
+            log.exception("LIME failed")
             return InterpretationResult(
                 interpreter_name=self.name,
                 interpreter_version=self.version,
-                error=str(e),
+                error=f"{type(e).__name__}: {e}",
             )
 
     def _explain_text(

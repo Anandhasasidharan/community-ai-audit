@@ -1,0 +1,22 @@
+image:
+  repository: community-ai-audit
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+config:
+  mountPath: /app/config
+  existingConfigMap: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -16,15 +16,19 @@ Example usage:
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import os
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import yaml
-from datetime import datetime
+from datetime import datetime, timezone
+
+from community_ai_audit.cache import ModelCache
 
 from .interfaces import (
+    Finding,
     ModelAdapter,
     ScanResult,
     InterpretationResult,
@@ -117,6 +121,13 @@ class AuditEngine:
         self._session_id = f"audit-{int(time.time())}"
         self._started_at: Optional[datetime] = None
 
+        cache_cfg = self.config.get("cache", {})
+        self.cache = ModelCache(
+            max_size=cache_cfg.get("max_size", 1000),
+            ttl_seconds=cache_cfg.get("ttl_seconds", 3600),
+            enabled=cache_cfg.get("enabled", True),
+        )
+
         if discovery_on_init:
             self.discover()
 
@@ -172,6 +183,12 @@ class AuditEngine:
         # Load model
         self._model = self._adapter.get_model(model_id, **model_kwargs)
         self._model_id = model_id
+
+        # Wrap predict with cache if enabled (unwrap first to avoid double-wrapping)
+        if self.cache.enabled:
+            raw_predict = getattr(self._adapter.predict, '__wrapped__', self._adapter.predict)
+            self._adapter.predict = self.cache.make_predict_wrapper(raw_predict)
+            log.debug("Predict caching enabled (max_size=%d, ttl=%ds)", self.cache.max_size, self.cache.ttl_seconds)
 
         log.info("Loaded model '%s' with adapter '%s'", model_id, provider)
         return self._model
@@ -297,6 +314,60 @@ class AuditEngine:
 
         return results
 
+    # ── Batch Scanning ─────────────────────────────────────────
+
+    def batch_scan(
+        self,
+        probe_inputs: List[Any],
+        scanners: Optional[List[str]] = None,
+        config_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
+        batch_size: int = 1,
+    ) -> List[ScanResult]:
+        self._ensure_model_loaded()
+        scanner_names = scanners or plugins.list_scanners()
+        config_overrides = config_overrides or {}
+        aggregated: Dict[str, ScanResult] = {}
+
+        for scanner_name in scanner_names:
+            if scanner_name not in plugins.list_scanners():
+                log.warning("Scanner '%s' not found, skipping", scanner_name)
+                continue
+
+            try:
+                scanner = plugins.scanners.get(scanner_name)
+                cfg = self._get_scanner_config(scanner_name, overrides=config_overrides.get(scanner_name))
+
+                all_findings: List[Finding] = []
+                total_duration = 0.0
+
+                for i in range(0, len(probe_inputs), batch_size):
+                    batch = probe_inputs[i : i + batch_size]
+                    batch_start = time.time()
+                    batch_cfg = {**cfg, "probe_inputs": batch}
+                    result = scanner.scan(self._model, self._adapter, config=batch_cfg)
+                    all_findings.extend(result.findings)
+                    total_duration += time.time() - batch_start
+
+                aggregated[scanner_name] = ScanResult(
+                    scanner_name=scanner_name,
+                    scanner_version=scanner.version,
+                    findings=all_findings,
+                    metadata={"batches": (len(probe_inputs) + batch_size - 1) // batch_size,
+                              "total_probes": len(probe_inputs),
+                              "total_duration_s": round(total_duration, 3)},
+                )
+                log.info("Batch scan '%s' completed: %d findings across %d probes",
+                         scanner_name, len(all_findings), len(probe_inputs))
+            except Exception as e:
+                log.error("Batch scan '%s' failed: %s", scanner_name, e)
+                aggregated[scanner_name] = ScanResult(
+                    scanner_name=scanner_name,
+                    scanner_version=getattr(plugins.scanners.get(scanner_name), "version", "unknown"),
+                    error=str(e),
+                )
+
+        return list(aggregated.values())
+
     # ── Full Audit ──────────────────────────────────────────────
 
     def audit(
@@ -305,8 +376,11 @@ class AuditEngine:
         interpreters: Optional[List[str]] = None,
         inputs: Optional[Any] = None,
         connectors: Optional[List[str]] = None,
+        connector_configs: Optional[Dict[str, Dict[str, Any]]] = None,
         config_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
         run_metadata: Optional[Dict[str, Any]] = None,
+        parallel_connectors: bool = False,
+        connector_max_workers: int = 4,
     ) -> AuditSession:
         """Run a full audit: scan + interpret + push to connectors.
 
@@ -315,13 +389,14 @@ class AuditEngine:
             interpreters: Interpreters to run. Requires 'inputs'.
             inputs: Input data for interpreters.
             connectors: SIEM/security tool names to push results to.
+            connector_configs: Per-connector config (API keys, URLs, etc.)
             config_overrides: Per-component config overrides.
             run_metadata: Optional reproducibility metadata to embed in the session/report.
 
         Returns:
             AuditSession containing all results and metadata.
         """
-        self._started_at = datetime.utcnow()
+        self._started_at = datetime.now(timezone.utc)
         results = AuditSession(
             session_id=self._session_id,
             model_id=self._model_id,
@@ -341,11 +416,17 @@ class AuditEngine:
 
         # Push to connectors
         if connectors:
-            results.connector_results = self._push_to_connectors(
-                results.scan_results, results.interpret_results, connectors
-            )
+            if parallel_connectors:
+                results.connector_results = self._push_to_connectors_parallel(
+                    results.scan_results, results.interpret_results,
+                    connectors, connector_configs, max_workers=connector_max_workers,
+                )
+            else:
+                results.connector_results = self._push_to_connectors(
+                    results.scan_results, results.interpret_results, connectors, connector_configs
+                )
 
-        results.completed_at = datetime.utcnow()
+        results.completed_at = datetime.now(timezone.utc)
         results.duration_seconds = (results.completed_at - self._started_at).total_seconds()
 
         return results
@@ -373,14 +454,21 @@ class AuditEngine:
         scan_results: List[ScanResult],
         interpret_results: List[InterpretationResult],
         connector_names: List[str],
+        connector_configs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Push audit results to configured connectors."""
         connector_results = {}
         audit_data = _format_audit_for_connector(scan_results, interpret_results, self._session_id)
+        connector_configs = connector_configs or {}
 
         for name in connector_names:
             try:
-                conn = connectors.get(name)
+                # Get connector with its config
+                config = connector_configs.get(name, {})
+                conn = connectors.get(name, config=config)
+                # Connect first if config provided
+                if config:
+                    conn.connect(config)
                 # Determine connector type by capability
                 if hasattr(conn, "send_batch"):
                     outcome = conn.send_batch(audit_data.get("events", []))
@@ -393,6 +481,43 @@ class AuditEngine:
             except Exception as e:
                 log.error("Connector '%s' failed: %s", name, e)
                 connector_results[name] = {"status": "failed", "error": str(e)}
+
+        return connector_results
+
+    def _push_to_connectors_parallel(
+        self,
+        scan_results: List[ScanResult],
+        interpret_results: List[InterpretationResult],
+        connector_names: List[str],
+        connector_configs: Optional[Dict[str, Dict[str, Any]]] = None,
+        max_workers: int = 4,
+    ) -> Dict[str, Any]:
+        connector_results: Dict[str, Any] = {}
+        audit_data = _format_audit_for_connector(scan_results, interpret_results, self._session_id)
+        connector_configs = connector_configs or {}
+
+        def _push_one(name: str) -> tuple:
+            try:
+                config = connector_configs.get(name, {})
+                conn = connectors.get(name, config=config)
+                if config:
+                    conn.connect(config)
+                if hasattr(conn, "send_batch"):
+                    outcome = conn.send_batch(audit_data.get("events", []))
+                elif hasattr(conn, "push_finding"):
+                    outcome = conn.push_finding(audit_data)
+                else:
+                    raise TypeError(f"Connector '{name}' does not support send_batch/push_finding")
+                return name, {"status": "success", "result": outcome}
+            except Exception as e:
+                log.error("Connector '%s' failed: %s", name, e)
+                return name, {"status": "failed", "error": str(e)}
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {pool.submit(_push_one, name): name for name in connector_names}
+            for future in concurrent.futures.as_completed(futures):
+                name, result = future.result()
+                connector_results[name] = result
 
         return connector_results
 
@@ -441,6 +566,27 @@ class AuditEngine:
         if overrides:
             cfg.update(overrides)
         return cfg
+
+    # ── Cache Management ────────────────────────────────────────
+
+    def enable_cache(
+        self,
+        enabled: bool = True,
+        max_size: Optional[int] = None,
+        ttl_seconds: Optional[float] = None,
+    ) -> None:
+        self.cache.enabled = enabled
+        if max_size is not None:
+            self.cache.max_size = max_size
+        if ttl_seconds is not None:
+            self.cache.ttl_seconds = ttl_seconds
+
+    def clear_cache(self) -> None:
+        self.cache.clear()
+
+    @property
+    def cache_stats(self) -> Dict[str, Any]:
+        return self.cache.stats
 
     def list_capabilities(self) -> Dict[str, List[str]]:
         """Return a summary of all discovered capabilities."""
@@ -526,12 +672,58 @@ def _format_audit_for_connector(
     interpret_results: List[InterpretationResult],
     session_id: str,
 ) -> Dict[str, Any]:
-    """Format audit results into a normalized structure for SIEM/tools."""
+    """Format audit results into a normalized structure for SIEM/tools.
+    
+    Each finding becomes a separate event with required fields (title, severity).
+    """
+    events = []
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # Emit each finding as a separate event
+    for scan_result in scan_results:
+        for finding in scan_result.findings:
+            finding_dict = finding.to_dict()
+            finding_dict.update({
+                "event_type": "scan_finding",
+                "session_id": session_id,
+                "scanner": scan_result.scanner_name,
+                "scanner_version": scan_result.scanner_version,
+                "model_id": getattr(scan_result, 'model_id', None),
+                "timestamp": timestamp,
+            })
+            events.append(finding_dict)
+    
+    # Also emit scan summary events
+    for scan_result in scan_results:
+        events.append({
+            "event_type": "scan_summary",
+            "session_id": session_id,
+            "scanner": scan_result.scanner_name,
+            "scanner_version": scan_result.scanner_version,
+            "overall_severity": scan_result.overall_severity.value,
+            "finding_count": len(scan_result.findings),
+            "error": scan_result.error,
+            "metadata": scan_result.metadata,
+            "timestamp": timestamp,
+        })
+    
+    # Interpretation results
+    for interp_result in interpret_results:
+        events.append({
+            "event_type": "interpretation_result",
+            "session_id": session_id,
+            "interpreter": interp_result.interpreter_name,
+            "interpreter_version": interp_result.interpreter_version,
+            "summary": interp_result.summary,
+            "error": interp_result.error,
+            "metadata": interp_result.metadata,
+            "timestamp": timestamp,
+        })
+    
     return {
         "session_id": session_id,
-        "timestamp": datetime.utcnow().isoformat(),
-        "events": [{**r.to_dict(), "event_type": "scan_result"} for r in scan_results]
-        + [{**r.to_dict(), "event_type": "interpretation_result"} for r in interpret_results],
+        "timestamp": timestamp,
+        "events": events,
     }
 
 

@@ -1,0 +1,24 @@
+# Elastic / Elasticsearch Connector Configuration
+# 
+# To use this connector:
+# 1. Set up Elasticsearch or Elastic Cloud deployment
+# 2. Create API key or basic auth credentials
+# 3. Set the URL and credentials below or via environment variables
+
+elastic:
+  url: ""  # e.g., "https://your-cluster.es.us-east-1.aws.elastic-cloud.com:9243"
+  # api_key: ""  # Base64 encoded "id:key" or use username/password
+  # username: ""
+  # password: ""
+  index: "security-ai-audit"
+  verify_ssl: true
+  max_batch_size: 100
+  # retry:
+  #   max_attempts: 3
+  #   initial_delay: 1.0
+  #   max_delay: 60.0
+
+# Environment variable fallbacks:
+# ELASTICSEARCH_URL
+# ELASTICSEARCH_API_KEY
+# ELASTICSEARCH_USERNAME / ELASTICSEARCH_PASSWORD

@@ -1,0 +1,21 @@
+# Microsoft Sentinel Connector Configuration
+# 
+# To use this connector:
+# 1. In Azure Portal, go to Log Analytics Workspace > Agents > Data Collector API
+# 2. Copy Workspace ID and Primary Key (Shared Key)
+# 3. Set the values below or via environment variables
+
+sentinel:
+  workspace_id: ""  # Log Analytics Workspace ID (GUID)
+  shared_key: ""    # Primary/Secondary Shared Key
+  log_type: "AIAudit"  # Custom table name (no spaces, alphanumeric + underscore)
+  # endpoint: ""  # Optional: override default endpoint
+  max_batch_size: 100
+  # retry:
+  #   max_attempts: 3
+  #   initial_delay: 1.0
+  #   max_delay: 60.0
+
+# Environment variable fallbacks:
+# AZURE_LOG_ANALYTICS_WORKSPACE_ID
+# AZURE_LOG_ANALYTICS_KEY

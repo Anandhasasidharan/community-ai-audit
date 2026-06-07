@@ -2,7 +2,7 @@
 
 import unittest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timezone
 
 from community_ai_audit.core.audit import AuditEngine, AuditSession
 from community_ai_audit.core.interfaces import (
@@ -92,7 +92,7 @@ class TestAuditEngine(unittest.TestCase):
             session_id="test-1",
             model_id="test-model",
             adapter_name="test-adapter",
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
 
         # No findings = low risk
@@ -123,7 +123,7 @@ class TestAuditEngine(unittest.TestCase):
             session_id="test-2",
             model_id="model",
             adapter_name="adapter",
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         d = session.to_dict()
         self.assertEqual(d["session_id"], "test-2")

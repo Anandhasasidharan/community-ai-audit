@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "community-ai-audit"
-version = "0.1.2"
+version = "0.5.0"
 description = "Community-driven AI security audit tool using interpretability techniques"
 readme = "README.md"
 license = {text = "MIT"}
@@ -22,6 +22,9 @@ dependencies = [
 [project.optional-dependencies]
 torch = [
     "torch>=2.0",
+]
+scheduler = [
+    "croniter>=1.3",
 ]
 dev = [
     "pytest>=7.0",

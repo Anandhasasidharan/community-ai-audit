@@ -13,10 +13,6 @@ from .interfaces import (
     SIEMConnector,
     SecurityToolConnector,
     ThreatIntelConnector,
-    # Scanner / Interpreter plugins
-    ScannerPlugin,
-    InterpreterPlugin,
-    ReporterPlugin,
 )
 
 from .registry import (
@@ -27,6 +23,9 @@ from .registry import (
 
 from .audit import AuditEngine
 
+from .scheduler import AuditScheduler
+from .rbac import RBACConfig, AccessControl, PermissionError
+
 __all__ = [
     # Interfaces
     "ModelAdapter",
@@ -36,13 +35,16 @@ __all__ = [
     "SIEMConnector",
     "SecurityToolConnector",
     "ThreatIntelConnector",
-    "ScannerPlugin",
-    "InterpreterPlugin",
-    "ReporterPlugin",
     # Registries
     "PluginRegistry",
     "AdapterRegistry",
     "ConnectorRegistry",
     # Engine
     "AuditEngine",
+    # Scheduler
+    "AuditScheduler",
+    # RBAC
+    "RBACConfig",
+    "AccessControl",
+    "PermissionError",
 ]

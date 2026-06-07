@@ -59,7 +59,7 @@ class BackdoorScanner(ScannerPlugin):
             )
 
         try:
-            activations = self._extract_activations(model, cfg)
+            activations = self._extract_activations(model, cfg, adapter)
         except Exception as e:
             log.exception("Activation extraction failed")
             return ScanResult(
@@ -109,7 +109,11 @@ class BackdoorScanner(ScannerPlugin):
 
             if outliers:
                 confidence = min(max(outliers), 0.99)
-                severity = Severity.HIGH if confidence >= 0.75 else Severity.MEDIUM
+                thresholds = cfg.get("severity_thresholds", {})
+                high_thresh = thresholds.get("high", 0.75)
+                severity = (
+                    Severity.HIGH if confidence >= high_thresh else Severity.MEDIUM
+                )
                 findings.append(
                     Finding(
                         title=f"Activation anomaly detected in {layer_name}",
@@ -155,11 +159,13 @@ class BackdoorScanner(ScannerPlugin):
             metadata={"layers_analyzed": len(activations)},
         )
 
-    def _extract_activations(self, model: Any, cfg: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_activations(
+        self, model: Any, cfg: Dict[str, Any], adapter=None
+    ) -> Dict[str, Any]:
         import torch
 
         device = self._get_device(model)
-        probe = self._build_probe_batch(model, cfg, device=device)
+        probe = self._build_probe_batch(model, cfg, device=device, adapter=adapter)
         if probe is None:
             return {}
 
@@ -183,7 +189,9 @@ class BackdoorScanner(ScannerPlugin):
                     if isinstance(out, torch.Tensor):
                         activations[layer_name] = out.detach().cpu()
                     elif (
-                        isinstance(out, (tuple, list)) and out and isinstance(out[0], torch.Tensor)
+                        isinstance(out, (tuple, list))
+                        and out
+                        and isinstance(out[0], torch.Tensor)
                     ):
                         activations[layer_name] = out[0].detach().cpu()
 
@@ -201,11 +209,26 @@ class BackdoorScanner(ScannerPlugin):
 
         return activations
 
-    def _build_probe_batch(self, model: Any, cfg: Dict[str, Any], device):
+    def _build_probe_batch(self, model: Any, cfg: Dict[str, Any], device, adapter=None):
         import torch
 
+        # Check if model is a text/language model (has vocab_size or uses token IDs)
+        is_text_model = (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
+        )
+
         if "probe_inputs" in cfg:
-            x = torch.tensor(cfg["probe_inputs"], dtype=torch.float32, device=device)
+            probe = cfg["probe_inputs"]
+            if isinstance(probe, list):
+                # Check if it's token IDs (integers) or embeddings (floats)
+                if probe and isinstance(probe[0], (int, list)):
+                    x = torch.tensor(probe, dtype=torch.long, device=device)
+                else:
+                    x = torch.tensor(probe, dtype=torch.float32, device=device)
+            else:
+                x = torch.tensor(probe, dtype=torch.float32, device=device)
             if x.dim() == 1:
                 x = x.unsqueeze(0)
             return x
@@ -217,6 +240,12 @@ class BackdoorScanner(ScannerPlugin):
                 full = tuple(input_shape)
             else:
                 full = (num_samples, *input_shape)
+            if is_text_model:
+                # For text models, create random token IDs
+                vocab_size = getattr(model.config, "vocab_size", 50257)
+                return torch.randint(
+                    0, vocab_size, full, device=device, dtype=torch.long
+                )
             return torch.randn(full, device=device)
 
         in_features = None
@@ -227,6 +256,13 @@ class BackdoorScanner(ScannerPlugin):
 
         if in_features is not None:
             return torch.randn((num_samples, in_features), device=device)
+
+        # Default: if text model, use token IDs
+        if is_text_model:
+            vocab_size = getattr(model.config, "vocab_size", 50257)
+            return torch.randint(
+                0, vocab_size, (num_samples, 16), device=device, dtype=torch.long
+            )
 
         return None
 
@@ -310,3 +346,34 @@ class BackdoorScanner(ScannerPlugin):
             if tail.size == 0:
                 return []
             return [float(min(0.99, (tail.mean() - q95) / (q95 + 1e-9)))]
+
+    @classmethod
+    def get_config_schema(cls) -> Dict[str, Any]:
+        schema = super().get_config_schema()
+        schema["properties"]["severity_thresholds"] = {
+            "type": "object",
+            "properties": {
+                "high": {"type": "number", "minimum": 0, "maximum": 1, "default": 0.75},
+            },
+            "description": "Override severity thresholds for anomaly confidence",
+        }
+        schema["properties"]["num_clusters"] = {
+            "type": "integer",
+            "minimum": 2,
+            "default": 5,
+            "description": "Number of KMeans clusters for activation analysis",
+        }
+        schema["properties"]["activation_threshold"] = {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.85,
+            "description": "Threshold for flagging anomalous activation clusters",
+        }
+        schema["properties"]["sample_size"] = {
+            "type": "integer",
+            "minimum": 64,
+            "default": 512,
+            "description": "Number of probe samples for activation extraction",
+        }
+        return schema

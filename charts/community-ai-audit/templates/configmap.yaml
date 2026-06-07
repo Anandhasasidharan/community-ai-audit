@@ -1,0 +1,62 @@
+{{- if not .Values.config.existingConfigMap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "community-ai-audit.fullname" . }}-config
+  labels:
+    {{- include "community-ai-audit.labels" . | nindent 4 }}
+data:
+  default.yaml: |
+    # Community AI Security Audit Tool - Default Configuration
+
+    # Model settings
+    model:
+      cache_dir: ~/.cache/community_ai_audit/models
+      device: auto
+      dtype: auto
+
+    # Scanner settings
+    scanners:
+      backdoor:
+        enabled: true
+        clustering_method: kmeans
+        activation_threshold: 0.85
+        num_clusters: 5
+      adversarial:
+        enabled: true
+        epsilon: 0.1
+        alpha: 0.01
+        pgd_steps: 10
+        num_samples: 100
+
+    # Interpreter settings
+    interpreters:
+      integrated_gradients:
+        enabled: true
+        steps: 50
+        baseline: zero
+      lime:
+        enabled: true
+        num_samples: 1000
+        kernel_width: 0.75
+
+    # Report settings
+    reporting:
+      format: markdown
+      include_evidence: true
+      max_evidence_samples: 10
+
+    # Audit presets
+    presets:
+      quick:
+        scanners: [backdoor]
+        interpreters: [integrated_gradients]
+      standard:
+        scanners: [backdoor, adversarial]
+        interpreters: [integrated_gradients, lime]
+      deep:
+        scanners: [backdoor, adversarial]
+        interpreters: [integrated_gradients, lime]
+        adversarial__num_samples: 1000
+        lime__num_samples: 5000
+{{- end }}

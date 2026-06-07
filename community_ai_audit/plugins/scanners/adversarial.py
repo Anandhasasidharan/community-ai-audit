@@ -60,11 +60,44 @@ class AdversarialScanner(ScannerPlugin):
                 ],
             )
 
+        # Check if model is a text/language model - adversarial attacks on token IDs don't work
+        is_text_model = (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
+        )
+
+        if is_text_model:
+            return ScanResult(
+                scanner_name=self.name,
+                scanner_version=self.version,
+                findings=[
+                    Finding(
+                        title="Adversarial scan limited: text model requires embedding-space attacks",
+                        description=(
+                            "FGSM/PGD on token IDs (discrete) is not supported. "
+                            "Adversarial attacks on text models require embedding-space perturbations "
+                            "which need access to the model's input embeddings layer."
+                        ),
+                        severity=Severity.INFO,
+                        confidence=0.7,
+                        mitre_id="AI-A1002",
+                        recommendation=(
+                            "For text model adversarial robustness, consider using "
+                            "embedding-space attacks or discrete optimization methods "
+                            "(e.g., HotFlip, TextFooler, BERT-Attack)."
+                        ),
+                    )
+                ],
+            )
+
         try:
             import torch
 
             device = self._get_device(model)
-            x = self._build_probe_batch(model, cfg, num_samples=num_samples, device=device)
+            x = self._build_probe_batch(
+                model, cfg, num_samples=num_samples, device=device, adapter=adapter
+            )
             if x is None:
                 return ScanResult(
                     scanner_name=self.name,
@@ -97,7 +130,7 @@ class AdversarialScanner(ScannerPlugin):
             pgd_success = float((pgd_pred != clean_pred).float().mean().item())
             max_success = max(fgsm_success, pgd_success)
 
-            severity = self._severity_from_success(max_success)
+            severity = self._severity_from_success(max_success, config=cfg)
             finding = Finding(
                 title=f"Adversarial vulnerability score: {max_success:.1%}",
                 description=(
@@ -158,11 +191,28 @@ class AdversarialScanner(ScannerPlugin):
         except Exception:
             return torch.device("cpu")
 
-    def _build_probe_batch(self, model: Any, cfg: Dict[str, Any], num_samples: int, device):
+    def _build_probe_batch(
+        self, model: Any, cfg: Dict[str, Any], num_samples: int, device, adapter=None
+    ):
         import torch
 
+        # Check if model is a text/language model (has vocab_size or uses token IDs)
+        is_text_model = (
+            hasattr(model.config, "vocab_size")
+            or hasattr(model, "vocab_size")
+            or hasattr(model, "wte")  # GPT-2 style
+        )
+
         if "probe_inputs" in cfg:
-            x = torch.tensor(cfg["probe_inputs"], dtype=torch.float32, device=device)
+            probe = cfg["probe_inputs"]
+            if isinstance(probe, list):
+                # Check if it's token IDs (integers) or embeddings (floats)
+                if probe and isinstance(probe[0], (int, list)):
+                    x = torch.tensor(probe, dtype=torch.long, device=device)
+                else:
+                    x = torch.tensor(probe, dtype=torch.float32, device=device)
+            else:
+                x = torch.tensor(probe, dtype=torch.float32, device=device)
             if x.dim() == 1:
                 x = x.unsqueeze(0)
             return x
@@ -174,6 +224,12 @@ class AdversarialScanner(ScannerPlugin):
                 full_shape = tuple(shape)
             else:
                 full_shape = (num_samples, *shape)
+            if is_text_model:
+                # For text models, create random token IDs
+                vocab_size = getattr(model.config, "vocab_size", 50257)
+                return torch.randint(
+                    0, vocab_size, full_shape, device=device, dtype=torch.long
+                )
             return torch.randn(full_shape, device=device)
 
         # best effort inference for simple MLPs
@@ -185,14 +241,24 @@ class AdversarialScanner(ScannerPlugin):
         if in_features is not None:
             return torch.randn((num_samples, in_features), device=device)
 
+        # Default: if text model, use token IDs
+        if is_text_model:
+            vocab_size = getattr(model.config, "vocab_size", 50257)
+            return torch.randint(
+                0, vocab_size, (num_samples, 16), device=device, dtype=torch.long
+            )
+
         return None
 
     def _forward_logits(self, model: Any, x):
         out = model(x)
         if isinstance(out, tuple):
             out = out[0]
-        if hasattr(out, "logits"):
+        if hasattr(out, "logits") and out.logits is not None:
             return out.logits
+        # For some transformers outputs, logits might be at a different path
+        if hasattr(out, "last_hidden_state"):
+            return out.last_hidden_state
         return out
 
     def _fgsm(self, model: Any, x, y_ref, epsilon: float):
@@ -226,13 +292,46 @@ class AdversarialScanner(ScannerPlugin):
 
         return x_adv
 
-    def _severity_from_success(self, success_rate: float) -> Severity:
-        if success_rate >= 0.8:
+    def _severity_from_success(
+        self, success_rate: float, config: Optional[Dict[str, Any]] = None
+    ) -> Severity:
+        thresholds = (config or {}).get("severity_thresholds", {})
+        critical = thresholds.get("critical", 0.8)
+        high = thresholds.get("high", 0.6)
+        medium = thresholds.get("medium", 0.3)
+        low = thresholds.get("low", 0.1)
+
+        if success_rate >= critical:
             return Severity.CRITICAL
-        if success_rate >= 0.6:
+        if success_rate >= high:
             return Severity.HIGH
-        if success_rate >= 0.3:
+        if success_rate >= medium:
             return Severity.MEDIUM
-        if success_rate >= 0.1:
+        if success_rate >= low:
             return Severity.LOW
         return Severity.INFO
+
+    @classmethod
+    def get_config_schema(cls) -> Dict[str, Any]:
+        schema = super().get_config_schema()
+        schema["properties"]["severity_thresholds"] = {
+            "type": "object",
+            "properties": {
+                "critical": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.8,
+                },
+                "high": {"type": "number", "minimum": 0, "maximum": 1, "default": 0.6},
+                "medium": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.3,
+                },
+                "low": {"type": "number", "minimum": 0, "maximum": 1, "default": 0.1},
+            },
+            "description": "Override severity thresholds for attack success rates",
+        }
+        return schema

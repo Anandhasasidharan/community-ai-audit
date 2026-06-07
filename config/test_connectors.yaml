@@ -1,0 +1,45 @@
+# Test Connector Configurations
+# Copy to your config and fill in real credentials for testing
+
+adapters:
+  local:
+    allow_state_dict: true
+    device: cuda
+
+connectors:
+  # Splunk HEC
+  splunk:
+    hec_url: "https://splunk.example.com:8088"
+    hec_token: "your-hec-token"
+    index: "security"
+    sourcetype: "ai:audit"
+    verify_ssl: true
+    max_batch_size: 100
+
+  # Elastic / Elasticsearch
+  elastic:
+    url: "https://your-cluster.es.us-east-1.aws.elastic-cloud.com:9243"
+    # api_key: "base64-encoded-id:key"
+    # username: "elastic"
+    # password: "your-password"
+    index: "security-ai-audit"
+    verify_ssl: true
+    max_batch_size: 100
+
+  # Datadog
+  datadog:
+    dd_site: "datadoghq.com"
+    dd_api_key: "your-datadog-api-key"
+    # dd_app_key: "your-datadog-app-key"
+    service: "ai-audit"
+    tags:
+      - "team:security"
+      - "source:community-ai-audit"
+    max_batch_size: 100
+
+  # Microsoft Sentinel
+  sentinel:
+    workspace_id: "your-workspace-id-guid"
+    shared_key: "your-shared-key"
+    log_type: "AIAudit"
+    max_batch_size: 100

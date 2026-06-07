@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  community-ai-audit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./config:/app/config
+      - ./output:/app/output
+    environment:
+      - COMMUNITY_AI_AUDIT_CONFIG=/app/config/default.yaml
+    command: tail -f /dev/null
+    ports:
+      - "8080:8080"

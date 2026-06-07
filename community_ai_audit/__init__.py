@@ -15,10 +15,12 @@ Plugins:
     Interpreters — integrated-gradients, lime
 """
 
-__version__ = "0.1.2"
+__version__ = "0.3.0"
 __author__ = "Community Contributors"
 
+from community_ai_audit.cache import ModelCache
 from community_ai_audit.core.audit import AuditEngine
+from community_ai_audit.diff import AuditDiff, audit_diff
 from community_ai_audit.core.interfaces import (
     ModelAdapter,
     SIEMConnector,
@@ -36,6 +38,9 @@ from community_ai_audit.reporting import ReportGenerator
 
 __all__ = [
     "AuditEngine",
+    "AuditDiff",
+    "audit_diff",
+    "ModelCache",
     "ReportGenerator",
     "ModelAdapter",
     "SIEMConnector",

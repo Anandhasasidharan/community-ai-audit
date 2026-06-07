@@ -1,6 +1,6 @@
 """
 Report generator — formats ScanResult, InterpretationResult, and AuditSession
-into Markdown and JSON.
+into Markdown, JSON, and HTML.
 """
 
 from __future__ import annotations
@@ -69,6 +69,21 @@ class ReportGenerator:
         return "\n".join(lines)
 
     def render_session(self, session: "AuditSession", fmt: str = "markdown") -> str:
+        if fmt == "dashboard":
+            from community_ai_audit.plugins.reporters.dashboard import DashboardReporter
+            risk_score = self._session_risk(session)
+            risk_level = self._risk_level(risk_score)
+            metadata = {
+                "session_id": session.session_id,
+                "model_id": session.model_id,
+                "total_findings": session.total_findings,
+                "risk_score": risk_score,
+                "risk_level": risk_level,
+                "started_at": session.started_at.isoformat() if session.started_at else "",
+                "duration_seconds": session.duration_seconds,
+            }
+            return DashboardReporter().render(session.scan_results, session.interpret_results, metadata)
+
         if fmt == "json":
             payload = session.to_dict()
             payload["risk_score"] = self._session_risk(session)
@@ -79,7 +94,7 @@ class ReportGenerator:
         risk_level = self._risk_level(risk_score)
 
         lines = [
-            "# 🤖 Community AI Security Audit Report",
+            "# Community AI Security Audit Report",
             "",
             f"**Session ID**: `{session.session_id}`",
             f"**Model**: {session.model_id or '(unknown)'} (adapter: {session.adapter_name or 'n/a'})",
@@ -112,6 +127,13 @@ class ReportGenerator:
             lines.append("- No scanner results.")
 
         lines.extend(["", "---", ""])
+
+        if fmt == "html":
+            markdown_scan = self.render_scan_results(session.scan_results, fmt="markdown")
+            markdown_interp = self.render_interpret_results(session.interpret_results, fmt="markdown")
+            body = "\n".join(lines)
+            return self._markdown_to_html(body, markdown_scan, markdown_interp, risk_score, risk_level, session)
+
         lines.append(self.render_scan_results(session.scan_results, fmt=fmt))
         lines.append(self.render_interpret_results(session.interpret_results, fmt=fmt))
 
@@ -121,6 +143,61 @@ class ReportGenerator:
                 lines.append(f"- **{name}**: {status}")
 
         return "\n".join(lines)
+
+    def _markdown_to_html(self, header_md: str, scan_md: str, interp_md: str,
+                          risk_score: float, risk_level: str, session) -> str:
+        def _md_to_html(text: str) -> str:
+            lines_out = []
+            for line in text.split("\n"):
+                stripped = line.strip()
+                if not stripped:
+                    lines_out.append("<br>")
+                elif stripped.startswith("###"):
+                    lines_out.append(f"<h3>{stripped.lstrip('# ')}</h3>")
+                elif stripped.startswith("##"):
+                    lines_out.append(f"<h2>{stripped.lstrip('# ')}</h2>")
+                elif stripped.startswith("#"):
+                    lines_out.append(f"<h1>{stripped.lstrip('# ')}</h1>")
+                elif stripped.startswith("- "):
+                    lines_out.append(f"<li>{stripped[2:]}</li>")
+                else:
+                    rendered = stripped.replace("**", "<strong>").replace("\n", "<br>")
+                    lines_out.append(f"<p>{rendered}</p>")
+            return "".join(lines_out)
+
+        risk_class = f"severity-{risk_level}" if risk_level in ("critical", "high", "medium", "low", "info") else "severity-info"
+        total_findings = session.total_findings if hasattr(session, "total_findings") else 0
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Security Audit Report - {session.session_id}</title>
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 960px; margin: 0 auto; padding: 2rem; background: #f9fafb; color: #111827; }}
+  h1 {{ color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }}
+  h2 {{ color: #1f2937; margin-top: 2rem; }}
+  h3 {{ color: #374151; margin-top: 1.5rem; }}
+  .header {{ background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }}
+  .header p {{ margin: 0.25rem 0; }}
+  .risk-badge {{ display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; color: white; font-weight: 600; font-size: 0.875rem; }}
+  .severity-critical {{ background: #dc2626; }} .severity-high {{ background: #ea580c; }} .severity-medium {{ background: #ca8a04; }} .severity-low {{ background: #16a34a; }} .severity-info {{ background: #2563eb; }}
+  .finding {{ background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin: 1rem 0; }}
+  hr {{ border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }}
+</style>
+</head>
+<body>
+  <div class="header">
+    {_md_to_html(header_md)}
+    <p><strong>Risk Score:</strong> <span class="risk-badge {risk_class}">{risk_score:.1f} ({risk_level})</span></p>
+    <p><strong>Total Findings:</strong> {total_findings}</p>
+  </div>
+  <h2>Scan Results</h2>
+  {_md_to_html(scan_md)}
+  <h2>Interpretation Results</h2>
+  {_md_to_html(interp_md)}
+</body>
+</html>"""
 
     def _scanner_risk(self, result: "ScanResult") -> float:
         if not result.findings:

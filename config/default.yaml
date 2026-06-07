@@ -19,6 +19,24 @@ scanners:
     alpha: 0.01
     pgd_steps: 10
     num_samples: 100
+  prompt_injection:
+    enabled: true
+    severity_thresholds:
+      critical: 0.5
+      high: 0.3
+      medium: 0.15
+      low: 0.05
+  data_extraction:
+    enabled: true
+    severity_thresholds:
+      critical: 0.5
+      high: 0.3
+      medium: 0.15
+      low: 0.05
+  toxicity:
+    enabled: true
+  watermark:
+    enabled: true
 
 # Interpreter settings
 interpreters:

@@ -46,20 +46,35 @@ Environment:
   COMMUNITY_AI_AUDIT_LOG_LEVEL   One of: DEBUG, INFO, WARNING, ERROR.
 """,
     )
-    parser.add_argument("--version", action="version", version="community-ai-audit 0.1.0")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output (DEBUG)")
+    parser.add_argument(
+        "--version", action="version", version="community-ai-audit 0.1.0"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Verbose output (DEBUG)"
+    )
     parser.add_argument("--config", help="Path to YAML config file")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # ── scan command ────────────────────────────────────────────
-    scan_parser = subparsers.add_parser("scan", help="Run vulnerability scanners on a model")
-    scan_parser.add_argument("model", help="Model identifier (local path, HF repo, API model name)")
+    scan_parser = subparsers.add_parser(
+        "scan", help="Run vulnerability scanners on a model"
+    )
+    scan_parser.add_argument(
+        "model", help="Model identifier (local path, HF repo, API model name)"
+    )
     scan_parser.add_argument(
         "--provider",
         "-p",
         required=True,
-        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        choices=[
+            "huggingface",
+            "openai",
+            "anthropic",
+            "aws_bedrock",
+            "local",
+            "ollama",
+        ],
         help="Model provider / adapter to use",
     )
     scan_parser.add_argument(
@@ -96,7 +111,9 @@ Environment:
         help="Save report to file path",
     )
     scan_parser.add_argument("--device", help="Device for local models (cpu/cuda/mps)")
-    scan_parser.add_argument("--api-key", help="API key for cloud providers (or set env var)")
+    scan_parser.add_argument(
+        "--api-key", help="API key for cloud providers (or set env var)"
+    )
     scan_parser.add_argument(
         "--input-shape",
         default=None,
@@ -112,6 +129,8 @@ Environment:
         default=None,
         help="Optional probe dataset file (.json/.jsonl/.csv) for scanners",
     )
+    scan_parser.add_argument("--user", help="Username for RBAC authentication")
+    scan_parser.add_argument("--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication")
 
     # ── interpret command ───────────────────────────────────
     interp_parser = subparsers.add_parser(
@@ -122,7 +141,14 @@ Environment:
         "--provider",
         "-p",
         required=True,
-        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        choices=[
+            "huggingface",
+            "openai",
+            "anthropic",
+            "aws_bedrock",
+            "local",
+            "ollama",
+        ],
         help="Model provider / adapter to use",
     )
     interp_parser.add_argument(
@@ -152,15 +178,28 @@ Environment:
     )
     interp_parser.add_argument("--device", help="Device for local models")
     interp_parser.add_argument("--api-key", help="API key for cloud providers")
+    interp_parser.add_argument("--user", help="Username for RBAC authentication")
+    interp_parser.add_argument(
+        "--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication"
+    )
 
     # ── audit command ─────────────────────────────────────────
-    audit_parser = subparsers.add_parser("audit", help="Run full audit (scan + interpret)")
+    audit_parser = subparsers.add_parser(
+        "audit", help="Run full audit (scan + interpret)"
+    )
     audit_parser.add_argument("model", help="Model identifier")
     audit_parser.add_argument(
         "--provider",
         "-p",
         required=True,
-        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        choices=[
+            "huggingface",
+            "openai",
+            "anthropic",
+            "aws_bedrock",
+            "local",
+            "ollama",
+        ],
         help="Model provider / adapter to use",
     )
     audit_parser.add_argument(
@@ -210,6 +249,10 @@ Environment:
     )
     audit_parser.add_argument("--device", help="Device for local models")
     audit_parser.add_argument("--api-key", help="API key for cloud providers")
+    audit_parser.add_argument("--user", help="Username for RBAC authentication")
+    audit_parser.add_argument(
+        "--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication"
+    )
     audit_parser.add_argument(
         "--input-shape",
         default=None,
@@ -233,6 +276,60 @@ Environment:
     disco_parser.add_argument(
         "--format", choices=["json", "table"], default="table", help="Output style"
     )
+
+    # ── schedule command ──────────────────────────────────────
+    sched_parser = subparsers.add_parser(
+        "schedule", help="Manage recurring audit schedules"
+    )
+    sched_sub = sched_parser.add_subparsers(
+        dest="schedule_command", help="Schedule actions"
+    )
+
+    sched_add = sched_sub.add_parser("add", help="Add a new schedule")
+    sched_add.add_argument("name", help="Schedule name")
+    sched_add.add_argument("model", help="Model identifier")
+    sched_add.add_argument("--provider", "-p", required=True, help="Model provider")
+    sched_add.add_argument(
+        "--cron", required=True, help="Cron expression (5-field, e.g. '0 0 * * *')"
+    )
+    sched_add.add_argument(
+        "--scanners", "-s", nargs="+", default=None, help="Scanners to run"
+    )
+    sched_add.add_argument(
+        "--interpreters", "-i", nargs="+", default=None, help="Interpreters to run"
+    )
+    sched_add.add_argument(
+        "--connectors", "-c", nargs="+", default=None, help="Connectors to push to"
+    )
+    sched_add.add_argument(
+        "--profile",
+        default="standard",
+        choices=["quick", "standard", "deep", "custom"],
+        help="Run profile",
+    )
+    sched_add.add_argument(
+        "--output",
+        choices=["markdown", "json", "html"],
+        default="markdown",
+        help="Report output format",
+    )
+    sched_add.add_argument(
+        "--save-dir", default="./output", help="Directory to save reports"
+    )
+
+    sched_sub.add_parser("list", help="List all schedules")
+    sched_remove = sched_sub.add_parser("remove", help="Remove a schedule")
+    sched_remove.add_argument("name", help="Schedule name to remove")
+
+    sched_run = sched_sub.add_parser("run", help="Execute due schedules now")
+    sched_run.add_argument(
+        "--name", default=None, help="Run a specific schedule by name"
+    )
+
+    # ── RBAC global flags ─────────────────────────────────────
+    for sub in (sched_parser,):
+        sub.add_argument("--user", help="Username for RBAC authentication")
+        sub.add_argument("--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication")
 
     return parser
 
@@ -276,6 +373,110 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "audit":
         return _cmd_audit(engine, args)
 
+    if args.command == "schedule":
+        return _cmd_schedule(engine, args)
+
+    return 0
+
+
+def _rbac_check(args) -> None:
+    """Authenticate and authorize the current user if RBAC is configured."""
+    user = getattr(args, "user", None)
+    api_key = getattr(args, "api_key", None) or getattr(args, "rbac_api_key", None)
+    if not user:
+        return  # RBAC not enforced unless --user is provided
+    from community_ai_audit.core.rbac import AccessControl, RBACConfig
+
+    rbac_config = RBACConfig()
+    ac = AccessControl(rbac_config)
+    if api_key and not ac.authenticate(user, api_key):
+        raise PermissionError(f"Authentication failed for user '{user}'")
+    if not ac.authenticate(user, None):
+        raise PermissionError(f"User '{user}' not found or disabled")
+
+
+def _cmd_schedule(engine, args) -> int:
+    """Manage and run recurring audit schedules."""
+    from community_ai_audit.core.scheduler import AuditScheduler
+
+    scheduler = AuditScheduler()
+    cmd = args.schedule_command
+
+    if cmd == "add":
+        try:
+            scheduler.add_schedule(
+                name=args.name,
+                cron=args.cron,
+                model_id=args.model,
+                provider=args.provider,
+                scanners=args.scanners,
+                interpreters=args.interpreters,
+                connectors=args.connectors,
+                profile=args.profile,
+                output_format=args.output,
+            )
+            print(f"Schedule '{args.name}' added (cron: {args.cron})")
+        except Exception as e:
+            print(f"Failed to add schedule: {e}")
+            return 1
+
+    elif cmd == "list":
+        schedules = scheduler.list_schedules()
+        if not schedules:
+            print("No schedules configured.")
+        else:
+            for s in schedules:
+                next_run = scheduler._get_next_run(s.get("cron", ""))
+                print(
+                    f"  {s['name']:20s} | cron: {s.get('cron', ''):15s} | "
+                    f"model: {s.get('model_id', ''):30s} | "
+                    f"next: {next_run or 'N/A'}"
+                )
+                print(
+                    f"  {'':20s} | scanners: {', '.join(s.get('scanners', [])) or '(all)'}"
+                )
+
+    elif cmd == "remove":
+        try:
+            scheduler.remove_schedule(args.name)
+            print(f"Schedule '{args.name}' removed.")
+        except KeyError:
+            print(f"Schedule '{args.name}' not found.")
+            return 1
+
+    elif cmd == "run":
+        if args.name:
+            all_schedules = scheduler.list_schedules()
+            found = [s for s in all_schedules if s["name"] == args.name]
+            if not found:
+                print(f"Schedule '{args.name}' not found.")
+                return 1
+            schedules_to_run = [
+                (found[0], scheduler._get_next_run(found[0].get("cron", "")))
+            ]
+        else:
+            schedules_to_run = scheduler.get_due_schedules()
+
+        if not schedules_to_run:
+            print("No schedules due.")
+            return 0
+
+        for sched, _ in schedules_to_run:
+            print(f"Running schedule '{sched['name']}'...")
+            try:
+                results = scheduler.run_due(engine)
+                if results:
+                    for r in results:
+                        print(f"  {r.get('name', '?'):20s} -> {r.get('status', '?')}")
+                print(f"Schedule '{sched['name']}' completed.")
+            except Exception as e:
+                print(f"Schedule '{sched['name']}' failed: {e}")
+                return 1
+
+    else:
+        print("Unknown schedule command. Use: add, list, remove, run")
+        return 1
+
     return 0
 
 
@@ -304,20 +505,32 @@ def _cmd_scan(engine, args) -> int:
     import json as _json
     from community_ai_audit.reporting import ReportGenerator
 
-    adapter_config = _build_adapter_config(args)
+    try:
+        _rbac_check(args)
+    except PermissionError as e:
+        print(f"Access denied: {e}")
+        return 1
+
+    adapter_config = _build_adapter_config(args, engine.config)
     model_id = args.model
 
     print(f"Loading model: {model_id} (provider: {args.provider}) ...")
     engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
     print("Model loaded. Running scanners...")
 
-    selected_scanners, _selected_interpreters, profile_overrides = _apply_profile_defaults(
-        profile=getattr(args, "profile", "standard"),
-        scanners=args.scanners,
-        interpreters=None,
+    selected_scanners, _selected_interpreters, profile_overrides = (
+        _apply_profile_defaults(
+            profile=getattr(args, "profile", "standard"),
+            scanners=args.scanners,
+            interpreters=None,
+        )
     )
-    scanner_overrides = _merge_overrides(profile_overrides, _build_scanner_overrides(args))
-    results = engine.scan(scanners=selected_scanners, config_overrides=scanner_overrides)
+    scanner_overrides = _merge_overrides(
+        profile_overrides, _build_scanner_overrides(args)
+    )
+    results = engine.scan(
+        scanners=selected_scanners, config_overrides=scanner_overrides
+    )
 
     # Generate and print / save report
     reporter = ReportGenerator()
@@ -333,13 +546,18 @@ def _cmd_scan(engine, args) -> int:
 
     # Push to SIEM if requested
     if args.connectors:
-        connector_results = engine._push_to_connectors(results, [], args.connectors)
+        connector_configs = _build_connector_configs(args, engine.config)
+        connector_results = engine._push_to_connectors(
+            results, [], args.connectors, connector_configs
+        )
         for name, status in connector_results.items():
             print(f"Connector {name}: {status}")
 
     # Exit with non-zero if critical/high/medium findings
     highest = max(
-        (r.overall_severity for r in results), key=lambda s: _severity_rank(s), default=None
+        (r.overall_severity for r in results),
+        key=lambda s: _severity_rank(s),
+        default=None,
     )
     if highest is None:
         return 0
@@ -355,14 +573,22 @@ def _cmd_interpret(engine, args) -> int:
     import json as _json
     from community_ai_audit.reporting import ReportGenerator
 
-    adapter_config = _build_adapter_config(args)
+    try:
+        _rbac_check(args)
+    except PermissionError as e:
+        print(f"Access denied: {e}")
+        return 1
+
+    adapter_config = _build_adapter_config(args, engine.config)
     model_id = args.model
 
     print(f"Loading model: {model_id} (provider: {args.provider}) ...")
     engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
     print("Model loaded. Running interpreters...")
 
-    raw_input = args.input_data or "Explain this model's decision for a neutral statement."
+    raw_input = (
+        args.input_data or "Explain this model's decision for a neutral statement."
+    )
     inputs = _parse_input_value(raw_input)
     results = engine.interpret(
         inputs=inputs,
@@ -388,28 +614,40 @@ def _cmd_audit(engine, args) -> int:
     import json as _json
     from community_ai_audit.reporting import ReportGenerator
 
-    adapter_config = _build_adapter_config(args)
+    try:
+        _rbac_check(args)
+    except PermissionError as e:
+        print(f"Access denied: {e}")
+        return 1
+
+    adapter_config = _build_adapter_config(args, engine.config)
     model_id = args.model
 
     print(f"Loading model: {model_id} (provider: {args.provider}) ...")
     engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
     print("Model loaded. Running full audit...")
 
-    selected_scanners, selected_interpreters, profile_overrides = _apply_profile_defaults(
-        profile=getattr(args, "profile", "standard"),
-        scanners=args.scanners,
-        interpreters=args.interpreters,
+    selected_scanners, selected_interpreters, profile_overrides = (
+        _apply_profile_defaults(
+            profile=getattr(args, "profile", "standard"),
+            scanners=args.scanners,
+            interpreters=args.interpreters,
+        )
     )
 
     parsed_inputs = _parse_input_value(args.input_data) if args.input_data else None
-    scanner_overrides = _merge_overrides(profile_overrides, _build_scanner_overrides(args))
+    scanner_overrides = _merge_overrides(
+        profile_overrides, _build_scanner_overrides(args)
+    )
     run_metadata = _build_run_metadata(args, scanner_overrides)
+    connector_configs = _build_connector_configs(args, engine.config)
 
     session = engine.audit(
         scanners=selected_scanners,
         interpreters=selected_interpreters,
         inputs=parsed_inputs if selected_interpreters else None,
         connectors=args.connectors,
+        connector_configs=connector_configs,
         config_overrides=scanner_overrides,
         run_metadata=run_metadata,
     )
@@ -439,13 +677,20 @@ def _cmd_audit(engine, args) -> int:
     return 0
 
 
-def _build_adapter_config(args) -> dict:
-    """Build adapter config from CLI args + environment."""
+def _build_adapter_config(args, engine_config: dict | None = None) -> dict:
+    """Build adapter config from CLI args + environment + config file."""
     config = {}
     if hasattr(args, "device") and args.device:
         config["device"] = args.device
     if hasattr(args, "api_key") and args.api_key:
         config["api_key"] = args.api_key
+
+    # Also pull adapter-specific config from config file
+    if engine_config and "adapters" in engine_config:
+        provider = getattr(args, "provider", None)
+        if provider and provider in engine_config["adapters"]:
+            config.update(engine_config["adapters"][provider])
+
     return config
 
 
@@ -496,6 +741,18 @@ def _build_scanner_overrides(args) -> dict:
         overrides["backdoor"] = dict(common)
 
     return overrides
+
+
+def _build_connector_configs(args, engine_config: dict | None) -> dict:
+    """Build connector configs from CLI args + environment + config file."""
+    configs = {}
+
+    # Pull connector-specific config from config file
+    if engine_config and "connectors" in engine_config:
+        for name, config in engine_config["connectors"].items():
+            configs[name] = config
+
+    return configs
 
 
 def _load_probe_file(path: str):
@@ -588,7 +845,9 @@ def _apply_profile_defaults(profile: str, scanners=None, interpreters=None):
     }
 
     selected_scanners = (
-        scanners if scanners else default_scanners.get(profile, default_scanners["standard"])
+        scanners
+        if scanners
+        else default_scanners.get(profile, default_scanners["standard"])
     )
     selected_interpreters = (
         interpreters
