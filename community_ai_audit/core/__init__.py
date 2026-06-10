@@ -25,6 +25,8 @@ from .audit import AuditEngine
 
 from .scheduler import AuditScheduler
 from .rbac import RBACConfig, AccessControl, PermissionError
+from .agent_session import AgentAuditSession, TraceStep, StepType
+from .tracing import ExecutionTrace, TraceStep as TracingTraceStep, Replayer, TraceExporter
 
 __all__ = [
     # Interfaces
@@ -47,4 +49,12 @@ __all__ = [
     "RBACConfig",
     "AccessControl",
     "PermissionError",
+    # Agent session
+    "AgentAuditSession",
+    "TraceStep",
+    "StepType",
+    # Tracing
+    "ExecutionTrace",
+    "Replayer",
+    "TraceExporter",
 ]

@@ -1,207 +1,282 @@
-# Community AI Security Audit Tool
+<div align="center">
+  <h1>🛡️ Community AI Audit</h1>
+  <p><strong>Enterprise-Grade AI Security Auditing · Open Source · Community-Driven</strong></p>
+  <p>
+    <a href="https://pypi.org/project/community-ai-audit/"><img src="https://img.shields.io/pypi/pyversions/community-ai-audit.svg" alt="Python versions"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/anomalyco/community-ai-audit.svg" alt="License"></a>
+    <a href="https://pypi.org/project/community-ai-audit/"><img src="https://img.shields.io/pypi/v/community-ai-audit.svg" alt="PyPI"></a>
+    <a href="https://github.com/anomalyco/community-ai-audit/actions"><img src="https://img.shields.io/github/actions/workflow/status/anomalyco/community-ai-audit/ci.yml?branch=main" alt="CI"></a>
+    <a href="https://codecov.io/gh/anomalyco/community-ai-audit"><img src="https://img.shields.io/codecov/c/github/anomalyco/community-ai-audit" alt="Coverage"></a>
+  </p>
+  <br>
+</div>
 
-[![PyPI version](https://img.shields.io/pypi/v/community-ai-audit.svg)](https://pypi.org/project/community-ai-audit/)
-[![Python versions](https://img.shields.io/pypi/pyversions/community-ai-audit.svg)](https://pypi.org/project/community-ai-audit/)
-[![License](https://img.shields.io/github/license/anomalyco/community-ai-audit.svg)](LICENSE)
+**Community AI Audit** is a unified security auditing platform for AI/ML models. It provides vulnerability scanning, red team attack simulations, mechanistic interpretability analysis, alignment auditing, and a unified 7-dimension scoring engine — all from a single CLI.
 
-A plug-and-play, community-driven AI security audit framework. Scan any model (local, HF Hub, OpenAI, Anthropic, AWS Bedrock, Ollama) for vulnerabilities, interpret decisions, and push findings to your SIEM (Splunk, Elastic, Datadog, Sentinel).
+---
 
-## Features
+## 🔍 What You Can Do
 
-- **Model Adapters**: HuggingFace, OpenAI, Anthropic, AWS Bedrock, Local (PyTorch/ONNX/SafeTensors), Ollama
-- **Vulnerability Scanners**: Backdoor/Trojan detection (activation clustering), Adversarial robustness (FGSM/PGD)
-- **Interpretability**: Integrated Gradients, LIME
-- **SIEM Connectors**: Splunk HEC, Elastic/Elasticsearch, Datadog Logs, Microsoft Sentinel
-- **Reporting**: Markdown, JSON, HTML
-- **CLI**: `discover`, `scan`, `interpret`, `audit` commands
-- **Extensible**: Plugin system for custom adapters, scanners, interpreters, connectors
+| Use Case | What It Solves |
+|----------|----------------|
+| **🛡️ Vulnerability Scanning** | Detect adversarial susceptibility, backdoors, prompt injection, data extraction, toxicity, watermark detectability |
+| **⚔️ Red Team Testing** | Simulate jailbreak, multi-turn, obfuscation, roleplay, and tool exploitation attacks |
+| **🧠 Mechanistic Interpretability** | Probe representations, attention patterns, feature attribution, and layer behavior |
+| **🎯 Alignment Auditing** | Measure sycophancy, preference drift, value alignment, and objective robustness |
+| **📊 Unified Scoring** | Aggregate 7 security dimensions into a single risk score with configurable weights |
+| **📈 Trend Tracking** | Monitor score evolution across time and detect regressions |
+| **📡 SIEM Integration** | Push findings to Splunk, Elastic, Datadog, Sentinel, and 9+ other platforms |
 
-## Quickstart
+---
+
+## ⚡ Quickstart
 
 ```bash
-# Install
-pip install community-ai-audit[hf]  # with HuggingFace support
+pip install community-ai-audit
 
 # Discover available plugins
 community-ai-audit discover
 
-# Scan a HuggingFace model
+# Scan a model
 community-ai-audit scan distilgpt2 --provider huggingface --profile quick
 
-# Full audit (scan + interpret) with SIEM push
+# Full audit with SIEM push
 community-ai-audit audit meta-llama/Llama-3-8B-Instruct \
-  --provider huggingface \
-  --profile standard \
-  --scanners backdoor adversarial \
-  --interpreters integrated-gradients lime \
-  --connectors splunk elastic \
-  --config config/my_connectors.yaml
+  --provider huggingface --profile standard \
+  --connectors splunk elastic
+
+# Red team attack simulation
+community-ai-audit redteam gpt-4 --provider openai
+
+# Alignment auditing
+community-ai-audit alignment claude-3-opus --provider anthropic
+
+# Compute unified 7-dimension score
+community-ai-audit audit-score \
+  --scan scan_results.json \
+  --redteam redteam_results.json \
+  --alignment alignment_results.json
 ```
 
-## Architecture
+---
+
+## 🧩 Capabilities
+
+### Model Support — 9 Adapters
+
+| Provider | Adapter | Auto-Detect |
+|----------|---------|-------------|
+| HuggingFace | `huggingface` | `*/*` or `llama*` |
+| OpenAI | `openai` | `gpt-*`, `o1*`, `o3*` |
+| Anthropic | `anthropic` | `claude-*` |
+| AWS Bedrock | `aws_bedrock` | — |
+| Local (PyTorch/TF/ONNX) | `local` | Path/URI/`*.pt`/`*.onnx` |
+| Ollama | `ollama` | `name:tag` (no `/`) |
+| Replicate | `replicate` | — |
+| VertexAI | `vertexai` | — |
+| Groq | `groq` | — |
+
+### Security Scanning — 7 Scanners
+
+| Scanner | What It Detects | Technique |
+|---------|----------------|-----------|
+| `adversarial` | FGSM/PGD perturbation susceptibility | Gradient-based attacks |
+| `backdoor` | Triggered malicious behavior | Activation clustering |
+| `prompt_injection` | Injection vulnerabilities | Heuristic pattern matching |
+| `data_extraction` | Training data / secret extraction | Response entropy analysis |
+| `toxicity` | Toxic / biased outputs | Keyword + classifier scoring |
+| `watermark` | Watermark detectability | Statistical pattern analysis |
+| `dsl` | User-defined rules | YAML rule engine |
+
+### Red Team — 5 Attack Scanners
+
+| Scanner | Attack Surface | Evaluation |
+|---------|---------------|------------|
+| `jailbreak` | 20 known jailbreak prompts | Refusal vs success pattern matching |
+| `multi_turn_attack` | 10 two-turn conversation attacks | Suspicious-keyword breach detection |
+| `prompt_obfuscation` | 10 obfuscated variants (base64, leetspeak) | Harmful-keyword matching |
+| `roleplay_attack` | 15 roleplay scenarios (DAN, character shells) | Refusal vs engagement patterns |
+| `tool_exploitation` | 10 tool-misuse prompts | Exploit-keyword detection |
+
+### Mechanistic Interpretability — 5 Analyzers
+
+| Analyzer | Probes | What It Measures |
+|----------|--------|------------------|
+| `activation_probes` | 5 probe inputs | Response quality, SNR estimate |
+| `representation_analysis` | 8 probes, 4 pairs | Jaccard differentiation, vocabulary size |
+| `attention_head_analysis` | 5 syntactic probes | Attention complexity estimate |
+| `feature_attribution` | 5 sentiment inputs | Word-level importance, sentiment match |
+| `layer_analysis` | 3 open-ended probes | Depth estimation, complexity distribution |
+
+### Alignment Auditing — 4 Scanners
+
+| Scanner | Prompts | What It Detects |
+|---------|---------|-----------------|
+| `sycophancy` | 5 agree + 5 disagree | Stance-sycophancy (rubber-stamping) |
+| `preference_drift` | 5 cores × 3 variants | Sentiment inconsistency across paraphrases |
+| `value_alignment` | 8 probes across 6 values | Refusal of harmful, encouragement of prosocial |
+| `objective_robustness` | 3 objectives × 4 prompts | Refusal-pattern violations per objective |
+
+### Scoring — 7 Dimensions
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      AuditEngine                                │
-│  (orchestrates: load → scan → interpret → report → push)       │
-└─────────────────────────────────────────────────────────────────┘
-         │                    │                    │
-         ▼                    ▼                    ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│   Adapters      │ │   Scanners      │ │  Interpreters   │
-│  (load_model)   │ │  (scan model)   │ │ (explain model) │
-├─────────────────┤ ├─────────────────┤ ├─────────────────┤
-│ • HuggingFace   │ │ • Backdoor      │ │ • Integrated    │
-│ • OpenAI        │ │ • Adversarial   │ │   Gradients     │
-│ • Anthropic     │ │ • (custom)      │ │ • LIME          │
-│ • AWS Bedrock   │ │                 │ │ • (custom)      │
-│ • Local         │ │                 │ │                 │
-│ • Ollama        │ │                 │ │                 │
-└─────────────────┘ └─────────────────┘ └─────────────────┘
-         │                    │                    │
-         └────────────────────┼────────────────────┘
-                              ▼
-                   ┌─────────────────────┐
-                   │   Reporters         │
-                   │ (markdown, json,    │
-                   │  html)              │
-                   └─────────────────────┘
-                              │
-                              ▼
-                   ┌─────────────────────┐
-                   │  SIEM Connectors    │
-                   │ (push findings)     │
-                   ├─────────────────────┤
-                   │ • Splunk HEC        │
-                   │ • Elastic           │
-                   │ • Datadog           │
-                   │ • Sentinel          │
-                   │ • (custom)          │
-                   └─────────────────────┘
+┌─────────────────────────────────────────────┐
+│           Unified Audit Score                │
+├──────────────┬──────────────────────────────┤
+│ Security     │   ████████████████░░ 82.0     │
+│ Reliability  │   ██████████████░░░░ 72.0     │
+│ Compliance   │   ██████████████████ 90.0     │
+│ Agent Risk   │   ████████████████░░ 80.0     │
+│ Alignment    │   ████████████████░░ 85.0     │
+│ Red Team     │   ████████████░░░░░░ 60.0     │
+│ Interpretability │ ████████████░░░░░░ 65.0   │
+├──────────────┴──────────────────────────────┤
+│ Overall: 77.6 (Good)                        │
+│ Weights: security=0.2, reliability=0.1, ... │
+└─────────────────────────────────────────────┘
 ```
 
-## Provider Matrix
+### Executive Dashboard
 
-| Provider | Text | Image | Multimodal | Embedding | Auth |
-|----------|------|-------|------------|-----------|------|
-| HuggingFace | ✅ | ✅ | ✅ | ✅ | HF_TOKEN |
-| OpenAI | ✅ | ✅ | ✅ | ✅ | OPENAI_API_KEY |
-| Anthropic | ✅ | ❌ | ❌ | ❌ | ANTHROPIC_API_KEY |
-| AWS Bedrock | ✅ | ✅ | ✅ | ✅ | AWS creds |
-| Local (PyTorch) | ✅ | ✅ | ✅ | ✅ | None |
-| Ollama | ✅ | ❌ | ❌ | ❌ | Local server |
+Real-time HTML dashboard served via `dashboard_v2/server.py`:
+- 7 color-coded score cards (critical → excellent)
+- JSON overlay endpoint for programmatic updates
+- Configurable refresh interval
+- Responsive CSS grid layout
 
-## Installation
+---
+
+## 🔧 Installation
 
 ```bash
-# Core only
+# Core (numpy, pyyaml, scikit-learn)
 pip install community-ai-audit
 
-# With HuggingFace transformers
-pip install community-ai-audit[hf]
+# Optional extras
+pip install community-ai-audit[torch]      # Torch-based scanners
+pip install community-ai-audit[scheduler]  # Cron scheduling
+pip install community-ai-audit[hf]         # HuggingFace transformers
+pip install community-ai-audit[tf]         # TensorFlow
 
-# With TensorFlow support
-pip install community-ai-audit[tf]
-
-# All optional dependencies
-pip install community-ai-audit[all]
-
-# Development install
+# Development
 git clone https://github.com/anomalyco/community-ai-audit
 cd community-ai-audit
 pip install -e .[dev]
 ```
 
-## Configuration
+---
 
-Create `config/my_config.yaml`:
+## 💻 CLI Reference
+
+| Command | Description |
+|---------|-------------|
+| `scan <model> -p <provider>` | Run vulnerability scanners |
+| `interpret <model> -p <provider>` | Run interpretability methods |
+| `audit <model> -p <provider>` | Full pipeline: scan + interpret + report + push |
+| `redteam <model> -p <provider>` | Red team attack simulations |
+| `mechinterp <model> -p <provider>` | Mechanistic interpretability analysis |
+| `alignment <model> -p <provider>` | Alignment auditing |
+| `audit-score` | Compute unified 7-dimension score |
+| `discover` | List all discovered plugins |
+| `schedule add/list/remove/run` | Manage recurring audits |
+
+Exit codes: `0` = ok, `1` = HIGH/MEDIUM findings, `2` = CRITICAL findings.
+
+---
+
+## 📚 Documentation
+
+| Resource | Description |
+|----------|-------------|
+| [Architecture & Reference](docs/ARCHITECTURE.md) | Full component docs, API, CLI, config, deployment |
+| [Plugin Guide](docs/PLUGIN_GUIDE.md) | Writing custom adapters, scanners, interpreters |
+| [Scanner Guide](docs/SCANNER_GUIDE.md) | Details on each vulnerability scanner |
+| [Adapter Guide](docs/ADAPTER_GUIDE.md) | Details on each model adapter |
+| [Connector Guide](docs/CONNECTOR_GUIDE.md) | SIEM and storage connector details |
+| [Red Team](docs/ARCHITECTURE.md#pluginsredteam--red-team-testing-5-scanners) | Attack framework and scanner reference |
+| [Mech Interp](docs/ARCHITECTURE.md#pluginsmechinterp--mechanistic-interpretability-5-analyzers) | Analyzer reference and methodology |
+| [Alignment](docs/ARCHITECTURE.md#pluginsalignment--alignment-auditing-4-scanners) | Alignment scanner reference |
+| [Scoring Engine](docs/ARCHITECTURE.md#corescoring--unified-scoring-engine) | 7-dimension scoring details |
+| [Dashboard](docs/ARCHITECTURE.md#dashboard_v2--executive-dashboard) | Executive dashboard server |
+
+---
+
+## 📋 Configuration
 
 ```yaml
-model:
-  device: auto
-  dtype: auto
+cache:
+  enabled: true
+  max_size: 1000
+  ttl_seconds: 3600
 
 scanners:
-  backdoor:
-    enabled: true
-    num_clusters: 5
-    activation_threshold: 0.85
   adversarial:
-    enabled: true
-    epsilon: 0.1
+    num_samples: 32
     pgd_steps: 10
+  backdoor:
+    sample_size: 128
 
 connectors:
   splunk:
-    hec_url: https://splunk.example.com:8088
-    hec_token: ${SPLUNK_HEC_TOKEN}
-    index: security
+    url: "${SPLUNK_URL}"
+    token: "${SPLUNK_TOKEN}"
   elastic:
-    url: https://es.example.com:9243
-    api_key: ${ELASTICSEARCH_API_KEY}
+    url: "${ELASTIC_URL}"
+    api_key: "${ELASTIC_API_KEY}"
 ```
 
-Use with `--config config/my_config.yaml`.
+Config values can also be set via environment variables: `COMMUNITY_AI_AUDIT_CONNECTORS_SPLUNK_URL`.
 
-## CLI Commands
+Precedence (lowest → highest): `default.yaml` → `--config PATH` → env vars → CLI args.
 
-### Discover
+### API Key Safety
+
+1. `COMMUNITY_AI_AUDIT_API_KEY` env var **(recommended)**
+2. `--api-key-file PATH` (reads from file, not visible in ps)
+3. `--api-key VALUE` (⚠️ visible in process list)
+
+---
+
+## 🚀 Deployment
+
 ```bash
-community-ai-audit discover
-community-ai-audit discover --format json
+# Docker
+docker build -t community-ai-audit .
+docker run -v $(pwd)/config:/app/config community-ai-audit scan model.pt -p local
+
+# Docker Compose
+docker-compose up -d
+
+# Helm (Kubernetes)
+helm install community-ai-audit ./charts/community-ai-audit
+
+# Air-Gapped
+./scripts/airgap-bundle.sh   # On connected machine
+./scripts/offline-install.sh  # On air-gapped machine
 ```
 
-### Scan
+---
+
+## 🧪 Testing
+
 ```bash
-# Quick scan with defaults
-community-ai-audit scan distilgpt2 --provider huggingface
+# All tests (no torch/croniter needed)
+pytest tests/
 
-# Custom profile and scanners
-community-ai-audit scan model.pt --provider local \
-  --profile deep \
-  --scanners backdoor adversarial \
-  --input-shape '[32, 768]' \
-  --output markdown --save report.md
+# With coverage
+pytest --cov=community_ai_audit tests/
 ```
 
-### Interpret
-```bash
-community-ai-audit interpret distilgpt2 --provider huggingface \
-  --interpreters integrated-gradients lime \
-  --input "The model should classify this as positive."
-```
+**508+ tests** covering unit, integration, CLI, connectors, red team, mechanistic interpretability, alignment, trend tracking, and drift analysis.
 
-### Audit (Full Pipeline)
-```bash
-community-ai-audit audit meta-llama/Llama-3-8B-Instruct \
-  --provider huggingface \
-  --profile standard \
-  --scanners backdoor adversarial \
-  --interpreters integrated-gradients \
-  --connectors splunk elastic \
-  --config config/my_connectors.yaml
-```
+---
 
-## Extending
+## 🤝 Contributing
 
-See [Plugin Guide](docs/PLUGIN_GUIDE.md) for:
-- [Adding a Model Adapter](docs/PLUGIN_GUIDE.md#adding-a-model-adapter)
-- [Adding a SIEM Connector](docs/PLUGIN_GUIDE.md#adding-a-siem-connector)
-- [Adding a Scanner](docs/PLUGIN_GUIDE.md#adding-a-scanner)
-- [Adding an Interpreter](docs/PLUGIN_GUIDE.md#adding-an-interpreter)
+We welcome contributions! See our [Plugin Guide](docs/PLUGIN_GUIDE.md) to get started writing custom scanners, adapters, or connectors.
 
-## Known Limitations
+---
 
-- Scanners require white-box access (gradients/activations) — work best with `provider=local` or HuggingFace local models
-- Text model adversarial attacks need embedding-space perturbations (token IDs are discrete)
-- Integrated Gradients on text requires access to embedding layer
-- Large model audits can be slow — batch mode coming in v0.2.0
-- TensorFlow support planned
+## 📄 License
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [Plugin Guide](docs/PLUGIN_GUIDE.md).
-
-## License
-
-MIT License — see [LICENSE](LICENSE).
+[MIT](LICENSE) © Anomaly Co.

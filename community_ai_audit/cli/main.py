@@ -7,6 +7,7 @@ import argparse
 import sys
 import json
 import os
+import time
 import logging
 from typing import Any, List, Optional
 
@@ -324,11 +325,339 @@ Environment:
     sched_run = sched_sub.add_parser("run", help="Execute due schedules now")
     sched_run.add_argument("--name", default=None, help="Run a specific schedule by name")
 
+    # ── eval command ──────────────────────────────────────────
+    eval_parser = subparsers.add_parser(
+        "eval", help="Run a full evaluation (scan + policy + reliability + scoring)"
+    )
+    eval_parser.add_argument("model", help="Model identifier")
+    eval_parser.add_argument(
+        "--provider",
+        "-p",
+        required=True,
+        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        help="Model provider / adapter to use",
+    )
+    eval_parser.add_argument(
+        "--scanners",
+        "-s",
+        nargs="+",
+        default=None,
+        help="Scanner plugins to run (default: all)",
+    )
+    eval_parser.add_argument(
+        "--policies",
+        nargs="+",
+        default=None,
+        help="Policy checks to run (default: all)",
+    )
+    eval_parser.add_argument(
+        "--reliability",
+        nargs="+",
+        default=None,
+        help="Reliability scanners to run (default: none)",
+    )
+    eval_parser.add_argument(
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "markdown"],
+        help="Output format",
+    )
+    eval_parser.add_argument(
+        "--save",
+        type=str,
+        default=None,
+        help="Save report to file path",
+    )
+    eval_parser.add_argument("--device", help="Device for local models")
+    eval_parser.add_argument(
+        "--api-key",
+        help="API key (visible in process list; prefer env var or --api-key-file)",
+    )
+    eval_parser.add_argument(
+        "--api-key-file",
+        help="Read API key from file (safer than --api-key)",
+    )
+    eval_parser.add_argument(
+        "--probe-file",
+        default=None,
+        help="Optional probe dataset file (.json/.jsonl/.csv)",
+    )
+    eval_parser.add_argument(
+        "--scoring-weight",
+        nargs=2,
+        action="append",
+        metavar=("DIMENSION", "VALUE"),
+        default=[],
+        help="Scoring weight override, e.g. --scoring-weight security 0.5",
+    )
+
+    # ── benchmark command ─────────────────────────────────────
+    bench_parser = subparsers.add_parser("benchmark", help="Run model against a benchmark dataset")
+    bench_parser.add_argument("model", help="Model identifier")
+    bench_parser.add_argument(
+        "--provider",
+        "-p",
+        required=True,
+        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        help="Model provider / adapter to use",
+    )
+    bench_parser.add_argument(
+        "--dataset",
+        "-d",
+        required=True,
+        help="Dataset name (built-in: safety, factuality) or path to custom dataset file",
+    )
+    bench_parser.add_argument(
+        "--dataset-version",
+        default="latest",
+        help="Dataset version string (default: latest)",
+    )
+    bench_parser.add_argument(
+        "--sample-limit",
+        type=int,
+        default=None,
+        help="Limit number of test samples",
+    )
+    bench_parser.add_argument(
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
+        help="Output format",
+    )
+    bench_parser.add_argument("--device", help="Device for local models")
+    bench_parser.add_argument("--api-key", help="API key for cloud providers")
+    bench_parser.add_argument("--api-key-file", help="Read API key from file")
+
+    # ── regression command ────────────────────────────────────
+    reg_parser = subparsers.add_parser(
+        "regression", help="Compare two benchmark runs for regression"
+    )
+    reg_parser.add_argument("baseline_id", help="Run ID or path to baseline result JSON")
+    reg_parser.add_argument("current_id", help="Run ID or path to current result JSON")
+    reg_parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.05,
+        help="Minimum delta to flag as regression (default: 0.05)",
+    )
+    reg_parser.add_argument(
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
+        help="Output format",
+    )
+
+    # ── datasets command ──────────────────────────────────────
+    datasets_parser = subparsers.add_parser("datasets", help="List available benchmark datasets")
+    datasets_parser.add_argument(
+        "--format",
+        choices=["json", "table"],
+        default="table",
+        help="Output style",
+    )
+
+    # ── agent-audit command ──────────────────────────────────
+    agent_audit_parser = subparsers.add_parser(
+        "agent-audit", help="Run agent audit scanners on a session"
+    )
+    agent_audit_parser.add_argument(
+        "--session-file",
+        "-f",
+        help="Path to agent session JSON file",
+    )
+    agent_audit_parser.add_argument(
+        "--agent-id",
+        default="unknown-agent",
+        help="Agent identifier",
+    )
+    agent_audit_parser.add_argument(
+        "--scanners",
+        nargs="+",
+        default=None,
+        help="Agent scanners to run (default: all)",
+    )
+    agent_audit_parser.add_argument(
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
+        help="Output format",
+    )
+    agent_audit_parser.add_argument(
+        "--save",
+        type=str,
+        default=None,
+        help="Save results to file path",
+    )
+
+    # ── agent-trace command ──────────────────────────────────
+    agent_trace_parser = subparsers.add_parser(
+        "agent-trace", help="Manage and export agent execution traces"
+    )
+    agent_trace_sub = agent_trace_parser.add_subparsers(
+        dest="trace_command", help="Trace actions"
+    )
+    trace_replay = agent_trace_sub.add_parser("replay", help="Replay a trace from a session file")
+    trace_replay.add_argument("session_file", help="Path to session JSON file")
+    trace_replay.add_argument("--step", type=int, default=None, help="Replay a single step number")
+    trace_export = agent_trace_sub.add_parser("export", help="Export a trace to a file")
+    trace_export.add_argument("session_file", help="Path to session JSON file")
+    trace_export.add_argument(
+        "--format", choices=["json", "jsonl", "html", "markdown"], default="json", help="Export format"
+    )
+    trace_export.add_argument(
+        "--output", "-o", default=None, help="Output file path (default: based on session ID)"
+    )
+
+    # ── agent-dashboard command ──────────────────────────────
+    dash_parser = subparsers.add_parser(
+        "agent-dashboard", help="Generate agent monitoring dashboard"
+    )
+    dash_parser.add_argument(
+        "--output", "-o", default="dashboard.html", help="Output HTML file path"
+    )
+    dash_parser.add_argument(
+        "--format", choices=["html", "json"], default="html", help="Dashboard output format"
+    )
+    dash_parser.add_argument(
+        "--history-limit", type=int, default=100, help="Number of audit records to include"
+    )
+
+    # ── agent-monitor command ────────────────────────────────
+    agent_monitor_parser = subparsers.add_parser(
+        "agent-monitor", help="Manage agent monitoring and alerts"
+    )
+    agent_monitor_sub = agent_monitor_parser.add_subparsers(
+        dest="monitor_command", help="Monitor actions"
+    )
+    mon_audit = agent_monitor_sub.add_parser("audit", help="Run a manual agent audit")
+    mon_audit.add_argument("agent_id", help="Agent identifier")
+    mon_audit.add_argument(
+        "--session-file", "-f", required=True, help="Path to agent session JSON file"
+    )
+    mon_audit.add_argument("--scanners", nargs="+", default=None, help="Scanners to run")
+    mon_history = agent_monitor_sub.add_parser("history", help="Show audit history")
+    mon_history.add_argument("--agent-id", default=None, help="Filter by agent ID")
+    mon_history.add_argument("--limit", type=int, default=20, help="Number of records")
+    mon_history.add_argument("--format", choices=["json", "table"], default="table")
+    mon_alerts = agent_monitor_sub.add_parser("alerts", help="Show recent alerts")
+    mon_alerts.add_argument("--limit", type=int, default=20)
+    mon_alerts.add_argument("--level", default=None, choices=["info", "warning", "critical"])
+    mon_alerts.add_argument("--clear", action="store_true", help="Clear all alerts")
+    mon_drift = agent_monitor_sub.add_parser("drift", help="Check for drift")
+    mon_drift.add_argument("--threshold", type=float, default=10.0, help="Drift threshold")
+    mon_drift.add_argument("--baseline", type=int, default=20, help="Baseline window size")
+
+    # ── redteam command ────────────────────────────────────────
+    redteam_parser = subparsers.add_parser(
+        "redteam", help="Run red team security testing against a model"
+    )
+    redteam_parser.add_argument("model", help="Model identifier")
+    redteam_parser.add_argument(
+        "--provider", "-p", required=True,
+        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        help="Model provider",
+    )
+    redteam_parser.add_argument(
+        "--scanners", nargs="+", default=None,
+        help="Red team scanners to run (default: all)",
+    )
+    redteam_parser.add_argument("--device", help="Device for local models")
+    redteam_parser.add_argument("--api-key", help="API key for cloud providers")
+    redteam_parser.add_argument("--api-key-file", help="Read API key from file")
+    redteam_parser.add_argument(
+        "--output", "-o", default="json", choices=["json", "table"],
+        help="Output format",
+    )
+
+    # ── mechinterp command ────────────────────────────────────
+    mechinterp_parser = subparsers.add_parser(
+        "mechinterp", help="Run mechanistic interpretability analysis"
+    )
+    mechinterp_parser.add_argument("model", help="Model identifier")
+    mechinterp_parser.add_argument(
+        "--provider", "-p", required=True,
+        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        help="Model provider",
+    )
+    mechinterp_parser.add_argument(
+        "--analyzers", nargs="+", default=None,
+        help="Analyzers to run (default: all)",
+    )
+    mechinterp_parser.add_argument("--device", help="Device for local models")
+    mechinterp_parser.add_argument("--api-key", help="API key for cloud providers")
+    mechinterp_parser.add_argument("--api-key-file", help="Read API key from file")
+    mechinterp_parser.add_argument(
+        "--output", "-o", default="json", choices=["json", "table"],
+        help="Output format",
+    )
+
+    # ── alignment command ─────────────────────────────────────
+    alignment_parser = subparsers.add_parser(
+        "alignment", help="Run alignment evaluation on a model"
+    )
+    alignment_parser.add_argument("model", help="Model identifier")
+    alignment_parser.add_argument(
+        "--provider", "-p", required=True,
+        choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
+        help="Model provider",
+    )
+    alignment_parser.add_argument(
+        "--scanners", nargs="+", default=None,
+        help="Alignment scanners to run (default: all)",
+    )
+    alignment_parser.add_argument("--device", help="Device for local models")
+    alignment_parser.add_argument("--api-key", help="API key for cloud providers")
+    alignment_parser.add_argument("--api-key-file", help="Read API key from file")
+    alignment_parser.add_argument(
+        "--output", "-o", default="json", choices=["json", "table"],
+        help="Output format",
+    )
+
+    # ── audit-score command ────────────────────────────────────
+    audit_score_parser = subparsers.add_parser(
+        "audit-score", help="Compute unified audit score from all results"
+    )
+    audit_score_parser.add_argument(
+        "--scan", type=str, default=None, help="Path to scan results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--policy", type=str, default=None, help="Path to policy results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--reliability", type=str, default=None, help="Path to reliability results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--agent", type=str, default=None, help="Path to agent audit results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--redteam", type=str, default=None, help="Path to red team results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--alignment", type=str, default=None, help="Path to alignment results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--mechinterp", type=str, default=None, help="Path to mechinterp results JSON"
+    )
+    audit_score_parser.add_argument(
+        "--weights", nargs=2, action="append", metavar=("DIMENSION", "VALUE"),
+        default=[], help="Weight override, e.g. --weights security 0.3",
+    )
+    audit_score_parser.add_argument(
+        "--output", "-o", default="json", choices=["json", "table"],
+        help="Output format",
+    )
+
     # ── RBAC global flags ─────────────────────────────────────
-    for sub in (sched_parser,):
+    for sub in (sched_parser, eval_parser, bench_parser):
         sub.add_argument("--user", help="Username for RBAC authentication")
         sub.add_argument(
-            "--api-key-rbac", dest="rbac_api_key", help="API key for RBAC authentication"
+            "--api-key-rbac",
+            dest="rbac_api_key",
+            help="API key for RBAC authentication",
         )
 
     return parser
@@ -375,6 +704,42 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "schedule":
         return _cmd_schedule(engine, args)
+
+    if args.command == "eval":
+        return _cmd_eval(engine, args)
+
+    if args.command == "benchmark":
+        return _cmd_benchmark(engine, args)
+
+    if args.command == "regression":
+        return _cmd_regression(args)
+
+    if args.command == "datasets":
+        return _cmd_datasets(args)
+
+    if args.command == "agent-audit":
+        return _cmd_agent_audit(args)
+
+    if args.command == "agent-trace":
+        return _cmd_agent_trace(args)
+
+    if args.command == "agent-dashboard":
+        return _cmd_agent_dashboard(args)
+
+    if args.command == "agent-monitor":
+        return _cmd_agent_monitor(args)
+
+    if args.command == "redteam":
+        return _cmd_redteam(args)
+
+    if args.command == "mechinterp":
+        return _cmd_mechinterp(args)
+
+    if args.command == "alignment":
+        return _cmd_alignment(args)
+
+    if args.command == "audit-score":
+        return _cmd_audit_score(args)
 
     return 0
 
@@ -942,6 +1307,626 @@ def _severity_rank(sev) -> int:
     value = getattr(sev, "value", str(sev)).lower()
     order = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0, "unknown": -1}
     return order.get(value, -1)
+
+
+def _cmd_eval(engine: Any, args: Any) -> int:
+    """Run a full evaluation."""
+    try:
+        _rbac_check(args)
+    except (PermissionError, RBACPermError) as e:
+        print(f"Access denied: {e}")
+        return 1
+
+    from community_ai_audit.core.evaluation import EvaluationEngine
+
+    scoring_weights = None
+    if hasattr(args, "scoring_weight") and args.scoring_weight:
+        try:
+            scoring_weights = {dim: float(val) for dim, val in args.scoring_weight}
+        except ValueError as e:
+            print(f"Invalid scoring weight: {e}")
+            return 1
+
+    eval_engine = EvaluationEngine(audit_engine=engine)
+
+    adapter_config = _build_adapter_config(args, engine.config)
+    probe_inputs = None
+    if hasattr(args, "probe_file") and args.probe_file:
+        probe_inputs = _load_probe_file(args.probe_file)
+
+    print(f"Evaluating model: {args.model} (provider: {args.provider}) ...")
+    result = eval_engine.evaluate(
+        model_id=args.model,
+        provider=args.provider,
+        adapter_config=adapter_config,
+        scanners=args.scanners,
+        policies=args.policies,
+        reliability_checks=args.reliability,
+        scoring_weights=scoring_weights,
+        probe_inputs=probe_inputs,
+    )
+
+    if args.output == "json":
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(f"\n{'─' * 60}")
+        print(f"Evaluation: {result.model_id}")
+        print(f"{'─' * 60}")
+        print(f"  Session:     {result.session_id}")
+        print(f"  Duration:    {result.duration_seconds:.1f}s")
+        print(f"  Findings:    {result.total_findings}")
+        print(f"  Policies:    {result.passed_policies} passed / {result.failed_policies} failed")
+        if result.risk_scores:
+            print("\n  Risk Scores:")
+            print(f"    Security:     {result.risk_scores.get('security_score', 'N/A')}")
+            print(f"    Reliability:  {result.risk_scores.get('reliability_score', 'N/A')}")
+            print(f"    Compliance:   {result.risk_scores.get('compliance_score', 'N/A')}")
+            print(f"    Overall:      {result.risk_scores.get('overall_score', 'N/A')}")
+
+    if args.save:
+        _save_report(json.dumps(result.to_dict(), indent=2), args.save)
+
+    return 0
+
+
+def _cmd_benchmark(engine: Any, args: Any) -> int:
+    """Run a benchmark against a dataset."""
+    try:
+        _rbac_check(args)
+    except (PermissionError, RBACPermError) as e:
+        print(f"Access denied: {e}")
+        return 1
+
+    from community_ai_audit.core.evaluation import EvaluationEngine
+
+    eval_engine = EvaluationEngine(audit_engine=engine)
+
+    dataset_name = args.dataset
+    # Check if it's a custom dataset file path
+    if os.path.exists(dataset_name) or dataset_name.endswith((".json", ".jsonl", ".yaml", ".yml")):
+        from community_ai_audit.datasets.registry import load_custom_dataset
+
+        try:
+            load_custom_dataset(dataset_name)
+            dataset_name = os.path.splitext(os.path.basename(dataset_name))[0]
+        except Exception as e:
+            print(f"Failed to load custom dataset: {e}")
+            return 1
+
+    adapter_config = _build_adapter_config(args, engine.config)
+
+    print(f"Benchmarking model: {args.model} (provider: {args.provider}) ...")
+    print(f"Dataset: {dataset_name} (version: {args.dataset_version})")
+
+    try:
+        result = eval_engine.benchmark(
+            model_id=args.model,
+            provider=args.provider,
+            dataset_name=dataset_name,
+            dataset_version=args.dataset_version,
+            adapter_config=adapter_config,
+            sample_limit=args.sample_limit,
+        )
+    except ValueError as e:
+        print(f"Benchmark failed: {e}")
+        return 1
+
+    # Record the benchmark run for history
+    from community_ai_audit.datasets.models import BenchmarkRun
+    from community_ai_audit.datasets.registry import record_benchmark_run
+
+    record_benchmark_run(
+        BenchmarkRun(
+            run_id=f"bench-{int(time.time())}",
+            dataset_name=result.dataset_name,
+            dataset_version=result.dataset_version,
+            model_id=result.model_id,
+            adapter_name=result.adapter_name,
+            accuracy=result.accuracy,
+            scores=result.scores,
+            num_samples=result.num_samples,
+            num_passed=result.num_passed,
+            num_failed=result.num_failed,
+            duration_seconds=result.duration_seconds,
+            metrics=result.metrics,
+        )
+    )
+
+    if args.output == "json":
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(f"\n{'─' * 60}")
+        print(f"Benchmark: {result.benchmark_name}")
+        print(f"{'─' * 60}")
+        print(f"  Dataset:       {result.dataset_name} v{result.dataset_version}")
+        print(f"  Model:         {result.model_id}")
+        print(f"  Samples:       {result.num_samples}")
+        print(f"  Passed:        {result.num_passed}")
+        print(f"  Failed:        {result.num_failed}")
+        print(f"  Accuracy:      {result.accuracy:.3f}")
+        print(f"  Duration:      {result.duration_seconds:.1f}s")
+        if result.scores:
+            print(f"  Scores:        {result.scores}")
+
+    return 0
+
+
+def _cmd_regression(args: Any) -> int:
+    """Compare two benchmark results for regression."""
+    from community_ai_audit.core.evaluation import EvaluationEngine
+
+    eval_engine = EvaluationEngine()
+
+    def _load_result(path_or_id: str) -> Any:
+        """Load a BenchmarkResult from file or history."""
+        from community_ai_audit.datasets.registry import get_benchmark_history
+        from community_ai_audit.core.evaluation.models import BenchmarkResult
+
+        if os.path.exists(path_or_id):
+            with open(path_or_id) as f:
+                data = json.load(f)
+            return BenchmarkResult(**{k: v for k, v in data.items() if k != "per_sample_results"})
+        runs = get_benchmark_history(limit=50)
+        for r in runs:
+            if r.run_id == path_or_id:
+                return r
+        raise ValueError(f"Could not find benchmark run: {path_or_id}")
+
+    try:
+        baseline = _load_result(args.baseline_id)
+        current = _load_result(args.current_id)
+    except (ValueError, OSError) as e:
+        print(f"Failed to load benchmark results: {e}")
+        return 1
+
+    report = eval_engine.regression(
+        baseline=baseline,
+        current=current,
+        threshold=args.threshold,
+    )
+
+    if args.output == "json":
+        print(json.dumps(report.to_dict(), indent=2))
+    else:
+        print(f"\n{'─' * 60}")
+        print("Regression Report")
+        print(f"{'─' * 60}")
+        print(
+            f"  Baseline: {report.baseline.benchmark_name} ({report.baseline.started_at.isoformat()[:10]})"
+        )
+        print(
+            f"  Current:  {report.current.benchmark_name} ({report.current.started_at.isoformat()[:10]})"
+        )
+        print(
+            f"  Accuracy: {report.baseline.accuracy:.3f} -> {report.current.accuracy:.3f} ({report.accuracy_delta:+.3f})"
+        )
+        if report.regressions:
+            print("\n  Regressions:")
+            for r in report.regressions:
+                print(f"    ⚠ {r}")
+        if report.improvements:
+            print("\n  Improvements:")
+            for r in report.improvements:
+                print(f"    ✓ {r}")
+        if not report.has_regression and not report.has_improvement:
+            print(f"  No significant changes detected (threshold: {report.threshold})")
+
+    return 0
+
+
+def _cmd_datasets(args: Any) -> int:
+    """List available benchmark datasets."""
+    from community_ai_audit.datasets.registry import list_datasets
+
+    datasets = list_datasets()
+    if not datasets:
+        print("No datasets available.")
+        return 0
+
+    if args.format == "json":
+        print(json.dumps([d.to_dict() for d in datasets], indent=2))
+    else:
+        print(f"\n{'─' * 60}")
+        print("Available Benchmark Datasets")
+        print(f"{'─' * 60}")
+        for ds in datasets:
+            print(
+                f"  {ds.name:20s} v{ds.version:8s} | {ds.num_samples:4d} samples | {', '.join(ds.categories)}"
+            )
+            print(f"  {'':20s}   {ds.description}")
+
+    return 0
+
+
+def _cmd_agent_audit(args: Any) -> int:
+    """Run agent audit scanners on a session."""
+    from community_ai_audit.core.agent_session import AgentAuditSession
+    from community_ai_audit.plugins.agents import run_agent_scanners, list_agent_scanners
+
+    if args.session_file:
+        with open(args.session_file) as f:
+            data = json.load(f)
+        session = AgentAuditSession.from_dict(data)
+    else:
+        session = AgentAuditSession(agent_id=args.agent_id)
+        print("Warning: No session file provided. Running on empty session.")
+        return 1
+
+    print(f"Running agent audit on session {session.session_id[:8]}...")
+    print(f"Tools used: {len([s for s in session.steps if hasattr(s, 'step_type') and hasattr(s.step_type, 'value') and s.step_type.value == 'tool_call'])}")
+
+    results = run_agent_scanners(
+        scanners=args.scanners,
+        session=session,
+    )
+
+    if args.output == "json":
+        output = json.dumps(results, indent=2, default=str)
+        print(output)
+    else:
+        print(f"\n{'─' * 60}")
+        print(f"Agent Audit Results: {session.agent_id} / {session.session_id[:8]}")
+        print(f"{'─' * 60}")
+        for result in results:
+            name = result.get("scanner_name", "?")
+            score = result.get("score", 0)
+            findings = result.get("findings", [])
+            print(f"\n  {name}: score={score:.1f}")
+            if findings:
+                for f in findings:
+                    print(f"    [{f.get('severity', 'info').upper()}] {f.get('title', '?')}")
+            else:
+                print(f"    No findings")
+
+    if args.save:
+        with open(args.save, "w") as f:
+            f.write(json.dumps(results, indent=2, default=str))
+        print(f"Results saved to: {args.save}")
+
+    return 0
+
+
+def _cmd_agent_trace(args: Any) -> int:
+    """Manage and export agent execution traces."""
+    from community_ai_audit.core.agent_session import AgentAuditSession
+    from community_ai_audit.core.tracing import Replayer, TraceExporter, ExecutionTrace
+
+    cmd = args.trace_command
+
+    if cmd == "replay":
+        with open(args.session_file) as f:
+            data = json.load(f)
+        session = AgentAuditSession.from_dict(data)
+        trace = ExecutionTrace(
+            agent_id=session.agent_id,
+            session_id=session.session_id,
+            steps=session.steps,
+            start_time=session.start_time,
+            end_time=session.end_time,
+        )
+        replayer = Replayer(trace)
+
+        if args.step:
+            step = replayer.seek(args.step)
+            if step:
+                print(json.dumps(step.to_dict(), indent=2, default=str))
+            else:
+                print(f"Step {args.step} not found.")
+                return 1
+        else:
+            print(f"Replaying trace: {trace.session_id} ({trace.step_count} steps)")
+            print(f"{'─' * 60}")
+            print(f"Summary: {json.dumps(replayer.summary(), indent=2)}")
+            print(f"Stats: {json.dumps(replayer.stats(), indent=2)}")
+
+    elif cmd == "export":
+        with open(args.session_file) as f:
+            data = json.load(f)
+        session = AgentAuditSession.from_dict(data)
+        trace = ExecutionTrace(
+            agent_id=session.agent_id,
+            session_id=session.session_id,
+            steps=session.steps,
+            start_time=session.start_time,
+            end_time=session.end_time,
+        )
+        exporter = TraceExporter(trace)
+
+        output_path = args.output or f"trace_{session.session_id[:8]}.{args.format}"
+        exporter.save(output_path, fmt=args.format)
+        print(f"Trace exported to: {output_path}")
+
+    else:
+        print("Unknown trace command. Use: replay, export")
+        return 1
+
+    return 0
+
+
+def _cmd_agent_dashboard(args: Any) -> int:
+    """Generate agent monitoring dashboard."""
+    from community_ai_audit.dashboard_v2 import DashboardServer, DashboardConfig
+
+    config = DashboardConfig(history_limit=args.history_limit)
+    server = DashboardServer(config=config)
+
+    if args.format == "json":
+        path = server.save_json(args.output)
+    else:
+        path = server.save_html(args.output)
+
+    print(f"Dashboard saved to: {path}")
+    return 0
+
+
+def _cmd_agent_monitor(args: Any) -> int:
+    """Manage agent monitoring and alerts."""
+    from community_ai_audit.monitoring import (
+        AgentAuditor, MonitorConfig, AlertManager, DriftDetector, TrendAnalyzer,
+    )
+
+    cmd = args.monitor_command
+
+    if cmd == "audit":
+        from community_ai_audit.core.agent_session import AgentAuditSession
+
+        with open(args.session_file) as f:
+            data = json.load(f)
+        session = AgentAuditSession.from_dict(data)
+
+        auditor = AgentAuditor()
+        result = auditor.audit_session(
+            session=session,
+            scanners=args.scanners,
+        )
+        print(json.dumps(result, indent=2, default=str))
+
+    elif cmd == "history":
+        auditor = AgentAuditor()
+        history = auditor.get_history(limit=args.limit, agent_id=args.agent_id)
+
+        if args.format == "json":
+            print(json.dumps(history, indent=2, default=str))
+        else:
+            print(f"\n{'─' * 60}")
+            print(f"Audit History (last {len(history)} records)")
+            print(f"{'─' * 60}")
+            for record in history:
+                ts = record.get("timestamp", "")[:19]
+                agent = record.get("agent_id", "?")
+                score = record.get("overall_score", "?")
+                scanner_count = len(record.get("scanner_results", []))
+                print(f"  {ts} | {agent:20s} | score: {score:>5} | scanners: {scanner_count}")
+
+    elif cmd == "alerts":
+        alert_manager = AlertManager()
+        if args.clear:
+            count = alert_manager.clear_alerts()
+            print(f"Cleared {count} alerts.")
+            return 0
+
+        from community_ai_audit.monitoring.alerts import AlertLevel
+
+        level = AlertLevel(args.level) if args.level else None
+        alerts = alert_manager.get_alerts(limit=args.limit, level=level)
+        print(json.dumps([a.to_dict() for a in alerts], indent=2))
+
+    elif cmd == "drift":
+        auditor = AgentAuditor()
+        history = auditor.get_history(limit=100)
+        if len(history) < 2:
+            print("Need at least 2 audit records for drift detection.")
+            return 1
+
+        baseline = history[: args.baseline]
+        current = history[-10:]
+        detector = DriftDetector(threshold=args.threshold)
+        reports = detector.detect_drift(baseline, current)
+
+        print(f"\n{'─' * 60}")
+        print("Drift Detection Report")
+        print(f"{'─' * 60}")
+        for report in reports:
+            status = "⚠ DRIFTED" if report.drifted else "✓ stable"
+            direction = "↓" if report.delta < 0 else "↑"
+            print(
+                f"  {report.scanner_name:25s} "
+                f"{report.baseline_score:6.1f} -> {report.current_score:6.1f} "
+                f"({direction}{abs(report.delta):.1f}) {status}"
+            )
+
+    else:
+        print("Unknown monitor command. Use: audit, history, alerts, drift")
+        return 1
+
+    return 0
+
+
+def _cmd_redteam(args: Any) -> int:
+    """Run red team security tests against a model."""
+    from community_ai_audit.plugins.redteam import run_redteam_scanners
+    from community_ai_audit.core.audit import AuditEngine
+
+    engine = AuditEngine(
+        config_path=getattr(args, "config", None),
+        extra_plugin_paths=[],
+    )
+
+    adapter_config = _build_adapter_config(args, engine.config)
+    provider = args.provider
+    model_id = args.model
+
+    print(f"Loading model: {model_id} (provider: {provider}) ...")
+    try:
+        engine.load_model(model_id, provider=provider, adapter_config=adapter_config)
+    except Exception as e:
+        print(f"Failed to load model: {e}")
+        return 1
+
+    print("Running red team tests...")
+    results = run_redteam_scanners(
+        scanners=args.scanners,
+        model=engine._model,
+        adapter=engine._adapter,
+    )
+
+    if args.output == "json":
+        print(json.dumps(results, indent=2, default=str))
+    else:
+        print(f"\n{'─' * 60}")
+        print("Red Team Test Results")
+        print(f"{'─' * 60}")
+        for r in results:
+            name = r.get("scanner_name", "?")
+            score = r.get("score", 0)
+            asr = r.get("attack_success_rate", 0)
+            total = r.get("total_attacks", 0)
+            print(f"  {name:20s} score={score:6.1f}  success_rate={asr:.2%}  ({total} attacks)")
+
+    return 0
+
+
+def _cmd_mechinterp(args: Any) -> int:
+    """Run mechanistic interpretability analysis."""
+    from community_ai_audit.plugins.mechinterp import run_mechinterp_analyzers
+    from community_ai_audit.core.audit import AuditEngine
+
+    engine = AuditEngine(
+        config_path=getattr(args, "config", None),
+        extra_plugin_paths=[],
+    )
+
+    adapter_config = _build_adapter_config(args, engine.config)
+    provider = args.provider
+    model_id = args.model
+
+    print(f"Loading model: {model_id} (provider: {provider}) ...")
+    try:
+        engine.load_model(model_id, provider=provider, adapter_config=adapter_config)
+    except Exception as e:
+        print(f"Failed to load model: {e}")
+        return 1
+
+    print("Running mechanistic interpretability analysis...")
+    results = run_mechinterp_analyzers(
+        analyzers=args.analyzers,
+        model=engine._model,
+        adapter=engine._adapter,
+    )
+
+    if args.output == "json":
+        print(json.dumps(results, indent=2, default=str))
+    else:
+        print(f"\n{'─' * 60}")
+        print("Mechanistic Interpretability Results")
+        print(f"{'─' * 60}")
+        for r in results:
+            name = r.get("interpreter_name", "?")
+            score = r.get("score", 0)
+            probes = r.get("total_probes", 0)
+            print(f"  {name:25s} score={score:6.1f}  probes={probes}")
+
+    return 0
+
+
+def _cmd_alignment(args: Any) -> int:
+    """Run alignment evaluation on a model."""
+    from community_ai_audit.plugins.alignment import run_alignment_scanners
+    from community_ai_audit.core.audit import AuditEngine
+
+    engine = AuditEngine(
+        config_path=getattr(args, "config", None),
+        extra_plugin_paths=[],
+    )
+
+    adapter_config = _build_adapter_config(args, engine.config)
+    provider = args.provider
+    model_id = args.model
+
+    print(f"Loading model: {model_id} (provider: {provider}) ...")
+    try:
+        engine.load_model(model_id, provider=provider, adapter_config=adapter_config)
+    except Exception as e:
+        print(f"Failed to load model: {e}")
+        return 1
+
+    print("Running alignment evaluation...")
+    results = run_alignment_scanners(
+        scanners=args.scanners,
+        model=engine._model,
+        adapter=engine._adapter,
+    )
+
+    if args.output == "json":
+        print(json.dumps(results, indent=2, default=str))
+    else:
+        print(f"\n{'─' * 60}")
+        print("Alignment Evaluation Results")
+        print(f"{'─' * 60}")
+        for r in results:
+            name = r.get("scanner_name", "?")
+            score = r.get("alignment_score", r.get("score", 0))
+            conf = r.get("confidence", 0)
+            print(f"  {name:25s} alignment_score={score:6.1f}  confidence={conf:.2f}")
+
+    return 0
+
+
+def _cmd_audit_score(args: Any) -> int:
+    """Compute unified audit score from result files."""
+    from community_ai_audit.core.scoring import ScoringEngine
+
+    def _load_json(path: str) -> list:
+        if not path:
+            return []
+        with open(path) as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else [data]
+
+    scan_results = _load_json(args.scan)
+    policy_results = _load_json(args.policy)
+    reliability_results = _load_json(args.reliability)
+    agent_results = _load_json(args.agent)
+    red_team_results = _load_json(args.redteam)
+    alignment_results = _load_json(args.alignment)
+    interpretability_results = _load_json(args.mechinterp)
+
+    weights = None
+    if hasattr(args, "weights") and args.weights:
+        try:
+            weights = {dim: float(val) for dim, val in args.weights}
+        except ValueError as e:
+            print(f"Invalid weight: {e}")
+            return 1
+
+    engine = ScoringEngine(weights=weights)
+    risk = engine.compute(
+        scan_results=scan_results,
+        policy_results=policy_results,
+        reliability_results=reliability_results,
+        agent_results=agent_results,
+        red_team_results=red_team_results,
+        alignment_results=alignment_results,
+        interpretability_results=interpretability_results,
+    )
+
+    if args.output == "json":
+        print(json.dumps(risk.to_dict(), indent=2))
+    else:
+        print(f"\n{'─' * 60}")
+        print("Unified Audit Score")
+        print(f"{'─' * 60}")
+        print(f"  Overall:           {risk.overall_score:.1f} ({risk.interpret_overall()})")
+        print(f"  Security:          {risk.security_score:.1f}")
+        print(f"  Reliability:       {risk.reliability_score:.1f}")
+        print(f"  Compliance:        {risk.compliance_score:.1f}")
+        print(f"  Agent Risk:        {risk.agent_risk_score:.1f}")
+        print(f"  Alignment:         {risk.alignment_score:.1f}")
+        print(f"  Red Team:          {risk.red_team_score:.1f}")
+        print(f"  Interpretability:  {risk.interpretability_score:.1f}")
+        print(f"  Weights:           {risk.weights}")
+
+    return 0
 
 
 if __name__ == "__main__":

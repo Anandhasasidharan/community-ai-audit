@@ -8,11 +8,12 @@ Usage:
     results = engine.audit(scanners=["backdoor", "adversarial"])
     print(results[0].summary())
 
-Plugins:
-    Model Adapters — huggingface, openai, anthropic, aws_bedrock, local, ollama
-    SIEM Connectors — splunk, elastic, datadog, sentinel
-    Scanners — backdoor, adversarial
-    Interpreters — integrated-gradients, lime
+Evaluation Framework:
+    from community_ai_audit.core.evaluation import EvaluationEngine
+    eval_engine = EvaluationEngine()
+    result = eval_engine.evaluate("gpt-4", provider="openai", scanners=["adversarial"], policies=["no-pii-leakage"])
+    benchmark = eval_engine.benchmark("gpt-4", provider="openai", dataset_name="safety")
+    report = eval_engine.regression(baseline, current)
 """
 
 __version__ = "0.3.0"
