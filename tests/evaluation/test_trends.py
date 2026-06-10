@@ -43,8 +43,13 @@ class TestTrendSnapshot(unittest.TestCase):
 class TestTrendResult(unittest.TestCase):
     def test_is_degrading(self):
         r = TrendResult(
-            dimension="security", direction="degrading", magnitude=-10.0,
-            slope=-5.0, current=70.0, previous=80.0, window=3,
+            dimension="security",
+            direction="degrading",
+            magnitude=-10.0,
+            slope=-5.0,
+            current=70.0,
+            previous=80.0,
+            window=3,
         )
         self.assertTrue(r.is_degrading)
         self.assertFalse(r.is_improving)
@@ -52,22 +57,37 @@ class TestTrendResult(unittest.TestCase):
 
     def test_is_improving(self):
         r = TrendResult(
-            dimension="alignment", direction="improving", magnitude=8.0,
-            slope=4.0, current=88.0, previous=80.0, window=3,
+            dimension="alignment",
+            direction="improving",
+            magnitude=8.0,
+            slope=4.0,
+            current=88.0,
+            previous=80.0,
+            window=3,
         )
         self.assertTrue(r.is_improving)
 
     def test_is_stable(self):
         r = TrendResult(
-            dimension="compliance", direction="stable", magnitude=2.0,
-            slope=1.0, current=82.0, previous=81.0, window=3,
+            dimension="compliance",
+            direction="stable",
+            magnitude=2.0,
+            slope=1.0,
+            current=82.0,
+            previous=81.0,
+            window=3,
         )
         self.assertTrue(r.is_stable)
 
     def test_summary(self):
         r = TrendResult(
-            dimension="red_team", direction="degrading", magnitude=-8.0,
-            slope=-4.0, current=60.0, previous=68.0, window=3,
+            dimension="red_team",
+            direction="degrading",
+            magnitude=-8.0,
+            slope=-4.0,
+            current=60.0,
+            previous=68.0,
+            window=3,
         )
         s = r.summary()
         self.assertIn("red_team", s)
@@ -93,7 +113,8 @@ class TestAuditTrendTracker(unittest.TestCase):
 
     def test_record_with_metadata(self):
         self.tracker.record(
-            "claude-3", {"reliability": 92.0},
+            "claude-3",
+            {"reliability": 92.0},
             metadata={"provider": "anthropic", "version": "claude-3-opus"},
         )
         latest = self.tracker.get_latest("claude-3")
@@ -176,8 +197,12 @@ class TestAuditTrendTracker(unittest.TestCase):
                 model_id="gpt-4",
                 timestamp=datetime.now(timezone.utc) - timedelta(hours=i),
                 scores={
-                    "security": 80.0, "reliability": 85.0, "compliance": 90.0,
-                    "agent_risk": 75.0, "alignment": 82.0, "red_team": 70.0,
+                    "security": 80.0,
+                    "reliability": 85.0,
+                    "compliance": 90.0,
+                    "agent_risk": 75.0,
+                    "alignment": 82.0,
+                    "red_team": 70.0,
                     "interpretability": 65.0,
                 },
                 snapshot_id=f"snap-{i}",

@@ -81,7 +81,9 @@ class AgentAuditor:
             if score < threshold:
                 log.warning(
                     "Alert: scanner '%s' score %.1f below threshold %.1f",
-                    name, score, threshold,
+                    name,
+                    score,
+                    threshold,
                 )
 
     def _save_audit_record(self, record: Dict[str, Any]) -> None:

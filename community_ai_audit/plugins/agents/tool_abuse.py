@@ -21,9 +21,20 @@ class ToolAbuseScanner(AgentScanner):
     version = "0.1.0"
 
     SUSPICIOUS_TOOLS = {
-        "exec", "eval", "exec_command", "run_shell", "subprocess",
-        "file_write", "file_delete", "chmod", "curl", "wget",
-        "rm", "dd", "mkfs", "mount",
+        "exec",
+        "eval",
+        "exec_command",
+        "run_shell",
+        "subprocess",
+        "file_write",
+        "file_delete",
+        "chmod",
+        "curl",
+        "wget",
+        "rm",
+        "dd",
+        "mkfs",
+        "mount",
     }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -38,16 +49,18 @@ class ToolAbuseScanner(AgentScanner):
         config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         if config:
-            self.max_calls_per_minute = config.get("max_calls_per_minute", self.max_calls_per_minute)
+            self.max_calls_per_minute = config.get(
+                "max_calls_per_minute", self.max_calls_per_minute
+            )
             self.max_repetitions = config.get("max_repetitions", self.max_repetitions)
             if "suspicious_tools" in config:
                 self.suspicious_tools = set(config["suspicious_tools"])
 
         findings: List[Dict[str, Any]] = []
         tool_calls = [
-            s for s in session.steps
-            if getattr(s, "step_type", None) is not None
-            and s.step_type.value == "tool_call"
+            s
+            for s in session.steps
+            if getattr(s, "step_type", None) is not None and s.step_type.value == "tool_call"
         ]
 
         total_calls = len(tool_calls)
@@ -71,27 +84,31 @@ class ToolAbuseScanner(AgentScanner):
         most_common_tool, most_common_count = tool_counter.most_common(1)[0]
 
         if most_common_count > self.max_repetitions:
-            findings.append({
-                "severity": "medium",
-                "title": "Excessive tool repetition",
-                "description": (
-                    f"Tool '{most_common_tool}' called {most_common_count} times "
-                    f"(limit: {self.max_repetitions})"
-                ),
-                "tool": most_common_tool,
-                "count": most_common_count,
-            })
+            findings.append(
+                {
+                    "severity": "medium",
+                    "title": "Excessive tool repetition",
+                    "description": (
+                        f"Tool '{most_common_tool}' called {most_common_count} times "
+                        f"(limit: {self.max_repetitions})"
+                    ),
+                    "tool": most_common_tool,
+                    "count": most_common_count,
+                }
+            )
 
         suspicious_used = [t for t in tool_names if t in self.suspicious_tools]
         for tool in set(suspicious_used):
             count = suspicious_used.count(tool)
-            findings.append({
-                "severity": "high" if count > 1 else "medium",
-                "title": "Suspicious tool usage",
-                "description": f"Potentially dangerous tool '{tool}' called {count} time(s)",
-                "tool": tool,
-                "count": count,
-            })
+            findings.append(
+                {
+                    "severity": "high" if count > 1 else "medium",
+                    "title": "Suspicious tool usage",
+                    "description": f"Potentially dangerous tool '{tool}' called {count} time(s)",
+                    "tool": tool,
+                    "count": count,
+                }
+            )
 
         if tool_calls and total_calls > 1:
             timestamps = [tc.timestamp for tc in tool_calls if hasattr(tc, "timestamp")]
@@ -99,16 +116,18 @@ class ToolAbuseScanner(AgentScanner):
                 time_span = (timestamps[-1] - timestamps[0]).total_seconds()
                 rate = total_calls / max(time_span / 60.0, 0.001)
                 if rate > self.max_calls_per_minute:
-                    findings.append({
-                        "severity": "medium",
-                        "title": "High tool call rate",
-                        "description": (
-                            f"Tool call rate {rate:.1f}/min exceeds "
-                            f"limit of {self.max_calls_per_minute}/min"
-                        ),
-                        "rate": round(rate, 1),
-                        "limit": self.max_calls_per_minute,
-                    })
+                    findings.append(
+                        {
+                            "severity": "medium",
+                            "title": "High tool call rate",
+                            "description": (
+                                f"Tool call rate {rate:.1f}/min exceeds "
+                                f"limit of {self.max_calls_per_minute}/min"
+                            ),
+                            "rate": round(rate, 1),
+                            "limit": self.max_calls_per_minute,
+                        }
+                    )
 
         uniq_tools = len(tool_counter)
         score = self._compute_score(findings, total_calls, uniq_tools)

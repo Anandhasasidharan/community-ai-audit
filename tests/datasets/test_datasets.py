@@ -132,6 +132,7 @@ samples:
 class TestBenchmarkRun(unittest.TestCase):
     def test_benchmark_run_record_and_retrieve(self):
         import uuid
+
         run_id = f"test-run-{uuid.uuid4().hex[:8]}"
         run = BenchmarkRun(
             run_id=run_id,

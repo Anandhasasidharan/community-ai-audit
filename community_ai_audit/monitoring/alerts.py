@@ -37,9 +37,7 @@ class Alert:
         }
 
 
-DEFAULT_ALERT_STORAGE = os.path.expanduser(
-    "~/.community-ai-audit/monitoring/alerts.jsonl"
-)
+DEFAULT_ALERT_STORAGE = os.path.expanduser("~/.community-ai-audit/monitoring/alerts.jsonl")
 
 
 class AlertManager:
@@ -55,9 +53,7 @@ class AlertManager:
 
     def emit(self, alert: Alert) -> None:
         log.log(
-            {"info": 20, "warning": 30, "critical": 40}.get(
-                alert.level.value, 30
-            ),
+            {"info": 20, "warning": 30, "critical": 40}.get(alert.level.value, 30),
             "[%s] %s: %s",
             alert.level.value.upper(),
             alert.source,
@@ -97,7 +93,9 @@ class AlertManager:
         report: Any,
         source: str = "drift_detector",
     ) -> None:
-        level = AlertLevel.CRITICAL if abs(report.delta) > report.threshold * 2 else AlertLevel.WARNING
+        level = (
+            AlertLevel.CRITICAL if abs(report.delta) > report.threshold * 2 else AlertLevel.WARNING
+        )
         direction = "degraded" if report.delta < 0 else "improved"
         self.emit(
             Alert(

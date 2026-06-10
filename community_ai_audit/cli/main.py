@@ -497,16 +497,17 @@ Environment:
     agent_trace_parser = subparsers.add_parser(
         "agent-trace", help="Manage and export agent execution traces"
     )
-    agent_trace_sub = agent_trace_parser.add_subparsers(
-        dest="trace_command", help="Trace actions"
-    )
+    agent_trace_sub = agent_trace_parser.add_subparsers(dest="trace_command", help="Trace actions")
     trace_replay = agent_trace_sub.add_parser("replay", help="Replay a trace from a session file")
     trace_replay.add_argument("session_file", help="Path to session JSON file")
     trace_replay.add_argument("--step", type=int, default=None, help="Replay a single step number")
     trace_export = agent_trace_sub.add_parser("export", help="Export a trace to a file")
     trace_export.add_argument("session_file", help="Path to session JSON file")
     trace_export.add_argument(
-        "--format", choices=["json", "jsonl", "html", "markdown"], default="json", help="Export format"
+        "--format",
+        choices=["json", "jsonl", "html", "markdown"],
+        default="json",
+        help="Export format",
     )
     trace_export.add_argument(
         "--output", "-o", default=None, help="Output file path (default: based on session ID)"
@@ -557,19 +558,26 @@ Environment:
     )
     redteam_parser.add_argument("model", help="Model identifier")
     redteam_parser.add_argument(
-        "--provider", "-p", required=True,
+        "--provider",
+        "-p",
+        required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider",
     )
     redteam_parser.add_argument(
-        "--scanners", nargs="+", default=None,
+        "--scanners",
+        nargs="+",
+        default=None,
         help="Red team scanners to run (default: all)",
     )
     redteam_parser.add_argument("--device", help="Device for local models")
     redteam_parser.add_argument("--api-key", help="API key for cloud providers")
     redteam_parser.add_argument("--api-key-file", help="Read API key from file")
     redteam_parser.add_argument(
-        "--output", "-o", default="json", choices=["json", "table"],
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
         help="Output format",
     )
 
@@ -579,19 +587,26 @@ Environment:
     )
     mechinterp_parser.add_argument("model", help="Model identifier")
     mechinterp_parser.add_argument(
-        "--provider", "-p", required=True,
+        "--provider",
+        "-p",
+        required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider",
     )
     mechinterp_parser.add_argument(
-        "--analyzers", nargs="+", default=None,
+        "--analyzers",
+        nargs="+",
+        default=None,
         help="Analyzers to run (default: all)",
     )
     mechinterp_parser.add_argument("--device", help="Device for local models")
     mechinterp_parser.add_argument("--api-key", help="API key for cloud providers")
     mechinterp_parser.add_argument("--api-key-file", help="Read API key from file")
     mechinterp_parser.add_argument(
-        "--output", "-o", default="json", choices=["json", "table"],
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
         help="Output format",
     )
 
@@ -601,19 +616,26 @@ Environment:
     )
     alignment_parser.add_argument("model", help="Model identifier")
     alignment_parser.add_argument(
-        "--provider", "-p", required=True,
+        "--provider",
+        "-p",
+        required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider",
     )
     alignment_parser.add_argument(
-        "--scanners", nargs="+", default=None,
+        "--scanners",
+        nargs="+",
+        default=None,
         help="Alignment scanners to run (default: all)",
     )
     alignment_parser.add_argument("--device", help="Device for local models")
     alignment_parser.add_argument("--api-key", help="API key for cloud providers")
     alignment_parser.add_argument("--api-key-file", help="Read API key from file")
     alignment_parser.add_argument(
-        "--output", "-o", default="json", choices=["json", "table"],
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
         help="Output format",
     )
 
@@ -643,11 +665,18 @@ Environment:
         "--mechinterp", type=str, default=None, help="Path to mechinterp results JSON"
     )
     audit_score_parser.add_argument(
-        "--weights", nargs=2, action="append", metavar=("DIMENSION", "VALUE"),
-        default=[], help="Weight override, e.g. --weights security 0.3",
+        "--weights",
+        nargs=2,
+        action="append",
+        metavar=("DIMENSION", "VALUE"),
+        default=[],
+        help="Weight override, e.g. --weights security 0.3",
     )
     audit_score_parser.add_argument(
-        "--output", "-o", default="json", choices=["json", "table"],
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
         help="Output format",
     )
 
@@ -1553,7 +1582,9 @@ def _cmd_agent_audit(args: Any) -> int:
         return 1
 
     print(f"Running agent audit on session {session.session_id[:8]}...")
-    print(f"Tools used: {len([s for s in session.steps if hasattr(s, 'step_type') and hasattr(s.step_type, 'value') and s.step_type.value == 'tool_call'])}")
+    print(
+        f"Tools used: {len([s for s in session.steps if hasattr(s, 'step_type') and hasattr(s.step_type, 'value') and s.step_type.value == 'tool_call'])}"
+    )
 
     results = run_agent_scanners(
         scanners=args.scanners,
@@ -1662,7 +1693,9 @@ def _cmd_agent_dashboard(args: Any) -> int:
 def _cmd_agent_monitor(args: Any) -> int:
     """Manage agent monitoring and alerts."""
     from community_ai_audit.monitoring import (
-        AgentAuditor, AlertManager, DriftDetector,
+        AgentAuditor,
+        AlertManager,
+        DriftDetector,
     )
 
     cmd = args.monitor_command

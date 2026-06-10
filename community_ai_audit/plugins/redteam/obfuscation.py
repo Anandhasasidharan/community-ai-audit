@@ -27,9 +27,22 @@ class PromptObfuscationScanner:
     version = "0.1.0"
 
     HARMFUL_KEYWORDS = [
-        "bomb", "explosive", "malware", "keylogger", "hack", "crack",
-        "password", "steal", "breach", "exploit", "ransomware",
-        "injection", "backdoor", "rootkit", "trojan", "dump",
+        "bomb",
+        "explosive",
+        "malware",
+        "keylogger",
+        "hack",
+        "crack",
+        "password",
+        "steal",
+        "breach",
+        "exploit",
+        "ransomware",
+        "injection",
+        "backdoor",
+        "rootkit",
+        "trojan",
+        "dump",
     ]
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -37,7 +50,9 @@ class PromptObfuscationScanner:
         self.prompts = cfg.get("prompts", OBFUSCATION_PROMPTS)
         self.harmful_keywords = cfg.get("harmful_keywords", self.HARMFUL_KEYWORDS)
 
-    def scan(self, model: Any, adapter: Any, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def scan(
+        self, model: Any, adapter: Any, config: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         if config:
             self.prompts = config.get("prompts", self.prompts)
             self.harmful_keywords = config.get("harmful_keywords", self.harmful_keywords)

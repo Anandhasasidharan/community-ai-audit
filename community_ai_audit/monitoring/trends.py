@@ -86,7 +86,8 @@ class TrendAnalyzer:
                     "max": max(p.value for p in line.points) if line.points else None,
                     "avg": (
                         sum(p.value for p in line.points) / len(line.points)
-                        if line.points else None
+                        if line.points
+                        else None
                     ),
                 }
                 for name, line in trends.items()

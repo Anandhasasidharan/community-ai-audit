@@ -38,9 +38,16 @@ class TestScoringEngine(unittest.TestCase):
         score = engine.compute()
         self.assertIsInstance(score, RiskScore)
         d = score.to_dict()
-        for key in ("security_score", "reliability_score", "compliance_score",
-                     "agent_risk_score", "alignment_score", "red_team_score",
-                     "interpretability_score", "overall_score"):
+        for key in (
+            "security_score",
+            "reliability_score",
+            "compliance_score",
+            "agent_risk_score",
+            "alignment_score",
+            "red_team_score",
+            "interpretability_score",
+            "overall_score",
+        ):
             self.assertIn(key, d)
 
     def test_compute_high_security_findings(self):
@@ -115,10 +122,16 @@ class TestScoringEngine(unittest.TestCase):
 class TestOverallAuditScore(unittest.TestCase):
     def test_creation(self):
         from community_ai_audit.core.scoring.models import OverallAuditScore
+
         score = OverallAuditScore(
-            security=85.0, reliability=72.0, compliance=90.0,
-            agent_risk=80.0, alignment=88.0, red_team=65.0,
-            interpretability=55.0, overall=78.0,
+            security=85.0,
+            reliability=72.0,
+            compliance=90.0,
+            agent_risk=80.0,
+            alignment=88.0,
+            red_team=65.0,
+            interpretability=55.0,
+            overall=78.0,
         )
         d = score.to_dict()
         self.assertAlmostEqual(d["security"], 85.0)
@@ -126,6 +139,7 @@ class TestOverallAuditScore(unittest.TestCase):
 
     def test_interpret(self):
         from community_ai_audit.core.scoring.models import OverallAuditScore
+
         self.assertEqual(OverallAuditScore(overall=95).interpret(), "Excellent")
         self.assertEqual(OverallAuditScore(overall=82).interpret(), "Good")
         self.assertEqual(OverallAuditScore(overall=72).interpret(), "Fair")
@@ -136,16 +150,27 @@ class TestOverallAuditScore(unittest.TestCase):
 class TestRiskScore(unittest.TestCase):
     def test_min_max(self):
         score = RiskScore(
-            security_score=90, reliability_score=50, compliance_score=70,
-            agent_risk_score=80, alignment_score=60, red_team_score=40,
+            security_score=90,
+            reliability_score=50,
+            compliance_score=70,
+            agent_risk_score=80,
+            alignment_score=60,
+            red_team_score=40,
         )
         self.assertEqual(score.max_score, 90)
         self.assertEqual(score.min_score, 40)
 
     def test_audit_summary(self):
-        score = RiskScore(overall_score=85.0, security_score=90, reliability_score=80,
-                          compliance_score=85, agent_risk_score=88, alignment_score=82,
-                          red_team_score=78, interpretability_score=65)
+        score = RiskScore(
+            overall_score=85.0,
+            security_score=90,
+            reliability_score=80,
+            compliance_score=85,
+            agent_risk_score=88,
+            alignment_score=82,
+            red_team_score=78,
+            interpretability_score=65,
+        )
         summary = score.audit_summary()
         self.assertIn("Overall: 85.0", summary)
         self.assertIn("Alignment:", summary)
@@ -156,7 +181,13 @@ class TestRiskScore(unittest.TestCase):
         engine = ScoringEngine()
         score = engine.compute(
             red_team_results=[
-                {"scanner_name": "jailbreak", "score": 80.0, "attack_success_rate": 0.2, "total_attacks": 10, "successful_attacks": 2},
+                {
+                    "scanner_name": "jailbreak",
+                    "score": 80.0,
+                    "attack_success_rate": 0.2,
+                    "total_attacks": 10,
+                    "successful_attacks": 2,
+                },
             ]
         )
         self.assertIsInstance(score.red_team_score, float)
@@ -166,7 +197,12 @@ class TestRiskScore(unittest.TestCase):
         engine = ScoringEngine()
         score = engine.compute(
             alignment_results=[
-                {"scanner_name": "sycophancy", "alignment_score": 85.0, "confidence": 0.9, "sycophancy_rate": 0.15},
+                {
+                    "scanner_name": "sycophancy",
+                    "alignment_score": 85.0,
+                    "confidence": 0.9,
+                    "sycophancy_rate": 0.15,
+                },
             ]
         )
         self.assertIsInstance(score.alignment_score, float)
@@ -185,11 +221,27 @@ class TestRiskScore(unittest.TestCase):
         engine = ScoringEngine()
         score = engine.compute(
             red_team_results=[
-                {"scanner_name": "jailbreak", "score": 80.0, "attack_success_rate": 0.2, "total_attacks": 10, "successful_attacks": 2},
+                {
+                    "scanner_name": "jailbreak",
+                    "score": 80.0,
+                    "attack_success_rate": 0.2,
+                    "total_attacks": 10,
+                    "successful_attacks": 2,
+                },
             ],
             alignment_results=[
-                {"scanner_name": "sycophancy", "alignment_score": 90.0, "confidence": 0.95, "sycophancy_rate": 0.1},
-                {"scanner_name": "value_alignment", "score": 85.0, "alignment_score": 85.0, "confidence": 0.8},
+                {
+                    "scanner_name": "sycophancy",
+                    "alignment_score": 90.0,
+                    "confidence": 0.95,
+                    "sycophancy_rate": 0.1,
+                },
+                {
+                    "scanner_name": "value_alignment",
+                    "score": 85.0,
+                    "alignment_score": 85.0,
+                    "confidence": 0.8,
+                },
             ],
             interpretability_results=[
                 {"interpreter_name": "activation_probes", "score": 65.0, "total_probes": 5},

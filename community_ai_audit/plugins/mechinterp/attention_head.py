@@ -64,7 +64,8 @@ class AttentionHeadAnalysis(MechanisticInterpreter):
 
         avg_complexity = (
             sum(p["estimated_complexity"] for p in probe_analyses) / len(probe_analyses)
-            if probe_analyses else 0.0
+            if probe_analyses
+            else 0.0
         )
 
         score = max(0.0, min(100.0, avg_complexity * 100.0))

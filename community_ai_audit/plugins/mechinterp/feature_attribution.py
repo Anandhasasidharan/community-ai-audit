@@ -23,8 +23,28 @@ class FeatureAttribution(MechanisticInterpreter):
     ]
 
     SENTIMENT_WORDS = {
-        "positive": ["excellent", "love", "great", "perfect", "amazing", "wonderful", "good", "fast", "beautiful"],
-        "negative": ["terrible", "boring", "damaged", "late", "awful", "horrible", "bad", "worst", "hate"],
+        "positive": [
+            "excellent",
+            "love",
+            "great",
+            "perfect",
+            "amazing",
+            "wonderful",
+            "good",
+            "fast",
+            "beautiful",
+        ],
+        "negative": [
+            "terrible",
+            "boring",
+            "damaged",
+            "late",
+            "awful",
+            "horrible",
+            "bad",
+            "worst",
+            "hate",
+        ],
     }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):

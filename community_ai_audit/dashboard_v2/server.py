@@ -40,9 +40,15 @@ class DashboardServer:
         trend_analyzer = TrendAnalyzer(history)
         drift_detector = DriftDetector()
 
-        baseline_records = history[: self.config.drift_baseline_window] if len(history) > self.config.drift_baseline_window else history
+        baseline_records = (
+            history[: self.config.drift_baseline_window]
+            if len(history) > self.config.drift_baseline_window
+            else history
+        )
         current_records = history[-10:] if len(history) >= 10 else history
-        drift_reports = drift_detector.detect_drift(baseline_records, current_records) if history else []
+        drift_reports = (
+            drift_detector.detect_drift(baseline_records, current_records) if history else []
+        )
 
         alerts = self.alert_manager.get_alerts(limit=20)
         trends = trend_analyzer.get_summary()
@@ -52,10 +58,14 @@ class DashboardServer:
         security_score = self._get_latest_scanner_score(history, "tool_abuse")
         reliability_score = self._get_latest_scanner_score(history, "memory_poisoning")
         compliance_score = self._get_latest_scanner_score(history, "goal_drift")
-        agent_risk_score = self._get_latest_scanner_score(history, "unsafe_action") or latest_overall
+        agent_risk_score = (
+            self._get_latest_scanner_score(history, "unsafe_action") or latest_overall
+        )
         alignment_score = self._get_latest_scanner_score(history, "sycophancy") or 100.0
         red_team_score = self._get_latest_scanner_score(history, "jailbreak") or 100.0
-        interpretability_score = self._get_latest_scanner_score(history, "activation_probes") or 50.0
+        interpretability_score = (
+            self._get_latest_scanner_score(history, "activation_probes") or 50.0
+        )
 
         scanner_trends = trend_analyzer.all_trends()
 
@@ -124,9 +134,15 @@ class DashboardServer:
             latest_val = pts[-1] if pts else 100.0
             color = self._score_color(latest_val)
             sparkline = f"[{', '.join(str(round(v, 1)) for v in pts[-20:])}]" if pts else "[]"
-            direction = trend_summary.get("scanner_trends", {}).get(name, {}).get("direction", "stable")
+            direction = (
+                trend_summary.get("scanner_trends", {}).get(name, {}).get("direction", "stable")
+            )
             dir_icon = "▲" if direction == "improving" else "▼" if direction == "degrading" else "◆"
-            dir_color = "#4CAF50" if direction == "improving" else "#f44336" if direction == "degrading" else "#999"
+            dir_color = (
+                "#4CAF50"
+                if direction == "improving"
+                else "#f44336" if direction == "degrading" else "#999"
+            )
             scanners_table += f"""
             <tr>
                 <td>{name}</td>
@@ -301,7 +317,11 @@ class DashboardServer:
         for name, data in scanner_trends.items():
             direction = data.get("direction", "stable")
             dir_icon = "▲" if direction == "improving" else "▼" if direction == "degrading" else "◆"
-            dir_color = "#4CAF50" if direction == "improving" else "#f44336" if direction == "degrading" else "#999"
+            dir_color = (
+                "#4CAF50"
+                if direction == "improving"
+                else "#f44336" if direction == "degrading" else "#999"
+            )
             latest = data.get("latest", "N/A")
             avg = data.get("avg", "N/A")
             mn = data.get("min", "N/A")
@@ -326,9 +346,15 @@ class DashboardServer:
         trend_analyzer = TrendAnalyzer(history)
         drift_detector = DriftDetector()
 
-        baseline_records = history[: self.config.drift_baseline_window] if len(history) > self.config.drift_baseline_window else history
+        baseline_records = (
+            history[: self.config.drift_baseline_window]
+            if len(history) > self.config.drift_baseline_window
+            else history
+        )
         current_records = history[-10:] if len(history) >= 10 else history
-        drift_reports = drift_detector.detect_drift(baseline_records, current_records) if history else []
+        drift_reports = (
+            drift_detector.detect_drift(baseline_records, current_records) if history else []
+        )
 
         alerts = self.alert_manager.get_alerts(limit=20)
         trends = trend_analyzer.get_summary()

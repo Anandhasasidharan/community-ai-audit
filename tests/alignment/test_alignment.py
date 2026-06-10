@@ -20,7 +20,9 @@ class MockAdapter:
         for key, value in sorted(self.responses.items(), key=lambda x: -len(x[0])):
             if isinstance(key, str) and key in prompt:
                 return value
-        return self.responses.get("__default__", "I cannot help with that. As an AI assistant, I should decline.")
+        return self.responses.get(
+            "__default__", "I cannot help with that. As an AI assistant, I should decline."
+        )
 
 
 class TestSycophancyScanner(unittest.TestCase):
@@ -47,15 +49,25 @@ class TestSycophancyScanner(unittest.TestCase):
         self.assertIn("sycophancy_rate", result)
 
     def test_stance_detection_agree(self):
-        is_syc = self.scanner._test_stance(None, MockAdapter(responses={
-            "__default__": "Yes, I completely agree! This is absolutely correct."
-        }), "test?", "agree")
+        is_syc = self.scanner._test_stance(
+            None,
+            MockAdapter(
+                responses={"__default__": "Yes, I completely agree! This is absolutely correct."}
+            ),
+            "test?",
+            "agree",
+        )
         self.assertTrue(is_syc)
 
     def test_stance_detection_disagree(self):
-        is_syc = self.scanner._test_stance(None, MockAdapter(responses={
-            "__default__": "No, I disagree with that statement. That is wrong."
-        }), "test?", "disagree")
+        is_syc = self.scanner._test_stance(
+            None,
+            MockAdapter(
+                responses={"__default__": "No, I disagree with that statement. That is wrong."}
+            ),
+            "test?",
+            "disagree",
+        )
         self.assertTrue(is_syc)
 
 
@@ -64,7 +76,9 @@ class TestPreferenceDriftScanner(unittest.TestCase):
         self.scanner = PreferenceDriftScanner()
 
     def test_evaluate(self):
-        adapter = MockAdapter(responses={"__default__": "Yes, I think that is acceptable and ethical."})
+        adapter = MockAdapter(
+            responses={"__default__": "Yes, I think that is acceptable and ethical."}
+        )
         result = self.scanner.evaluate(None, adapter)
         self.assertIn("scanner_name", result)
         self.assertIn("drift_rate", result)
@@ -86,7 +100,9 @@ class TestValueAlignmentScanner(unittest.TestCase):
         self.scanner = ValueAlignmentScanner()
 
     def test_evaluate(self):
-        adapter = MockAdapter(responses={"__default__": "I cannot help with that as it would be unethical."})
+        adapter = MockAdapter(
+            responses={"__default__": "I cannot help with that as it would be unethical."}
+        )
         result = self.scanner.evaluate(None, adapter)
         self.assertIn("scanner_name", result)
         self.assertIn("alignment_rate", result)
@@ -141,9 +157,7 @@ class TestObjectiveRobustnessScanner(unittest.TestCase):
         self.assertFalse(violated)
 
     def test_violation_check_missing_refusal(self):
-        violated = self.scanner._check_violation(
-            "Sure! Here's how to do it.", should_refuse=True
-        )
+        violated = self.scanner._check_violation("Sure! Here's how to do it.", should_refuse=True)
         self.assertTrue(violated)
 
     def test_empty_output_violation(self):

@@ -60,7 +60,8 @@ class ActivationProbes(MechanisticInterpreter):
 
         avg_quality = (
             sum(r["response_quality"] for r in probe_results) / len(probe_results)
-            if probe_results else 0.0
+            if probe_results
+            else 0.0
         )
 
         score = max(0.0, min(100.0, avg_quality * 100.0))

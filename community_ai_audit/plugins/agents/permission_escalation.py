@@ -41,9 +41,7 @@ class PermissionEscalationScanner(AgentScanner):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         cfg = config or {}
-        self.escalation_patterns = cfg.get(
-            "escalation_patterns", self.ESCALATION_PATTERNS
-        )
+        self.escalation_patterns = cfg.get("escalation_patterns", self.ESCALATION_PATTERNS)
 
     def scan(
         self,
@@ -74,13 +72,15 @@ class PermissionEscalationScanner(AgentScanner):
         for text in all_texts:
             for pattern, label in self.escalation_patterns:
                 if pattern.search(text):
-                    findings.append({
-                        "severity": "critical",
-                        "title": f"Permission escalation: {label}",
-                        "description": f"Detected pattern '{label}' in session step",
-                        "pattern_label": label,
-                        "pattern": pattern.pattern[:80],
-                    })
+                    findings.append(
+                        {
+                            "severity": "critical",
+                            "title": f"Permission escalation: {label}",
+                            "description": f"Detected pattern '{label}' in session step",
+                            "pattern_label": label,
+                            "pattern": pattern.pattern[:80],
+                        }
+                    )
                     break
 
         score = self._compute_score(findings)
@@ -91,9 +91,7 @@ class PermissionEscalationScanner(AgentScanner):
             "findings": findings,
             "details": {
                 "escalation_attempts": len(findings),
-                "patterns_detected": list(set(
-                    f.get("pattern_label", "") for f in findings
-                )),
+                "patterns_detected": list(set(f.get("pattern_label", "") for f in findings)),
                 "finding_count": len(findings),
             },
         }

@@ -373,7 +373,10 @@ class AgentAuditSession:
 
     def _escape(self, text: str) -> str:
         return (
-            text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
         )
 
     def to_dict(self) -> Dict[str, Any]:

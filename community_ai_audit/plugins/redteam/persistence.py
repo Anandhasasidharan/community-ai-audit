@@ -48,9 +48,7 @@ class RedTeamPersistence:
         log.debug("Saved red team result for %s/%s", model_id, scanner_name)
         return entry["timestamp"]
 
-    def save_multi(
-        self, model_id: str, results: List[Dict[str, Any]]
-    ) -> List[str]:
+    def save_multi(self, model_id: str, results: List[Dict[str, Any]]) -> List[str]:
         timestamps = []
         for r in results:
             sn = r.get("scanner_name", "unknown")
@@ -75,9 +73,7 @@ class RedTeamPersistence:
         entries.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
         return entries[:limit]
 
-    def get_latest(
-        self, model_id: str, scanner_name: str
-    ) -> Optional[Dict[str, Any]]:
+    def get_latest(self, model_id: str, scanner_name: str) -> Optional[Dict[str, Any]]:
         history = self.load_history(model_id, scanner_name, limit=1)
         return history[0] if history else None
 
@@ -86,7 +82,7 @@ class RedTeamPersistence:
         safe = _model_safe(model_id)
         for f in self._dir.iterdir():
             if f.suffix == ".jsonl" and f.stem.startswith(f"{safe}__"):
-                scanner_part = f.stem[len(safe) + 2:]  # e.g., "gpt-4__jailbreak" -> "jailbreak"
+                scanner_part = f.stem[len(safe) + 2 :]  # e.g., "gpt-4__jailbreak" -> "jailbreak"
                 scanners.add(scanner_part)
         return sorted(scanners)
 
@@ -134,15 +130,11 @@ class RedTeamPersistence:
             "values": [round(v, 4) for v in rates],
         }
 
-    def drift_report(
-        self, model_id: str, window: int = 5
-    ) -> Dict[str, Any]:
+    def drift_report(self, model_id: str, window: int = 5) -> Dict[str, Any]:
         scanners = self.list_scanners(model_id)
         scanner_drifts = {}
         for sn in sorted(scanners):
-            scanner_drifts[sn] = self.compute_drift(
-                model_id, sn, window=window
-            )
+            scanner_drifts[sn] = self.compute_drift(model_id, sn, window=window)
         overall_direction = "stable"
         worsening = [s for s, d in scanner_drifts.items() if d.get("direction") == "worsening"]
         improving = [s for s, d in scanner_drifts.items() if d.get("direction") == "improving"]

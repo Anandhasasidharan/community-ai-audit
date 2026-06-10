@@ -17,7 +17,9 @@ class MemoryPoisoningScanner(AgentScanner):
     """
 
     name = "memory_poisoning"
-    description = "Detect memory poisoning: sensitive data leaks, injection payloads, abnormal writes"
+    description = (
+        "Detect memory poisoning: sensitive data leaks, injection payloads, abnormal writes"
+    )
     version = "0.1.0"
 
     SENSITIVE_PATTERNS = [
@@ -43,12 +45,8 @@ class MemoryPoisoningScanner(AgentScanner):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         cfg = config or {}
-        self.sensitive_patterns = cfg.get(
-            "sensitive_patterns", self.SENSITIVE_PATTERNS
-        )
-        self.injection_patterns = cfg.get(
-            "injection_patterns", self.INJECTION_PATTERNS
-        )
+        self.sensitive_patterns = cfg.get("sensitive_patterns", self.SENSITIVE_PATTERNS)
+        self.injection_patterns = cfg.get("injection_patterns", self.INJECTION_PATTERNS)
         self.max_memory_writes = cfg.get("max_memory_writes", 50)
 
     def scan(
@@ -65,14 +63,14 @@ class MemoryPoisoningScanner(AgentScanner):
                 ]
             if "injection_patterns" in config:
                 self.injection_patterns = [
-                    re.compile(p) if isinstance(p, str) else p
-                    for p in config["injection_patterns"]
+                    re.compile(p) if isinstance(p, str) else p for p in config["injection_patterns"]
                 ]
 
         findings: List[Dict[str, Any]] = []
 
         memory_writes = [
-            s for s in session.steps
+            s
+            for s in session.steps
             if getattr(s, "step_type", None) is not None
             and s.step_type.value == "memory_access"
             and getattr(s, "input", {}).get("operation") == "write"
@@ -81,48 +79,54 @@ class MemoryPoisoningScanner(AgentScanner):
         total_writes = len(memory_writes)
 
         if total_writes > self.max_memory_writes:
-            findings.append({
-                "severity": "medium",
-                "title": "Excessive memory writes",
-                "description": (
-                    f"{total_writes} memory writes exceeds "
-                    f"limit of {self.max_memory_writes}"
-                ),
-                "total_writes": total_writes,
-                "limit": self.max_memory_writes,
-            })
+            findings.append(
+                {
+                    "severity": "medium",
+                    "title": "Excessive memory writes",
+                    "description": (
+                        f"{total_writes} memory writes exceeds "
+                        f"limit of {self.max_memory_writes}"
+                    ),
+                    "total_writes": total_writes,
+                    "limit": self.max_memory_writes,
+                }
+            )
 
         for mw in memory_writes:
             inp = mw.input if isinstance(mw.input, dict) else {}
             key = str(inp.get("key", ""))
-            value = str(inp.get("value", "")) if inp.get("value") else str(mw.output if mw.output else "")
+            value = (
+                str(inp.get("value", ""))
+                if inp.get("value")
+                else str(mw.output if mw.output else "")
+            )
 
             combined = f"{key} {value}"
 
             for pattern, label in self.sensitive_patterns:
                 if pattern.search(combined):
-                    findings.append({
-                        "severity": "high",
-                        "title": f"Sensitive data in memory: {label}",
-                        "description": (
-                            f"Memory key '{key}' contains {label} pattern"
-                        ),
-                        "key": key,
-                        "pattern_label": label,
-                    })
+                    findings.append(
+                        {
+                            "severity": "high",
+                            "title": f"Sensitive data in memory: {label}",
+                            "description": (f"Memory key '{key}' contains {label} pattern"),
+                            "key": key,
+                            "pattern_label": label,
+                        }
+                    )
                     break
 
             for pattern in self.injection_patterns:
                 if pattern.search(combined):
-                    findings.append({
-                        "severity": "high",
-                        "title": "Possible prompt injection payload in memory",
-                        "description": (
-                            f"Injection pattern detected in memory key '{key}'"
-                        ),
-                        "key": key,
-                        "pattern": pattern.pattern[:60],
-                    })
+                    findings.append(
+                        {
+                            "severity": "high",
+                            "title": "Possible prompt injection payload in memory",
+                            "description": (f"Injection pattern detected in memory key '{key}'"),
+                            "key": key,
+                            "pattern": pattern.pattern[:60],
+                        }
+                    )
                     break
 
         memory_keys = []

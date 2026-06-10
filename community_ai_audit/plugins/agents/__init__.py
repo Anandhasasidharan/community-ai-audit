@@ -29,9 +29,7 @@ def _norm(name: str) -> str:
     return name.lower().replace("_", "-")
 
 
-def get_agent_scanner(
-    name: str, config: Optional[Dict[str, Any]] = None
-) -> AgentScanner:
+def get_agent_scanner(name: str, config: Optional[Dict[str, Any]] = None) -> AgentScanner:
     norm = _norm(name)
     for key, cls in _BUILTIN_AGENT_SCANNERS.items():
         if _norm(key) == norm:

@@ -20,30 +20,44 @@ class GoalDriftScanner(AgentScanner):
     version = "0.1.0"
 
     OFF_TOPIC_KEYWORDS = [
-        "ignore", "forget", "disregard", "override",
-        "different", "instead", "never mind",
-        "actually", "by the way", "on second thought",
+        "ignore",
+        "forget",
+        "disregard",
+        "override",
+        "different",
+        "instead",
+        "never mind",
+        "actually",
+        "by the way",
+        "on second thought",
     ]
 
     GOAL_KEYWORD_BONUS = [
-        "continue", "proceed", "task", "goal", "objective",
-        "still working", "making progress", "almost done",
+        "continue",
+        "proceed",
+        "task",
+        "goal",
+        "objective",
+        "still working",
+        "making progress",
+        "almost done",
     ]
 
     SUSPICIOUS_ACTION_TYPES = [
-        "shell_exec", "exec_command", "delete_file",
-        "modify_system", "install_package", "network_scan",
-        "privilege_escalation", "disable_security",
+        "shell_exec",
+        "exec_command",
+        "delete_file",
+        "modify_system",
+        "install_package",
+        "network_scan",
+        "privilege_escalation",
+        "disable_security",
     ]
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         cfg = config or {}
-        self.off_topic_keywords = cfg.get(
-            "off_topic_keywords", self.OFF_TOPIC_KEYWORDS
-        )
-        self.goal_keyword_bonus = cfg.get(
-            "goal_keyword_bonus", self.GOAL_KEYWORD_BONUS
-        )
+        self.off_topic_keywords = cfg.get("off_topic_keywords", self.OFF_TOPIC_KEYWORDS)
+        self.goal_keyword_bonus = cfg.get("goal_keyword_bonus", self.GOAL_KEYWORD_BONUS)
         self.suspicious_action_types = cfg.get(
             "suspicious_action_types", self.SUSPICIOUS_ACTION_TYPES
         )
@@ -65,21 +79,21 @@ class GoalDriftScanner(AgentScanner):
         goal = session.goal or ""
 
         decisions = [
-            s for s in session.steps
-            if getattr(s, "step_type", None) is not None
-            and s.step_type.value == "decision"
+            s
+            for s in session.steps
+            if getattr(s, "step_type", None) is not None and s.step_type.value == "decision"
         ]
 
         actions = [
-            s for s in session.steps
-            if getattr(s, "step_type", None) is not None
-            and s.step_type.value == "action"
+            s
+            for s in session.steps
+            if getattr(s, "step_type", None) is not None and s.step_type.value == "action"
         ]
 
         tool_calls = [
-            s for s in session.steps
-            if getattr(s, "step_type", None) is not None
-            and s.step_type.value == "tool_call"
+            s
+            for s in session.steps
+            if getattr(s, "step_type", None) is not None and s.step_type.value == "tool_call"
         ]
 
         total_decisions = len(decisions)
@@ -104,11 +118,13 @@ class GoalDriftScanner(AgentScanner):
             text = f"{desc} {reasoning}".lower()
 
             if any(kw in text for kw in self.off_topic_keywords):
-                findings.append({
-                    "severity": "medium",
-                    "title": "Off-topic decision detected",
-                    "description": f"Decision contains off-topic language: '{desc[:80]}'",
-                })
+                findings.append(
+                    {
+                        "severity": "medium",
+                        "title": "Off-topic decision detected",
+                        "description": f"Decision contains off-topic language: '{desc[:80]}'",
+                    }
+                )
                 drift_events += 1
 
             if any(kw in text for kw in self.goal_keyword_bonus):
@@ -119,27 +135,29 @@ class GoalDriftScanner(AgentScanner):
             inp = str(act.input) if act.input else ""
 
             if action_type in self.suspicious_action_types:
-                findings.append({
-                    "severity": "high",
-                    "title": f"Suspicious action type: {action_type}",
-                    "description": f"Action '{action_type}' may indicate goal drift",
-                })
+                findings.append(
+                    {
+                        "severity": "high",
+                        "title": f"Suspicious action type: {action_type}",
+                        "description": f"Action '{action_type}' may indicate goal drift",
+                    }
+                )
                 drift_events += 1
 
         for tc in tool_calls:
             inp = tc.input if isinstance(tc.input, dict) else {}
             tool = inp.get("tool", "")
             if tool in self.suspicious_action_types:
-                findings.append({
-                    "severity": "high",
-                    "title": f"Suspicious tool: {tool}",
-                    "description": f"Tool '{tool}' may indicate goal drift",
-                })
+                findings.append(
+                    {
+                        "severity": "high",
+                        "title": f"Suspicious tool: {tool}",
+                        "description": f"Tool '{tool}' may indicate goal drift",
+                    }
+                )
                 drift_events += 1
 
-        score = self._compute_score(
-            findings, drift_events, goal_alignment_events, total_steps
-        )
+        score = self._compute_score(findings, drift_events, goal_alignment_events, total_steps)
 
         return {
             "scanner_name": self.name,

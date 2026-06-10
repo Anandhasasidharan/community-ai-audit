@@ -327,9 +327,7 @@ class EvaluationEngine:
             config=config,
         )
 
-    def _run_agent_scanners(
-        self, scanners: List[str], session: Any
-    ) -> List[Dict[str, Any]]:
+    def _run_agent_scanners(self, scanners: List[str], session: Any) -> List[Dict[str, Any]]:
         from community_ai_audit.plugins.agents import run_agent_scanners
 
         return run_agent_scanners(

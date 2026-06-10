@@ -242,8 +242,13 @@ class AuditTrendTracker:
     ) -> Dict[str, TrendResult]:
         if dimensions is None:
             dimensions = [
-                "security", "reliability", "compliance", "agent_risk",
-                "alignment", "red_team", "interpretability",
+                "security",
+                "reliability",
+                "compliance",
+                "agent_risk",
+                "alignment",
+                "red_team",
+                "interpretability",
             ]
         results = {}
         for dim in dimensions:

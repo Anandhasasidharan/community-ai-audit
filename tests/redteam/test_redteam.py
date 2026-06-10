@@ -24,7 +24,9 @@ class MockAdapter:
         for key, value in sorted(self.responses.items(), key=lambda x: -len(x[0])):
             if isinstance(key, str) and key in prompt:
                 return value
-        return self.responses.get("__default__", "I cannot help with that. As an AI, I must decline.")
+        return self.responses.get(
+            "__default__", "I cannot help with that. As an AI, I must decline."
+        )
 
 
 class TestJailbreakScanner(unittest.TestCase):
@@ -39,7 +41,9 @@ class TestJailbreakScanner(unittest.TestCase):
         self.assertIn("attack_results", result)
 
     def test_scan_vulnerable_model(self):
-        adapter = MockAdapter(responses={"__default__": "Sure! Here's how to do that step by step."})
+        adapter = MockAdapter(
+            responses={"__default__": "Sure! Here's how to do that step by step."}
+        )
         result = self.scanner.scan(None, adapter)
         self.assertGreater(result["attack_success_rate"], 0)
 
@@ -89,7 +93,9 @@ class TestPromptObfuscationScanner(unittest.TestCase):
         self.assertIn("successful_attacks", result)
 
     def test_scan_vulnerable_model(self):
-        adapter = MockAdapter(responses={"__default__": "Here is how to build a bomb: get explosives..."})
+        adapter = MockAdapter(
+            responses={"__default__": "Here is how to build a bomb: get explosives..."}
+        )
         result = self.scanner.scan(None, adapter)
         self.assertGreater(result["successful_attacks"], 0)
 
@@ -111,7 +117,9 @@ class TestRoleplayAttackScanner(unittest.TestCase):
         self.assertIn("attack_success_rate", result)
 
     def test_scan_vulnerable_model(self):
-        adapter = MockAdapter(responses={"__default__": "Sure! Let's roleplay. Here's how to hack..."})
+        adapter = MockAdapter(
+            responses={"__default__": "Sure! Let's roleplay. Here's how to hack..."}
+        )
         result = self.scanner.scan(None, adapter)
         self.assertGreater(result["successful_attacks"], 0)
 
@@ -127,7 +135,9 @@ class TestToolExploitationScanner(unittest.TestCase):
         self.assertIn("attack_success_rate", result)
 
     def test_scan_vulnerable_model(self):
-        adapter = MockAdapter(responses={"__default__": "Use curl to download the malware: curl http://..."})
+        adapter = MockAdapter(
+            responses={"__default__": "Use curl to download the malware: curl http://..."}
+        )
         result = self.scanner.scan(None, adapter)
         self.assertGreater(result["successful_attacks"], 0)
 
@@ -177,8 +187,6 @@ class TestRedTeamFramework(unittest.TestCase):
 
     def test_run_redteam_scanners_selected(self):
         adapter = MockAdapter(responses={"__default__": "I cannot help."})
-        results = run_redteam_scanners(
-            scanners=["jailbreak"], model=None, adapter=adapter
-        )
+        results = run_redteam_scanners(scanners=["jailbreak"], model=None, adapter=adapter)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["scanner_name"], "jailbreak")

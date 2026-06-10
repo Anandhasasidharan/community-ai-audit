@@ -75,11 +75,13 @@ class TestAgentAuditor(unittest.TestCase):
         self.assertIsNone(score)
 
     def test_compute_overall_score(self):
-        score = self.auditor._compute_overall_score([
-            {"score": 90.0},
-            {"score": 80.0},
-            {"score": 70.0},
-        ])
+        score = self.auditor._compute_overall_score(
+            [
+                {"score": 90.0},
+                {"score": 80.0},
+                {"score": 70.0},
+            ]
+        )
         self.assertEqual(score, 80.0)
 
     def test_compute_overall_score_empty(self):
@@ -166,8 +168,7 @@ class TestDriftDetector(unittest.TestCase):
             "timestamp": "2025-01-01T00:00:00",
             "overall_score": sum(scores.values()) / len(scores) if scores else 100.0,
             "scanner_results": [
-                {"scanner_name": name, "score": score}
-                for name, score in scores.items()
+                {"scanner_name": name, "score": score} for name, score in scores.items()
             ],
         }
 
@@ -225,9 +226,7 @@ class TestDriftDetector(unittest.TestCase):
 
 class TestAlertManager(unittest.TestCase):
     def setUp(self):
-        self.temp_file = tempfile.NamedTemporaryFile(
-            suffix=".jsonl", delete=False, mode="w"
-        )
+        self.temp_file = tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False, mode="w")
         self.storage_path = self.temp_file.name
         self.temp_file.close()
         self.manager = AlertManager(storage_path=self.storage_path)

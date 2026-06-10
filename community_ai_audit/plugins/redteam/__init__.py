@@ -30,9 +30,7 @@ def list_redteam_scanners() -> List[str]:
     return sorted(_BUILTIN_REDTEAM.keys())
 
 
-def get_redteam_scanner(
-    name: str, config: Optional[Dict[str, Any]] = None
-):
+def get_redteam_scanner(name: str, config: Optional[Dict[str, Any]] = None):
     norm = _norm(name)
     for key, cls in _BUILTIN_REDTEAM.items():
         if _norm(key) == norm:

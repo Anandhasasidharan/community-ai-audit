@@ -77,9 +77,7 @@ class DriftDetector:
             )
         return reports
 
-    def _aggregate_scores(
-        self, records: List[Dict[str, Any]]
-    ) -> Dict[str, float]:
+    def _aggregate_scores(self, records: List[Dict[str, Any]]) -> Dict[str, float]:
         scanner_scores: Dict[str, List[float]] = {}
         for record in records:
             for result in record.get("scanner_results", []):
@@ -87,10 +85,7 @@ class DriftDetector:
                 score = result.get("score", 0.0)
                 scanner_scores.setdefault(name, []).append(score)
 
-        return {
-            name: sum(scores) / len(scores)
-            for name, scores in scanner_scores.items()
-        }
+        return {name: sum(scores) / len(scores) for name, scores in scanner_scores.items()}
 
     def _direction(self, delta: float) -> str:
         if delta > self.threshold:

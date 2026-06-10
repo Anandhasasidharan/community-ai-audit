@@ -46,15 +46,23 @@ class RiskScore:
     @property
     def max_score(self) -> float:
         return max(
-            self.security_score, self.reliability_score, self.compliance_score,
-            self.agent_risk_score, self.alignment_score, self.red_team_score,
+            self.security_score,
+            self.reliability_score,
+            self.compliance_score,
+            self.agent_risk_score,
+            self.alignment_score,
+            self.red_team_score,
         )
 
     @property
     def min_score(self) -> float:
         return min(
-            self.security_score, self.reliability_score, self.compliance_score,
-            self.agent_risk_score, self.alignment_score, self.red_team_score,
+            self.security_score,
+            self.reliability_score,
+            self.compliance_score,
+            self.agent_risk_score,
+            self.alignment_score,
+            self.red_team_score,
         )
 
     def interpret_overall(self) -> str:

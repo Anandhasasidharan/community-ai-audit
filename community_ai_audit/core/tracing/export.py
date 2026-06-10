@@ -91,14 +91,19 @@ class TraceExporter:
 
     def _escape(self, text: str) -> str:
         return (
-            text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
         )
 
     def to_markdown(self) -> str:
         lines: List[str] = []
         lines.append(f"# Execution Trace: {self.trace.session_id}")
         lines.append(f"**Agent:** {self.trace.agent_id}")
-        lines.append(f"**Steps:** {self.trace.step_count} | **Duration:** {self.trace.duration:.1f}s")
+        lines.append(
+            f"**Steps:** {self.trace.step_count} | **Duration:** {self.trace.duration:.1f}s"
+        )
         lines.append("")
         lines.append("| Step | Type | Duration | Summary |")
         lines.append("|------|------|----------|---------|")

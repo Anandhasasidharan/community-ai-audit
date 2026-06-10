@@ -40,9 +40,16 @@ class MockAuditEngine:
 
 
 class MockScoringEngine:
-    def compute(self, scan_results=None, policy_results=None, reliability_results=None,
-                agent_results=None, red_team_results=None, alignment_results=None,
-                interpretability_results=None):
+    def compute(
+        self,
+        scan_results=None,
+        policy_results=None,
+        reliability_results=None,
+        agent_results=None,
+        red_team_results=None,
+        alignment_results=None,
+        interpretability_results=None,
+    ):
         from community_ai_audit.core.scoring.models import RiskScore
 
         return RiskScore(

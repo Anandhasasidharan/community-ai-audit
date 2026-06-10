@@ -68,12 +68,8 @@ class RepresentationAnalysis(MechanisticInterpreter):
 
         pairwise: List[Dict[str, Any]] = []
         for a, b in self.paired_probes:
-            resp_a = next(
-                (r["output_preview"] for r in responses if r["input"] == a[:80]), ""
-            )
-            resp_b = next(
-                (r["output_preview"] for r in responses if r["input"] == b[:80]), ""
-            )
+            resp_a = next((r["output_preview"] for r in responses if r["input"] == a[:80]), "")
+            resp_b = next((r["output_preview"] for r in responses if r["input"] == b[:80]), "")
             differentiation = self._estimate_differentiation(resp_a, resp_b)
             pairwise.append(
                 {
@@ -84,8 +80,7 @@ class RepresentationAnalysis(MechanisticInterpreter):
             )
 
         avg_diff = (
-            sum(p["differentiation_score"] for p in pairwise) / len(pairwise)
-            if pairwise else 0.0
+            sum(p["differentiation_score"] for p in pairwise) / len(pairwise) if pairwise else 0.0
         )
 
         score = max(0.0, min(100.0, avg_diff * 100.0))

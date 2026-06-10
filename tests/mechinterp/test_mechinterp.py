@@ -21,7 +21,10 @@ class MockAdapter:
         for key, value in sorted(self.responses.items(), key=lambda x: -len(x[0])):
             if isinstance(key, str) and key in prompt:
                 return value
-        return self.responses.get("__default__", "This is a detailed response about the topic. It provides comprehensive information and analysis covering multiple aspects and considerations.")
+        return self.responses.get(
+            "__default__",
+            "This is a detailed response about the topic. It provides comprehensive information and analysis covering multiple aspects and considerations.",
+        )
 
     def predict(self, model, inputs, **kwargs):
         return self.generate(model, inputs)
@@ -103,7 +106,9 @@ class TestFeatureAttribution(unittest.TestCase):
         self.assertIn("attributions", result)
 
     def test_feature_map(self):
-        fm = self.analyzer._attribute_features("The movie was terrible", "I agree the movie was bad")
+        fm = self.analyzer._attribute_features(
+            "The movie was terrible", "I agree the movie was bad"
+        )
         self.assertIn("feature_importance", fm)
         self.assertGreaterEqual(fm.get("attributed_features", 0), 0)
 

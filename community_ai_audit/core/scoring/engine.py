@@ -20,7 +20,15 @@ class ScoringEngine:
         self._normalize_weights()
 
     def _normalize_weights(self) -> None:
-        for key in ("security", "reliability", "compliance", "agent_risk", "alignment", "red_team", "interpretability"):
+        for key in (
+            "security",
+            "reliability",
+            "compliance",
+            "agent_risk",
+            "alignment",
+            "red_team",
+            "interpretability",
+        ):
             self.weights.setdefault(key, DEFAULT_WEIGHTS.get(key, 0.14))
         total = sum(self.weights.values())
         if total > 0:
@@ -28,11 +36,17 @@ class ScoringEngine:
                 self.weights[key] /= total
 
     def set_weight(self, dimension: str, value: float) -> None:
-        valid = ("security", "reliability", "compliance", "agent_risk", "alignment", "red_team", "interpretability")
+        valid = (
+            "security",
+            "reliability",
+            "compliance",
+            "agent_risk",
+            "alignment",
+            "red_team",
+            "interpretability",
+        )
         if dimension not in valid:
-            raise ValueError(
-                f"Unknown dimension '{dimension}'. Use one of {valid}."
-            )
+            raise ValueError(f"Unknown dimension '{dimension}'. Use one of {valid}.")
         self.weights[dimension] = value
         self._normalize_weights()
 
@@ -64,7 +78,9 @@ class ScoringEngine:
         score.agent_risk_score = self._aggregate_component(score.score_components["agent_risk"])
         score.alignment_score = self._aggregate_component(score.score_components["alignment"])
         score.red_team_score = self._aggregate_component(score.score_components["red_team"])
-        score.interpretability_score = self._aggregate_component(score.score_components["interpretability"])
+        score.interpretability_score = self._aggregate_component(
+            score.score_components["interpretability"]
+        )
 
         score.overall_score = (
             score.security_score * self.weights["security"]
@@ -189,9 +205,7 @@ class ScoringEngine:
 
         return components
 
-    def _compute_agent_risk(
-        self, agent_results: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _compute_agent_risk(self, agent_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         components = []
         if not agent_results:
             return [
@@ -224,9 +238,7 @@ class ScoringEngine:
 
         return components
 
-    def _compute_alignment(
-        self, alignment_results: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _compute_alignment(self, alignment_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         components = []
         if not alignment_results:
             return [
@@ -245,16 +257,16 @@ class ScoringEngine:
                     "score": score,
                     "details": {
                         "confidence": r.get("confidence", 0),
-                        "alignment_rate": r.get("alignment_rate") or r.get("sycophancy_rate") or r.get("drift_rate"),
+                        "alignment_rate": r.get("alignment_rate")
+                        or r.get("sycophancy_rate")
+                        or r.get("drift_rate"),
                     },
                 }
             )
 
         return components
 
-    def _compute_red_team(
-        self, red_team_results: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _compute_red_team(self, red_team_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         components = []
         if not red_team_results:
             return [

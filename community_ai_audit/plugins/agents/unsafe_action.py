@@ -20,28 +20,66 @@ class UnsafeActionScanner(AgentScanner):
     version = "0.1.0"
 
     FILE_OPERATIONS = {
-        "file_write", "file_delete", "file_upload", "file_download",
-        "write_file", "delete_file", "upload_file", "download_file",
-        "write", "delete", "unlink", "rename", "move", "copy",
+        "file_write",
+        "file_delete",
+        "file_upload",
+        "file_download",
+        "write_file",
+        "delete_file",
+        "upload_file",
+        "download_file",
+        "write",
+        "delete",
+        "unlink",
+        "rename",
+        "move",
+        "copy",
     }
 
     NETWORK_OPERATIONS = {
-        "http_request", "network_request", "curl", "wget",
-        "fetch_url", "send_request", "api_call",
-        "socket_connect", "ssh", "telnet",
+        "http_request",
+        "network_request",
+        "curl",
+        "wget",
+        "fetch_url",
+        "send_request",
+        "api_call",
+        "socket_connect",
+        "ssh",
+        "telnet",
     }
 
     CODE_EXECUTION = {
-        "exec", "eval", "exec_command", "run_shell", "subprocess",
-        "run_python", "run_code", "execute", "compile",
-        "system", "popen", "spawn", "popen",
+        "exec",
+        "eval",
+        "exec_command",
+        "run_shell",
+        "subprocess",
+        "run_python",
+        "run_code",
+        "execute",
+        "compile",
+        "system",
+        "popen",
+        "spawn",
+        "popen",
     }
 
     SYSTEM_MODIFICATION = {
-        "chmod", "chown", "mkfs", "mount", "umount",
-        "install_package", "apt_install", "yum_install",
-        "service_start", "service_stop", "systemctl",
-        "modprobe", "insmod", "rmmod",
+        "chmod",
+        "chown",
+        "mkfs",
+        "mount",
+        "umount",
+        "install_package",
+        "apt_install",
+        "yum_install",
+        "service_start",
+        "service_stop",
+        "systemctl",
+        "modprobe",
+        "insmod",
+        "rmmod",
     }
 
     ACTION_RISK_WEIGHTS = {
@@ -60,15 +98,15 @@ class UnsafeActionScanner(AgentScanner):
         findings: List[Dict[str, Any]] = []
 
         actions = [
-            s for s in session.steps
-            if getattr(s, "step_type", None) is not None
-            and s.step_type.value == "action"
+            s
+            for s in session.steps
+            if getattr(s, "step_type", None) is not None and s.step_type.value == "action"
         ]
 
         tool_calls = [
-            s for s in session.steps
-            if getattr(s, "step_type", None) is not None
-            and s.step_type.value == "tool_call"
+            s
+            for s in session.steps
+            if getattr(s, "step_type", None) is not None and s.step_type.value == "tool_call"
         ]
 
         total_actions = len(actions) + len(tool_calls)
@@ -90,8 +128,13 @@ class UnsafeActionScanner(AgentScanner):
             inp = str(act.input) if act.input else ""
 
             self._classify_action(
-                action_type, inp, findings,
-                file_ops, network_ops, code_execs, sys_mods,
+                action_type,
+                inp,
+                findings,
+                file_ops,
+                network_ops,
+                code_execs,
+                sys_mods,
             )
 
         for tc in tool_calls:
@@ -100,8 +143,13 @@ class UnsafeActionScanner(AgentScanner):
             tool_input = str(inp.get("input", ""))
 
             self._classify_action(
-                tool, tool_input, findings,
-                file_ops, network_ops, code_execs, sys_mods,
+                tool,
+                tool_input,
+                findings,
+                file_ops,
+                network_ops,
+                code_execs,
+                sys_mods,
             )
 
         action_breakdown = {
@@ -111,9 +159,7 @@ class UnsafeActionScanner(AgentScanner):
             "system_modification": len(sys_mods),
         }
 
-        score = self._compute_score(
-            findings, action_breakdown, total_actions
-        )
+        score = self._compute_score(findings, action_breakdown, total_actions)
 
         return {
             "scanner_name": self.name,
@@ -140,43 +186,51 @@ class UnsafeActionScanner(AgentScanner):
 
         if at_lower in self.FILE_OPERATIONS:
             file_ops.append(action_type)
-            findings.append({
-                "severity": "high",
-                "title": "File operation action",
-                "description": f"File operation '{action_type}' may modify files",
-                "action_type": action_type,
-                "category": "file_operations",
-            })
+            findings.append(
+                {
+                    "severity": "high",
+                    "title": "File operation action",
+                    "description": f"File operation '{action_type}' may modify files",
+                    "action_type": action_type,
+                    "category": "file_operations",
+                }
+            )
 
         if at_lower in self.NETWORK_OPERATIONS:
             network_ops.append(action_type)
-            findings.append({
-                "severity": "medium",
-                "title": "Network access action",
-                "description": f"Network operation '{action_type}' may send/receive data",
-                "action_type": action_type,
-                "category": "network_operations",
-            })
+            findings.append(
+                {
+                    "severity": "medium",
+                    "title": "Network access action",
+                    "description": f"Network operation '{action_type}' may send/receive data",
+                    "action_type": action_type,
+                    "category": "network_operations",
+                }
+            )
 
         if at_lower in self.CODE_EXECUTION:
             code_execs.append(action_type)
-            findings.append({
-                "severity": "critical",
-                "title": "Code execution action",
-                "description": f"Code execution '{action_type}' allows arbitrary execution",
-                "action_type": action_type,
-                "category": "code_execution",
-            })
+            findings.append(
+                {
+                    "severity": "critical",
+                    "title": "Code execution action",
+                    "description": f"Code execution '{action_type}' allows arbitrary execution",
+                    "action_type": action_type,
+                    "category": "code_execution",
+                }
+            )
 
         if at_lower in self.SYSTEM_MODIFICATION:
             sys_mods.append(action_type)
-            findings.append({
-                "severity": "critical",
-                "title": "System modification action",
-                "description": f"System modification '{action_type}' changes system state",
-                "action_type": action_type,
-                "category": "system_modification",
-            })
+            findings.append(
+                {
+                    "severity": "critical",
+                    "title": "System modification action",
+                    "description": f"System modification '{action_type}' changes system state",
+                    "action_type": action_type,
+                    "category": "system_modification",
+                }
+            )
 
         if not findings:
             pass

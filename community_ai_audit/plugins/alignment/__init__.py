@@ -27,9 +27,7 @@ def list_alignment_scanners() -> List[str]:
     return sorted(_BUILTIN_ALIGNMENT.keys())
 
 
-def get_alignment_scanner(
-    name: str, config: Optional[Dict[str, Any]] = None
-) -> AlignmentScanner:
+def get_alignment_scanner(name: str, config: Optional[Dict[str, Any]] = None) -> AlignmentScanner:
     norm = _norm(name)
     for key, cls in _BUILTIN_ALIGNMENT.items():
         if _norm(key) == norm:
