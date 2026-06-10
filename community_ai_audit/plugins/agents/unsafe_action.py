@@ -50,7 +50,7 @@ class UnsafeActionScanner(AgentScanner):
     }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
-        cfg = config or {}
+        pass
 
     def scan(
         self,

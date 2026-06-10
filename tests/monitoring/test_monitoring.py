@@ -1,6 +1,5 @@
 """Tests for monitoring module."""
 
-import json
 import os
 import tempfile
 import unittest

@@ -26,7 +26,7 @@ from .audit import AuditEngine
 from .scheduler import AuditScheduler
 from .rbac import RBACConfig, AccessControl, PermissionError
 from .agent_session import AgentAuditSession, TraceStep, StepType
-from .tracing import ExecutionTrace, TraceStep as TracingTraceStep, Replayer, TraceExporter
+from .tracing import ExecutionTrace, Replayer, TraceExporter
 
 __all__ = [
     # Interfaces

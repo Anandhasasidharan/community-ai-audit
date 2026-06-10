@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
@@ -61,8 +60,8 @@ class MemoryPoisoningScanner(AgentScanner):
             self.max_memory_writes = config.get("max_memory_writes", self.max_memory_writes)
             if "sensitive_patterns" in config:
                 self.sensitive_patterns = [
-                    (re.compile(p), l) if isinstance(p, str) else p
-                    for p, l in config["sensitive_patterns"]
+                    (re.compile(p), lbl) if isinstance(p, str) else p
+                    for p, lbl in config["sensitive_patterns"]
                 ]
             if "injection_patterns" in config:
                 self.injection_patterns = [

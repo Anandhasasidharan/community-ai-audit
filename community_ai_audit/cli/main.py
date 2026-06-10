@@ -1541,7 +1541,7 @@ def _cmd_datasets(args: Any) -> int:
 def _cmd_agent_audit(args: Any) -> int:
     """Run agent audit scanners on a session."""
     from community_ai_audit.core.agent_session import AgentAuditSession
-    from community_ai_audit.plugins.agents import run_agent_scanners, list_agent_scanners
+    from community_ai_audit.plugins.agents import run_agent_scanners
 
     if args.session_file:
         with open(args.session_file) as f:
@@ -1576,7 +1576,7 @@ def _cmd_agent_audit(args: Any) -> int:
                 for f in findings:
                     print(f"    [{f.get('severity', 'info').upper()}] {f.get('title', '?')}")
             else:
-                print(f"    No findings")
+                print("    No findings")
 
     if args.save:
         with open(args.save, "w") as f:
@@ -1662,7 +1662,7 @@ def _cmd_agent_dashboard(args: Any) -> int:
 def _cmd_agent_monitor(args: Any) -> int:
     """Manage agent monitoring and alerts."""
     from community_ai_audit.monitoring import (
-        AgentAuditor, MonitorConfig, AlertManager, DriftDetector, TrendAnalyzer,
+        AgentAuditor, AlertManager, DriftDetector,
     )
 
     cmd = args.monitor_command

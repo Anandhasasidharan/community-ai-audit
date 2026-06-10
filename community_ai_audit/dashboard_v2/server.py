@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 from community_ai_audit.monitoring import (
     AgentAuditor,
@@ -118,13 +118,6 @@ class DashboardServer:
         total_audits: int,
         overall_trend: Any,
     ) -> str:
-        trend_points_json = json.dumps(
-            [
-                {"t": p.timestamp[:10], "v": p.value}
-                for p in overall_trend.points[-30:]
-            ]
-        )
-
         scanners_table = ""
         for name, line in scanner_trends.items():
             pts = [(p.value) for p in line.points[-10:]]

@@ -4,11 +4,7 @@ import json
 import unittest
 from community_ai_audit.core.agent_session import (
     AgentAuditSession,
-    TraceStep,
     StepType,
-    MemoryAccess,
-    Decision,
-    Action,
 )
 
 
@@ -81,7 +77,6 @@ class TestAgentAuditSession(unittest.TestCase):
         self.assertIsNotNone(self.session.end_time)
 
     def test_duration(self):
-        import time
         self.session.finish()
         dur = self.session.duration
         self.assertGreaterEqual(dur, 0)

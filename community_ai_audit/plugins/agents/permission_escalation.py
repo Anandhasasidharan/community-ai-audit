@@ -52,8 +52,8 @@ class PermissionEscalationScanner(AgentScanner):
     ) -> Dict[str, Any]:
         if config and "escalation_patterns" in config:
             self.escalation_patterns = [
-                (re.compile(p), l) if isinstance(p, str) else p
-                for p, l in config["escalation_patterns"]
+                (re.compile(p), lbl) if isinstance(p, str) else p
+                for p, lbl in config["escalation_patterns"]
             ]
 
         findings: List[Dict[str, Any]] = []

@@ -4,7 +4,6 @@ import json
 import os
 import tempfile
 import unittest
-from datetime import datetime, timezone
 from community_ai_audit.core.tracing import (
     TraceStep,
     ExecutionTrace,

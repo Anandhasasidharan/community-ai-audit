@@ -37,7 +37,6 @@ class ActivationProbes(MechanisticInterpreter):
             probe_inputs = config["probe_inputs"]
 
         probe_results: List[Dict[str, Any]] = []
-        active_neurons_estimate = 0
 
         for inp in probe_inputs:
             try:
