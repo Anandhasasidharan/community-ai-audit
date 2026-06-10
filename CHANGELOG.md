@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.3.0...v0.4.0) (2026-06-10)
+
+
+### Features
+
+* v0.7.0 - Red Team, Mech Interp, Alignment, Scoring Engine, Dashboard, Trend Tracking ([061aa8e](https://github.com/Anandhasasidharan/community-ai-audit/commit/061aa8e41d1888356677d0d068b0d7609ca1866a))
+
 ## [0.3.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.2.0...v0.3.0) (2026-06-07)
 
 

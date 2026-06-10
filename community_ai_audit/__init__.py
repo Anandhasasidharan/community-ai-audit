@@ -16,7 +16,7 @@ Evaluation Framework:
     report = eval_engine.regression(baseline, current)
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "Community Contributors"
 
 from community_ai_audit.cache import ModelCache
