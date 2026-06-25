@@ -9,7 +9,9 @@ import json
 import os
 import time
 import logging
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
+
+from community_ai_audit.cli import ui
 
 from community_ai_audit.core.rbac import PermissionError as RBACPermError
 
@@ -705,8 +707,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     _setup_logging(args.verbose)
 
     if args.command is None:
+        ui.print_banner()
         parser.print_help()
         return 1
+
+    ui.install_traceback_handler()
+    ui.print_banner()
 
     # Lazy import to avoid slow startup for --help
     from community_ai_audit.core.audit import AuditEngine
@@ -794,7 +800,7 @@ def _cmd_schedule(engine, args) -> int:
     try:
         _rbac_check(args)
     except (PermissionError, RBACPermError) as e:
-        print(f"Access denied: {e}")
+        ui.error(f"Access denied: {e}")
         return 1
     from community_ai_audit.core.scheduler import AuditScheduler
 
@@ -814,31 +820,31 @@ def _cmd_schedule(engine, args) -> int:
                 profile=args.profile,
                 output_format=args.output,
             )
-            print(f"Schedule '{args.name}' added (cron: {args.cron})")
+            ui.success(f"Schedule '{args.name}' added (cron: {args.cron})")
         except Exception as e:
-            print(f"Failed to add schedule: {e}")
+            ui.error(f"Failed to add schedule: {e}")
             return 1
 
     elif cmd == "list":
         schedules = scheduler.list_schedules()
         if not schedules:
-            print("No schedules configured.")
+            ui.info("No schedules configured.")
         else:
             for s in schedules:
                 next_run = scheduler._get_next_run(s.get("cron", ""))
-                print(
-                    f"  {s['name']:20s} | cron: {s.get('cron', ''):15s} | "
-                    f"model: {s.get('model_id', ''):30s} | "
+                ui.info(
+                    f"  {s['name']} | cron: {s.get('cron', '')} | "
+                    f"model: {s.get('model_id', '')} | "
                     f"next: {next_run or 'N/A'}"
                 )
-                print(f"  {'':20s} | scanners: {', '.join(s.get('scanners', [])) or '(all)'}")
+                ui.info(f"  {'':20s} | scanners: {', '.join(s.get('scanners', [])) or '(all)'}")
 
     elif cmd == "remove":
         try:
             scheduler.remove_schedule(args.name)
-            print(f"Schedule '{args.name}' removed.")
+            ui.success(f"Schedule '{args.name}' removed.")
         except KeyError:
-            print(f"Schedule '{args.name}' not found.")
+            ui.error(f"Schedule '{args.name}' not found.")
             return 1
 
     elif cmd == "run":
@@ -846,30 +852,30 @@ def _cmd_schedule(engine, args) -> int:
             all_schedules = scheduler.list_schedules()
             found = [s for s in all_schedules if s["name"] == args.name]
             if not found:
-                print(f"Schedule '{args.name}' not found.")
+                ui.error(f"Schedule '{args.name}' not found.")
                 return 1
             schedules_to_run = [(found[0], scheduler._get_next_run(found[0].get("cron", "")))]
         else:
             schedules_to_run = scheduler.get_due_schedules()
 
         if not schedules_to_run:
-            print("No schedules due.")
+            ui.info("No schedules due.")
             return 0
 
         for sched, _ in schedules_to_run:
-            print(f"Running schedule '{sched['name']}'...")
+            ui.info(f"Running schedule '{sched['name']}'...")
             try:
                 results = scheduler.run_due(engine)
                 if results:
                     for r in results:
-                        print(f"  {r.get('name', '?'):20s} -> {r.get('status', '?')}")
-                print(f"Schedule '{sched['name']}' completed.")
+                        ui.info(f"  {r.get('name', '?')} -> {r.get('status', '?')}")
+                ui.success(f"Schedule '{sched['name']}' completed.")
             except Exception as e:
-                print(f"Schedule '{sched['name']}' failed: {e}")
+                ui.error(f"Schedule '{sched['name']}' failed: {e}")
                 return 1
 
     else:
-        print("Unknown schedule command. Use: add, list, remove, run")
+        ui.error("Unknown schedule command. Use: add, list, remove, run")
         return 1
 
     return 0
@@ -881,16 +887,9 @@ def _cmd_discover(engine, args) -> int:
     caps = engine.list_capabilities()
 
     if args.format == "json":
-        print(json.dumps(caps, indent=2))
+        ui.print_json(caps)
     else:
-        print("\n" + "─" * 60)
-        print("🎛  Community AI Audit — Discovered Capabilities")
-        print("─" * 60)
-
-        for category, items in caps.items():
-            print(f"\n  {category.replace('_', ' ').title()}:")
-            for item in items:
-                print(f"    • {item}")
+        ui.print_discover(caps, format="tree")
 
     return 0
 
@@ -903,15 +902,16 @@ def _cmd_scan(engine, args) -> int:
     try:
         _rbac_check(args)
     except (PermissionError, RBACPermError) as e:
-        print(f"Access denied: {e}")
+        ui.error(f"Access denied: {e}")
         return 1
 
     adapter_config = _build_adapter_config(args, engine.config)
     model_id = args.model
 
-    print(f"Loading model: {model_id} (provider: {args.provider}) ...")
-    engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
-    print("Model loaded. Running scanners...")
+    ui.header("Security Scan", f"{model_id} ({args.provider})")
+    with ui.progress_context("Loading model...") as progress:
+        progress.add_task("Loading model...", total=None)
+        engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
 
     selected_scanners, _selected_interpreters, profile_overrides = _apply_profile_defaults(
         profile=getattr(args, "profile", "standard"),
@@ -919,30 +919,43 @@ def _cmd_scan(engine, args) -> int:
         interpreters=None,
     )
     scanner_overrides = _merge_overrides(profile_overrides, _build_scanner_overrides(args))
+
+    ui.info(f"Running {len(selected_scanners)} scanners...")
+    scanner_names = selected_scanners or []
+
+    for name in ui.task_progress(scanner_names, "Scanning"):
+        pass
+
     results = engine.scan(scanners=selected_scanners, config_overrides=scanner_overrides)
 
-    # Generate and print / save report
     reporter = ReportGenerator()
     if args.output == "json":
         report = _json.dumps([r.to_dict() for r in results], indent=2)
+        ui.print_json(report)
     else:
-        report = reporter.render_scan_results(results, fmt=args.output)
-
-    print(report)
+        for r in results:
+            findings = getattr(r, "findings", [])
+            finding_dicts = []
+            for f in findings:
+                finding_dicts.append({
+                    "severity": getattr(f, "severity", "unknown"),
+                    "description": getattr(f, "description", str(f)),
+                    "category": getattr(f, "category", "general"),
+                })
+            if finding_dicts:
+                ui.print_findings(finding_dicts, title=f"{r.scanner_name} Findings")
+            else:
+                ui.success(f"{r.scanner_name}: no findings")
 
     if args.save:
-        _save_report(report, args.save)
+        _save_report(report if args.output == "json" else reporter.render_scan_results(results, fmt=args.output), args.save)
 
-    # Push to SIEM if requested
     if args.connectors:
         connector_configs = _build_connector_configs(args, engine.config)
-        connector_results = engine._push_to_connectors(
-            results, [], args.connectors, connector_configs
-        )
+        connector_results = engine._push_to_connectors(results, [], args.connectors, connector_configs)
         for name, status in connector_results.items():
-            print(f"Connector {name}: {status}")
+            ui.info(f"Connector {name}: {status}")
 
-    # Exit with non-zero if critical/high/medium findings
     highest = max(
         (r.overall_severity for r in results),
         key=lambda s: _severity_rank(s),
@@ -950,9 +963,10 @@ def _cmd_scan(engine, args) -> int:
     )
     if highest is None:
         return 0
-    if getattr(highest, "value", str(highest)).lower() == "critical":
+    sev_str = getattr(highest, "value", str(highest)).lower()
+    if sev_str == "critical":
         return 2
-    if getattr(highest, "value", str(highest)).lower() in ("high", "medium"):
+    if sev_str in ("high", "medium"):
         return 1
     return 0
 
@@ -965,33 +979,37 @@ def _cmd_interpret(engine, args) -> int:
     try:
         _rbac_check(args)
     except (PermissionError, RBACPermError) as e:
-        print(f"Access denied: {e}")
+        ui.error(f"Access denied: {e}")
         return 1
 
     adapter_config = _build_adapter_config(args, engine.config)
     model_id = args.model
 
-    print(f"Loading model: {model_id} (provider: {args.provider}) ...")
-    engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
-    print("Model loaded. Running interpreters...")
+    ui.header("Model Interpretation", f"{model_id} ({args.provider})")
+    with ui.progress_context("Loading model...") as progress:
+        progress.add_task("Loading model...", total=None)
+        engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
 
     raw_input = args.input_data or "Explain this model's decision for a neutral statement."
     inputs = _parse_input_value(raw_input)
-    results = engine.interpret(
-        inputs=inputs,
-        interpreters=args.interpreters,
-    )
+
+    ui.info("Running interpreters...")
+    results = engine.interpret(inputs=inputs, interpreters=args.interpreters)
 
     reporter = ReportGenerator()
     if args.output == "json":
         report = _json.dumps([r.to_dict() for r in results], indent=2)
+        ui.print_json(report)
     else:
-        report = reporter.render_interpret_results(results, fmt=args.output)
-
-    print(report)
+        for r in results:
+            ui.panel(
+                getattr(r, "interpreter_name", "Interpretation"),
+                str(getattr(r, "summary", str(r))),
+                style="magenta",
+            )
 
     if args.save:
-        _save_report(report, args.save)
+        _save_report(report if args.output == "json" else reporter.render_interpret_results(results, fmt=args.output), args.save)
 
     return 0
 
@@ -1004,15 +1022,16 @@ def _cmd_audit(engine, args) -> int:
     try:
         _rbac_check(args)
     except (PermissionError, RBACPermError) as e:
-        print(f"Access denied: {e}")
+        ui.error(f"Access denied: {e}")
         return 1
 
     adapter_config = _build_adapter_config(args, engine.config)
     model_id = args.model
 
-    print(f"Loading model: {model_id} (provider: {args.provider}) ...")
-    engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
-    print("Model loaded. Running full audit...")
+    ui.header("Full Security Audit", f"{model_id} ({args.provider})")
+    with ui.progress_context("Loading model...") as progress:
+        progress.add_task("Loading model...", total=None)
+        engine.load_model(model_id, provider=args.provider, adapter_config=adapter_config)
 
     selected_scanners, selected_interpreters, profile_overrides = _apply_profile_defaults(
         profile=getattr(args, "profile", "standard"),
@@ -1025,6 +1044,7 @@ def _cmd_audit(engine, args) -> int:
     run_metadata = _build_run_metadata(args, scanner_overrides)
     connector_configs = _build_connector_configs(args, engine.config)
 
+    ui.info(f"Running {len(selected_scanners)} scanners and {len(selected_interpreters)} interpreters...")
     session = engine.audit(
         scanners=selected_scanners,
         interpreters=selected_interpreters,
@@ -1035,15 +1055,13 @@ def _cmd_audit(engine, args) -> int:
         run_metadata=run_metadata,
     )
 
-    # Generate report
     reporter = ReportGenerator()
     if args.output == "json":
         report = _json.dumps(session.to_dict(), indent=2, default=str)
+        ui.print_json(report)
     else:
         report = reporter.render_session(session, fmt=args.output)
-
-    print(report)
-    print("\n" + session.summary())
+        ui.success(f"Audit complete: {session.summary()}")
 
     if args.save:
         _save_report(report, args.save)
@@ -1343,7 +1361,7 @@ def _cmd_eval(engine: Any, args: Any) -> int:
     try:
         _rbac_check(args)
     except (PermissionError, RBACPermError) as e:
-        print(f"Access denied: {e}")
+        ui.error(f"Access denied: {e}")
         return 1
 
     from community_ai_audit.core.evaluation import EvaluationEngine
@@ -1353,7 +1371,7 @@ def _cmd_eval(engine: Any, args: Any) -> int:
         try:
             scoring_weights = {dim: float(val) for dim, val in args.scoring_weight}
         except ValueError as e:
-            print(f"Invalid scoring weight: {e}")
+            ui.error(f"Invalid scoring weight: {e}")
             return 1
 
     eval_engine = EvaluationEngine(audit_engine=engine)
@@ -1363,7 +1381,7 @@ def _cmd_eval(engine: Any, args: Any) -> int:
     if hasattr(args, "probe_file") and args.probe_file:
         probe_inputs = _load_probe_file(args.probe_file)
 
-    print(f"Evaluating model: {args.model} (provider: {args.provider}) ...")
+    ui.info(f"Evaluating model: {args.model} (provider: {args.provider}) ...")
     result = eval_engine.evaluate(
         model_id=args.model,
         provider=args.provider,
@@ -1376,21 +1394,23 @@ def _cmd_eval(engine: Any, args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(result.to_dict(), indent=2))
+        ui.print_json(result.to_dict())
     else:
-        print(f"\n{'─' * 60}")
-        print(f"Evaluation: {result.model_id}")
-        print(f"{'─' * 60}")
-        print(f"  Session:     {result.session_id}")
-        print(f"  Duration:    {result.duration_seconds:.1f}s")
-        print(f"  Findings:    {result.total_findings}")
-        print(f"  Policies:    {result.passed_policies} passed / {result.failed_policies} failed")
+        ui.header(f"Evaluation: {result.model_id}")
+        ui.info(f"Session: {result.session_id}")
+        ui.info(f"Duration: {result.duration_seconds:.1f}s")
+        ui.info(f"Findings: {result.total_findings}")
+        ui.info(f"Policies: {result.passed_policies} passed / {result.failed_policies} failed")
+
+        d = result.to_dict()
         if result.risk_scores:
-            print("\n  Risk Scores:")
-            print(f"    Security:     {result.risk_scores.get('security_score', 'N/A')}")
-            print(f"    Reliability:  {result.risk_scores.get('reliability_score', 'N/A')}")
-            print(f"    Compliance:   {result.risk_scores.get('compliance_score', 'N/A')}")
-            print(f"    Overall:      {result.risk_scores.get('overall_score', 'N/A')}")
+            dims = [
+                ("Security", d.get("risk_scores", {}).get("security_score", 0)),
+                ("Reliability", d.get("risk_scores", {}).get("reliability_score", 0)),
+                ("Compliance", d.get("risk_scores", {}).get("compliance_score", 0)),
+            ]
+            overall = d.get("risk_scores", {}).get("overall_score", 0)
+            ui.print_overall_score(overall, *dims)
 
     if args.save:
         _save_report(json.dumps(result.to_dict(), indent=2), args.save)
@@ -1403,7 +1423,7 @@ def _cmd_benchmark(engine: Any, args: Any) -> int:
     try:
         _rbac_check(args)
     except (PermissionError, RBACPermError) as e:
-        print(f"Access denied: {e}")
+        ui.error(f"Access denied: {e}")
         return 1
 
     from community_ai_audit.core.evaluation import EvaluationEngine
@@ -1411,7 +1431,6 @@ def _cmd_benchmark(engine: Any, args: Any) -> int:
     eval_engine = EvaluationEngine(audit_engine=engine)
 
     dataset_name = args.dataset
-    # Check if it's a custom dataset file path
     if os.path.exists(dataset_name) or dataset_name.endswith((".json", ".jsonl", ".yaml", ".yml")):
         from community_ai_audit.datasets.registry import load_custom_dataset
 
@@ -1419,13 +1438,13 @@ def _cmd_benchmark(engine: Any, args: Any) -> int:
             load_custom_dataset(dataset_name)
             dataset_name = os.path.splitext(os.path.basename(dataset_name))[0]
         except Exception as e:
-            print(f"Failed to load custom dataset: {e}")
+            ui.error(f"Failed to load custom dataset: {e}")
             return 1
 
     adapter_config = _build_adapter_config(args, engine.config)
 
-    print(f"Benchmarking model: {args.model} (provider: {args.provider}) ...")
-    print(f"Dataset: {dataset_name} (version: {args.dataset_version})")
+    ui.header("Model Benchmark", f"{args.model} ({args.provider})")
+    ui.info(f"Dataset: {dataset_name} (version: {args.dataset_version})")
 
     try:
         result = eval_engine.benchmark(
@@ -1437,10 +1456,9 @@ def _cmd_benchmark(engine: Any, args: Any) -> int:
             sample_limit=args.sample_limit,
         )
     except ValueError as e:
-        print(f"Benchmark failed: {e}")
+        ui.error(f"Benchmark failed: {e}")
         return 1
 
-    # Record the benchmark run for history
     from community_ai_audit.datasets.models import BenchmarkRun
     from community_ai_audit.datasets.registry import record_benchmark_run
 
@@ -1462,20 +1480,18 @@ def _cmd_benchmark(engine: Any, args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(result.to_dict(), indent=2))
+        ui.print_json(result.to_dict())
     else:
-        print(f"\n{'─' * 60}")
-        print(f"Benchmark: {result.benchmark_name}")
-        print(f"{'─' * 60}")
-        print(f"  Dataset:       {result.dataset_name} v{result.dataset_version}")
-        print(f"  Model:         {result.model_id}")
-        print(f"  Samples:       {result.num_samples}")
-        print(f"  Passed:        {result.num_passed}")
-        print(f"  Failed:        {result.num_failed}")
-        print(f"  Accuracy:      {result.accuracy:.3f}")
-        print(f"  Duration:      {result.duration_seconds:.1f}s")
-        if result.scores:
-            print(f"  Scores:        {result.scores}")
+        ui.panel(
+            f"Benchmark: {result.benchmark_name}",
+            f"Dataset: {result.dataset_name} v{result.dataset_version}\n"
+            f"Model: {result.model_id}\n"
+            f"Samples: {result.num_samples}\n"
+            f"Passed: {result.num_passed} / Failed: {result.num_failed}\n"
+            f"Accuracy: [{'green' if result.accuracy > 0.8 else 'yellow'}]{result.accuracy:.3f}[/]\n"
+            f"Duration: {result.duration_seconds:.1f}s",
+            style="cyan",
+        )
 
     return 0
 
@@ -1505,7 +1521,7 @@ def _cmd_regression(args: Any) -> int:
         baseline = _load_result(args.baseline_id)
         current = _load_result(args.current_id)
     except (ValueError, OSError) as e:
-        print(f"Failed to load benchmark results: {e}")
+        ui.error(f"Failed to load benchmark results: {e}")
         return 1
 
     report = eval_engine.regression(
@@ -1515,30 +1531,23 @@ def _cmd_regression(args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(report.to_dict(), indent=2))
+        ui.print_json(report.to_dict())
     else:
-        print(f"\n{'─' * 60}")
-        print("Regression Report")
-        print(f"{'─' * 60}")
-        print(
-            f"  Baseline: {report.baseline.benchmark_name} ({report.baseline.started_at.isoformat()[:10]})"
-        )
-        print(
-            f"  Current:  {report.current.benchmark_name} ({report.current.started_at.isoformat()[:10]})"
-        )
-        print(
-            f"  Accuracy: {report.baseline.accuracy:.3f} -> {report.current.accuracy:.3f} ({report.accuracy_delta:+.3f})"
-        )
+        ui.header("Regression Report")
+        ui.info(f"Baseline: {report.baseline.benchmark_name} ({report.baseline.started_at.isoformat()[:10]})")
+        ui.info(f"Current:  {report.current.benchmark_name} ({report.current.started_at.isoformat()[:10]})")
+        delta = report.accuracy_delta
+        delta_color = "green" if delta >= 0 else "red"
+        ui.info(f"Accuracy: {report.baseline.accuracy:.3f} -> {report.current.accuracy:.3f} ([{delta_color}]{delta:+.3f}[/])")
         if report.regressions:
-            print("\n  Regressions:")
+            ui.divider()
             for r in report.regressions:
-                print(f"    ⚠ {r}")
+                ui.error(str(r))
         if report.improvements:
-            print("\n  Improvements:")
             for r in report.improvements:
-                print(f"    ✓ {r}")
+                ui.success(str(r))
         if not report.has_regression and not report.has_improvement:
-            print(f"  No significant changes detected (threshold: {report.threshold})")
+            ui.info(f"No significant changes detected (threshold: {report.threshold})")
 
     return 0
 
@@ -1549,20 +1558,22 @@ def _cmd_datasets(args: Any) -> int:
 
     datasets = list_datasets()
     if not datasets:
-        print("No datasets available.")
+        ui.info("No datasets available.")
         return 0
 
     if args.format == "json":
-        print(json.dumps([d.to_dict() for d in datasets], indent=2))
+        ui.print_json([d.to_dict() for d in datasets])
     else:
-        print(f"\n{'─' * 60}")
-        print("Available Benchmark Datasets")
-        print(f"{'─' * 60}")
+        ui.header("Available Benchmark Datasets")
+        tbl = ui.Table(box=ui.box.SIMPLE, header_style="bold cyan")
+        tbl.add_column("Name", style="bold")
+        tbl.add_column("Version")
+        tbl.add_column("Samples", justify="right")
+        tbl.add_column("Categories")
+        tbl.add_column("Description")
         for ds in datasets:
-            print(
-                f"  {ds.name:20s} v{ds.version:8s} | {ds.num_samples:4d} samples | {', '.join(ds.categories)}"
-            )
-            print(f"  {'':20s}   {ds.description}")
+            tbl.add_row(ds.name, str(ds.version), str(ds.num_samples), ", ".join(ds.categories), ds.description)
+        ui._console().print(tbl)
 
     return 0
 
@@ -1577,42 +1588,30 @@ def _cmd_agent_audit(args: Any) -> int:
             data = json.load(f)
         session = AgentAuditSession.from_dict(data)
     else:
-        session = AgentAuditSession(agent_id=args.agent_id)
-        print("Warning: No session file provided. Running on empty session.")
+        ui.warning("No session file provided. Running on empty session.")
         return 1
 
-    print(f"Running agent audit on session {session.session_id[:8]}...")
-    print(
-        f"Tools used: {len([s for s in session.steps if hasattr(s, 'step_type') and hasattr(s.step_type, 'value') and s.step_type.value == 'tool_call'])}"
-    )
+    ui.header(f"Agent Audit: {session.agent_id}")
+    ui.info(f"Session: {session.session_id[:8]}")
+    tool_count = len([s for s in session.steps if hasattr(s, 'step_type') and hasattr(s.step_type, 'value') and s.step_type.value == 'tool_call'])
+    ui.info(f"Tools used: {tool_count}")
 
-    results = run_agent_scanners(
-        scanners=args.scanners,
-        session=session,
-    )
+    results = run_agent_scanners(scanners=args.scanners, session=session)
 
     if args.output == "json":
-        output = json.dumps(results, indent=2, default=str)
-        print(output)
+        ui.print_json(results)
     else:
-        print(f"\n{'─' * 60}")
-        print(f"Agent Audit Results: {session.agent_id} / {session.session_id[:8]}")
-        print(f"{'─' * 60}")
+        ui.print_results_table(results, title="Agent Audit Results", score_keys=["score"], extra_keys=[])
+
         for result in results:
-            name = result.get("scanner_name", "?")
-            score = result.get("score", 0)
             findings = result.get("findings", [])
-            print(f"\n  {name}: score={score:.1f}")
             if findings:
-                for f in findings:
-                    print(f"    [{f.get('severity', 'info').upper()}] {f.get('title', '?')}")
-            else:
-                print("    No findings")
+                ui.print_findings(findings, title=result.get("scanner_name", "?"))
 
     if args.save:
         with open(args.save, "w") as f:
             f.write(json.dumps(results, indent=2, default=str))
-        print(f"Results saved to: {args.save}")
+        ui.success(f"Results saved to: {args.save}")
 
     return 0
 
@@ -1640,15 +1639,15 @@ def _cmd_agent_trace(args: Any) -> int:
         if args.step:
             step = replayer.seek(args.step)
             if step:
-                print(json.dumps(step.to_dict(), indent=2, default=str))
+                ui.print_json(step.to_dict())
             else:
-                print(f"Step {args.step} not found.")
+                ui.error(f"Step {args.step} not found.")
                 return 1
         else:
-            print(f"Replaying trace: {trace.session_id} ({trace.step_count} steps)")
-            print(f"{'─' * 60}")
-            print(f"Summary: {json.dumps(replayer.summary(), indent=2)}")
-            print(f"Stats: {json.dumps(replayer.stats(), indent=2)}")
+            ui.header(f"Trace Replay: {trace.session_id}")
+            ui.info(f"Steps: {trace.step_count}")
+            ui.info(f"Summary: {json.dumps(replayer.summary(), indent=2)}")
+            ui.info(f"Stats: {json.dumps(replayer.stats(), indent=2)}")
 
     elif cmd == "export":
         with open(args.session_file) as f:
@@ -1662,13 +1661,12 @@ def _cmd_agent_trace(args: Any) -> int:
             end_time=session.end_time,
         )
         exporter = TraceExporter(trace)
-
         output_path = args.output or f"trace_{session.session_id[:8]}.{args.format}"
         exporter.save(output_path, fmt=args.format)
-        print(f"Trace exported to: {output_path}")
+        ui.success(f"Trace exported to: {output_path}")
 
     else:
-        print("Unknown trace command. Use: replay, export")
+        ui.error("Unknown trace command. Use: replay, export")
         return 1
 
     return 0
@@ -1686,7 +1684,7 @@ def _cmd_agent_dashboard(args: Any) -> int:
     else:
         path = server.save_html(args.output)
 
-    print(f"Dashboard saved to: {path}")
+    ui.success(f"Dashboard saved to: {path}")
     return 0
 
 
@@ -1712,43 +1710,41 @@ def _cmd_agent_monitor(args: Any) -> int:
             session=session,
             scanners=args.scanners,
         )
-        print(json.dumps(result, indent=2, default=str))
+        ui.print_json(result)
 
     elif cmd == "history":
         auditor = AgentAuditor()
         history = auditor.get_history(limit=args.limit, agent_id=args.agent_id)
 
         if args.format == "json":
-            print(json.dumps(history, indent=2, default=str))
+            ui.print_json(history)
         else:
-            print(f"\n{'─' * 60}")
-            print(f"Audit History (last {len(history)} records)")
-            print(f"{'─' * 60}")
+            ui.header(f"Audit History (last {len(history)} records)")
             for record in history:
                 ts = record.get("timestamp", "")[:19]
                 agent = record.get("agent_id", "?")
                 score = record.get("overall_score", "?")
                 scanner_count = len(record.get("scanner_results", []))
-                print(f"  {ts} | {agent:20s} | score: {score:>5} | scanners: {scanner_count}")
+                ui.info(f"{ts} | {agent} | score: {score} | scanners: {scanner_count}")
 
     elif cmd == "alerts":
         alert_manager = AlertManager()
         if args.clear:
             count = alert_manager.clear_alerts()
-            print(f"Cleared {count} alerts.")
+            ui.success(f"Cleared {count} alerts.")
             return 0
 
         from community_ai_audit.monitoring.alerts import AlertLevel
 
         level = AlertLevel(args.level) if args.level else None
         alerts = alert_manager.get_alerts(limit=args.limit, level=level)
-        print(json.dumps([a.to_dict() for a in alerts], indent=2))
+        ui.print_json([a.to_dict() for a in alerts])
 
     elif cmd == "drift":
         auditor = AgentAuditor()
         history = auditor.get_history(limit=100)
         if len(history) < 2:
-            print("Need at least 2 audit records for drift detection.")
+            ui.warning("Need at least 2 audit records for drift detection.")
             return 1
 
         baseline = history[: args.baseline]
@@ -1756,20 +1752,28 @@ def _cmd_agent_monitor(args: Any) -> int:
         detector = DriftDetector(threshold=args.threshold)
         reports = detector.detect_drift(baseline, current)
 
-        print(f"\n{'─' * 60}")
-        print("Drift Detection Report")
-        print(f"{'─' * 60}")
+        tbl = ui.Table(box=ui.box.SIMPLE, header_style="bold yellow")
+        tbl.add_column("Scanner", style="bold")
+        tbl.add_column("Baseline", justify="right")
+        tbl.add_column("Current", justify="right")
+        tbl.add_column("Delta", justify="right")
+        tbl.add_column("Status")
         for report in reports:
-            status = "⚠ DRIFTED" if report.drifted else "✓ stable"
+            status = "[red]DRIFTED[/]" if report.drifted else "[green]stable[/]"
             direction = "↓" if report.delta < 0 else "↑"
-            print(
-                f"  {report.scanner_name:25s} "
-                f"{report.baseline_score:6.1f} -> {report.current_score:6.1f} "
-                f"({direction}{abs(report.delta):.1f}) {status}"
+            delta_str = f"{direction}{abs(report.delta):.1f}"
+            delta_color = "red" if report.drifted else "green"
+            tbl.add_row(
+                report.scanner_name,
+                f"{report.baseline_score:.1f}",
+                f"{report.current_score:.1f}",
+                f"[{delta_color}]{delta_str}[/]",
+                status,
             )
+        ui._console().print(ui.Panel(tbl, title="Drift Detection Report", border_style="yellow"))
 
     else:
-        print("Unknown monitor command. Use: audit, history, alerts, drift")
+        ui.error("Unknown monitor command. Use: audit, history, alerts, drift")
         return 1
 
     return 0
@@ -1789,14 +1793,14 @@ def _cmd_redteam(args: Any) -> int:
     provider = args.provider
     model_id = args.model
 
-    print(f"Loading model: {model_id} (provider: {provider}) ...")
+    ui.info(f"Loading model: {model_id} (provider: {provider}) ...")
     try:
         engine.load_model(model_id, provider=provider, adapter_config=adapter_config)
     except Exception as e:
-        print(f"Failed to load model: {e}")
+        ui.error(f"Failed to load model: {e}")
         return 1
 
-    print("Running red team tests...")
+    ui.info("Running red team tests...")
     results = run_redteam_scanners(
         scanners=args.scanners,
         model=engine._model,
@@ -1804,17 +1808,15 @@ def _cmd_redteam(args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(results, indent=2, default=str))
+        ui.print_json(results)
     else:
-        print(f"\n{'─' * 60}")
-        print("Red Team Test Results")
-        print(f"{'─' * 60}")
-        for r in results:
-            name = r.get("scanner_name", "?")
-            score = r.get("score", 0)
-            asr = r.get("attack_success_rate", 0)
-            total = r.get("total_attacks", 0)
-            print(f"  {name:20s} score={score:6.1f}  success_rate={asr:.2%}  ({total} attacks)")
+        ui.print_results_table(
+            results,
+            title="Red Team Test Results",
+            name_key="scanner_name",
+            score_keys=["score"],
+            extra_keys=["attack_success_rate", "total_attacks"],
+        )
 
     return 0
 
@@ -1833,14 +1835,14 @@ def _cmd_mechinterp(args: Any) -> int:
     provider = args.provider
     model_id = args.model
 
-    print(f"Loading model: {model_id} (provider: {provider}) ...")
+    ui.info(f"Loading model: {model_id} (provider: {provider}) ...")
     try:
         engine.load_model(model_id, provider=provider, adapter_config=adapter_config)
     except Exception as e:
-        print(f"Failed to load model: {e}")
+        ui.error(f"Failed to load model: {e}")
         return 1
 
-    print("Running mechanistic interpretability analysis...")
+    ui.info("Running mechanistic interpretability analysis...")
     results = run_mechinterp_analyzers(
         analyzers=args.analyzers,
         model=engine._model,
@@ -1848,16 +1850,15 @@ def _cmd_mechinterp(args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(results, indent=2, default=str))
+        ui.print_json(results)
     else:
-        print(f"\n{'─' * 60}")
-        print("Mechanistic Interpretability Results")
-        print(f"{'─' * 60}")
-        for r in results:
-            name = r.get("interpreter_name", "?")
-            score = r.get("score", 0)
-            probes = r.get("total_probes", 0)
-            print(f"  {name:25s} score={score:6.1f}  probes={probes}")
+        ui.print_results_table(
+            results,
+            title="Mechanistic Interpretability Results",
+            name_key="interpreter_name",
+            score_keys=["score"],
+            extra_keys=["total_probes"],
+        )
 
     return 0
 
@@ -1876,14 +1877,14 @@ def _cmd_alignment(args: Any) -> int:
     provider = args.provider
     model_id = args.model
 
-    print(f"Loading model: {model_id} (provider: {provider}) ...")
+    ui.info(f"Loading model: {model_id} (provider: {provider}) ...")
     try:
         engine.load_model(model_id, provider=provider, adapter_config=adapter_config)
     except Exception as e:
-        print(f"Failed to load model: {e}")
+        ui.error(f"Failed to load model: {e}")
         return 1
 
-    print("Running alignment evaluation...")
+    ui.info("Running alignment evaluation...")
     results = run_alignment_scanners(
         scanners=args.scanners,
         model=engine._model,
@@ -1891,16 +1892,15 @@ def _cmd_alignment(args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(results, indent=2, default=str))
+        ui.print_json(results)
     else:
-        print(f"\n{'─' * 60}")
-        print("Alignment Evaluation Results")
-        print(f"{'─' * 60}")
-        for r in results:
-            name = r.get("scanner_name", "?")
-            score = r.get("alignment_score", r.get("score", 0))
-            conf = r.get("confidence", 0)
-            print(f"  {name:25s} alignment_score={score:6.1f}  confidence={conf:.2f}")
+        ui.print_results_table(
+            results,
+            title="Alignment Evaluation Results",
+            name_key="scanner_name",
+            score_keys=["alignment_score", "score"],
+            extra_keys=["confidence"],
+        )
 
     return 0
 
@@ -1929,7 +1929,7 @@ def _cmd_audit_score(args: Any) -> int:
         try:
             weights = {dim: float(val) for dim, val in args.weights}
         except ValueError as e:
-            print(f"Invalid weight: {e}")
+            ui.error(f"Invalid weight: {e}")
             return 1
 
     engine = ScoringEngine(weights=weights)
@@ -1944,20 +1944,20 @@ def _cmd_audit_score(args: Any) -> int:
     )
 
     if args.output == "json":
-        print(json.dumps(risk.to_dict(), indent=2))
+        ui.print_json(risk.to_dict())
     else:
-        print(f"\n{'─' * 60}")
-        print("Unified Audit Score")
-        print(f"{'─' * 60}")
-        print(f"  Overall:           {risk.overall_score:.1f} ({risk.interpret_overall()})")
-        print(f"  Security:          {risk.security_score:.1f}")
-        print(f"  Reliability:       {risk.reliability_score:.1f}")
-        print(f"  Compliance:        {risk.compliance_score:.1f}")
-        print(f"  Agent Risk:        {risk.agent_risk_score:.1f}")
-        print(f"  Alignment:         {risk.alignment_score:.1f}")
-        print(f"  Red Team:          {risk.red_team_score:.1f}")
-        print(f"  Interpretability:  {risk.interpretability_score:.1f}")
-        print(f"  Weights:           {risk.weights}")
+        dims = [
+            ("Security", risk.security_score),
+            ("Reliability", risk.reliability_score),
+            ("Compliance", risk.compliance_score),
+            ("Agent Risk", risk.agent_risk_score),
+            ("Alignment", risk.alignment_score),
+            ("Red Team", risk.red_team_score),
+            ("Interpretability", risk.interpretability_score),
+        ]
+        ui.print_overall_score(risk.overall_score, *dims)
+        ui.divider()
+        ui.info(f"Weights: {risk.weights}")
 
     return 0
 

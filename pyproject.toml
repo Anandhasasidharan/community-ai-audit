@@ -40,8 +40,11 @@ tf = [
 hf = [
     "transformers>=4.30",
 ]
+cli = [
+    "rich>=13.0",
+]
 all = [
-    "community-ai-audit[tf,hf,dev]",
+    "community-ai-audit[tf,hf,dev,cli]",
 ]
 
 [project.scripts]
