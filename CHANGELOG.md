@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.6.0...v0.6.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* align version to 0.6.0 (match remote release) ([70e6402](https://github.com/Anandhasasidharan/community-ai-audit/commit/70e64026e16f42c27da332deb0742a7386fd11ec))
+
 ## [0.6.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.5.0...v0.6.0) (2026-06-25)
 
 
