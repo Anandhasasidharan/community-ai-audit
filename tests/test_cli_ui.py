@@ -6,21 +6,22 @@ import sys
 import io
 from unittest import mock
 
-
 # ─────────────────────────────────────────────────────────────
 # ui.py module tests
 # ─────────────────────────────────────────────────────────────
+
 
 class TestUIModule(unittest.TestCase):
     """Verify the ui.py module functions work correctly."""
 
     def setUp(self):
         from community_ai_audit.cli import ui
+
         self.ui = ui
 
     def test_import(self):
-        self.assertTrue(hasattr(self.ui, 'print_banner'))
-        self.assertTrue(hasattr(self.ui, 'install_traceback_handler'))
+        self.assertTrue(hasattr(self.ui, "print_banner"))
+        self.assertTrue(hasattr(self.ui, "install_traceback_handler"))
 
     def test_score_color(self):
         self.assertEqual(self.ui.score_color(95), "green")
@@ -55,7 +56,7 @@ class TestUIModule(unittest.TestCase):
 
     def test_print_json_with_dict(self):
         out = io.StringIO()
-        with mock.patch('sys.stdout', out):
+        with mock.patch("sys.stdout", out):
             self.ui.print_json({"a": 1, "b": [2, 3]})
         output = out.getvalue()
         self.assertTrue(len(output) > 0)
@@ -63,30 +64,30 @@ class TestUIModule(unittest.TestCase):
 
     def test_print_json_with_list(self):
         out = io.StringIO()
-        with mock.patch('sys.stdout', out):
+        with mock.patch("sys.stdout", out):
             self.ui.print_json([{"x": 1}])
         output = out.getvalue()
         self.assertIn("x", output)
 
     def test_print_json_invalid(self):
         out = io.StringIO()
-        with mock.patch('sys.stdout', out):
+        with mock.patch("sys.stdout", out):
             self.ui.print_json({"a": object()})
         output = out.getvalue()
         self.assertIn("a", output)
 
     def test_confirm_action_default_no(self):
-        with mock.patch('builtins.input', return_value=''):
+        with mock.patch("builtins.input", return_value=""):
             result = self.ui.confirm_action("Proceed?")
         self.assertFalse(result)
 
     def test_confirm_action_yes(self):
-        with mock.patch('builtins.input', return_value='y'):
+        with mock.patch("builtins.input", return_value="y"):
             result = self.ui.confirm_action("Proceed?")
         self.assertTrue(result)
 
     def test_confirm_action_no(self):
-        with mock.patch('builtins.input', return_value='n'):
+        with mock.patch("builtins.input", return_value="n"):
             result = self.ui.confirm_action("Proceed?")
         self.assertFalse(result)
 
@@ -100,7 +101,7 @@ class TestUIRichFallback(unittest.TestCase):
 
         old_modules = {}
         for mod_name in list(sys.modules.keys()):
-            if mod_name.startswith('rich') or mod_name == 'rich':
+            if mod_name.startswith("rich") or mod_name == "rich":
                 old_modules[mod_name] = sys.modules[mod_name]
                 sys.modules[mod_name] = None  # type: ignore[assignment]
 
@@ -109,7 +110,7 @@ class TestUIRichFallback(unittest.TestCase):
             self.assertFalse(ui._RICH)
 
             out = io.StringIO()
-            with mock.patch('sys.stdout', out):
+            with mock.patch("sys.stdout", out):
                 ui.header("Fallback")
                 ui.info("fallback info")
                 ui.warning("fallback warn")
@@ -133,11 +134,13 @@ class TestUIRichFallback(unittest.TestCase):
 # CLI argument parsing tests
 # ─────────────────────────────────────────────────────────────
 
+
 class TestCLIParsing(unittest.TestCase):
     """Verify all 17 CLI commands parse correctly."""
 
     def setUp(self):
         from community_ai_audit.cli.main import build_parser
+
         self.parser = build_parser()
 
     def parse(self, *args):
@@ -177,7 +180,9 @@ class TestCLIParsing(unittest.TestCase):
         self.assertEqual(args.command, "datasets")
 
     def test_schedule_add_command(self):
-        args = self.parse("schedule", "add", "daily", "my_model", "--cron", "0 6 * * *", "--provider", "local")
+        args = self.parse(
+            "schedule", "add", "daily", "my_model", "--cron", "0 6 * * *", "--provider", "local"
+        )
         self.assertEqual(args.command, "schedule")
         self.assertEqual(args.schedule_command, "add")
 
@@ -247,10 +252,19 @@ class TestCLIParsing(unittest.TestCase):
 
     def test_scan_with_all_flags(self):
         args = self.parse(
-            "scan", "model", "--provider", "openai",
-            "--scanners", "backdoor", "adversarial",
-            "--output", "json", "--save", "out.json",
-            "--profile", "deep",
+            "scan",
+            "model",
+            "--provider",
+            "openai",
+            "--scanners",
+            "backdoor",
+            "adversarial",
+            "--output",
+            "json",
+            "--save",
+            "out.json",
+            "--profile",
+            "deep",
         )
         self.assertEqual(args.scanners, ["backdoor", "adversarial"])
         self.assertEqual(args.output, "json")
@@ -258,8 +272,13 @@ class TestCLIParsing(unittest.TestCase):
 
     def test_audit_with_interpreters(self):
         args = self.parse(
-            "audit", "model", "--provider", "local",
-            "--interpreters", "lime", "integrated-gradients",
+            "audit",
+            "model",
+            "--provider",
+            "local",
+            "--interpreters",
+            "lime",
+            "integrated-gradients",
         )
         self.assertEqual(args.interpreters, ["lime", "integrated-gradients"])
 
@@ -276,6 +295,7 @@ class TestCLIParsing(unittest.TestCase):
 # Subprocess invocation tests
 # ─────────────────────────────────────────────────────────────
 
+
 @unittest.skipIf(sys.platform == "win32", "subprocess tests use posix paths")
 class TestCLISubprocess(unittest.TestCase):
     """Invoke the CLI as a subprocess (system-level)."""
@@ -285,7 +305,9 @@ class TestCLISubprocess(unittest.TestCase):
     def test_help_exit_code(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn("usage:", result.stdout)
@@ -293,14 +315,18 @@ class TestCLISubprocess(unittest.TestCase):
     def test_version_output(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "--version"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_discover_runs(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "discover"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn("adapters", result.stdout.lower())
@@ -308,77 +334,99 @@ class TestCLISubprocess(unittest.TestCase):
     def test_scan_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "scan", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_agent_audit_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "agent-audit", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_agent_monitor_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "agent-monitor", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_redteam_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "redteam", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_mechinterp_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "mechinterp", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_alignment_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "alignment", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_datasets_runs(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "datasets"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_schedule_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "schedule", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_eval_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "eval", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_benchmark_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "benchmark", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
     def test_regression_help(self):
         result = subprocess.run(
             [sys.executable, "-m", self.CLI_MODULE, "regression", "--help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         self.assertEqual(result.returncode, 0)
 
@@ -386,6 +434,7 @@ class TestCLISubprocess(unittest.TestCase):
 # ─────────────────────────────────────────────────────────────
 # CLI handler integration tests (with mocked engine)
 # ─────────────────────────────────────────────────────────────
+
 
 class FakeArgs:
     """Minimal args object for command handler tests."""
@@ -401,14 +450,35 @@ class MockEngine:
     def __init__(self):
         self.config = {}
 
-    def load_model(self, *a, **kw): pass
-    def scan(self, *a, **kw): return []
-    def interpret(self, *a, **kw): return []
-    def list_capabilities(self): return {"adapters": [], "connectors": [], "scanners": [], "interpreters": [], "reporters": []}
-    def audit(self, *a, **kw): return self
-    def scan_results(self): return []
-    def interpret_results(self): return []
-    def to_report_dict(self): return {}
+    def load_model(self, *a, **kw):
+        pass
+
+    def scan(self, *a, **kw):
+        return []
+
+    def interpret(self, *a, **kw):
+        return []
+
+    def list_capabilities(self):
+        return {
+            "adapters": [],
+            "connectors": [],
+            "scanners": [],
+            "interpreters": [],
+            "reporters": [],
+        }
+
+    def audit(self, *a, **kw):
+        return self
+
+    def scan_results(self):
+        return []
+
+    def interpret_results(self):
+        return []
+
+    def to_report_dict(self):
+        return {}
 
 
 class TestCommandHandlers(unittest.TestCase):
@@ -417,9 +487,13 @@ class TestCommandHandlers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from community_ai_audit.cli.main import (
-            _cmd_discover, _cmd_scan, _cmd_audit_score, _cmd_datasets,
+            _cmd_discover,
+            _cmd_scan,
+            _cmd_audit_score,
+            _cmd_datasets,
             _cmd_schedule,
         )
+
         cls._cmd_discover = _cmd_discover
         cls._cmd_scan = _cmd_scan
         cls._cmd_audit_score = _cmd_audit_score
@@ -440,11 +514,22 @@ class TestCommandHandlers(unittest.TestCase):
 
     def test_scan_handler(self):
         engine = MockEngine()
-        args = FakeArgs(model="test", provider="local", output="json", profile=None,
-                        scanners=None, save=None, connectors=None,
-                        probe_file=None, api_key_file=None, api_key=None,
-                        device=None, config=None,
-                        scanner_config=None, report_format="text")
+        args = FakeArgs(
+            model="test",
+            provider="local",
+            output="json",
+            profile=None,
+            scanners=None,
+            save=None,
+            connectors=None,
+            probe_file=None,
+            api_key_file=None,
+            api_key=None,
+            device=None,
+            config=None,
+            scanner_config=None,
+            report_format="text",
+        )
         result = TestCommandHandlers._cmd_scan(engine, args)
         self.assertEqual(result, 0)
 
@@ -460,9 +545,18 @@ class TestCommandHandlers(unittest.TestCase):
 
     def test_schedule_list_handler(self):
         engine = MockEngine()
-        args = FakeArgs(schedule_command="list", name=None, cron=None, model=None,
-                        provider=None, scanners=None, interpreters=None, connectors=None,
-                        profile=None, output=None)
+        args = FakeArgs(
+            schedule_command="list",
+            name=None,
+            cron=None,
+            model=None,
+            provider=None,
+            scanners=None,
+            interpreters=None,
+            connectors=None,
+            profile=None,
+            output=None,
+        )
         result = TestCommandHandlers._cmd_schedule(engine, args)
         self.assertEqual(result, 0)
 

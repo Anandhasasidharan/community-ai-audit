@@ -41,6 +41,7 @@ class DistilGPT2Adapter:
         log.info("Loading distilgpt2 model (cached from HF)...")
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
+
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
         self._model = AutoModelForCausalLM.from_pretrained("distilgpt2").to(self._device)
         self._tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
@@ -50,6 +51,7 @@ class DistilGPT2Adapter:
     def generate(self, model: Any, prompt: str, **kwargs: Any) -> str:
         self._ensure_loaded()
         import torch
+
         inputs = self._tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
         inputs = {k: v.to(self._device) for k, v in inputs.items()}
         with torch.no_grad():
@@ -61,7 +63,7 @@ class DistilGPT2Adapter:
                 pad_token_id=self._tokenizer.eos_token_id,
             )
         text = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return text[len(prompt):].strip() or text.strip()
+        return text[len(prompt) :].strip() or text.strip()
 
     def predict(self, model: Any, inputs: Any, **kwargs: Any) -> Any:
         if isinstance(inputs, str):
@@ -134,6 +136,7 @@ def _do_audit(model_id: str) -> Dict[str, Any]:
 
     log.info("Running built-in scanners...")
     from community_ai_audit.core.registry import plugins
+
     plugins.discover()
     scan_results: List[Dict[str, Any]] = []
     for name in plugins.list_scanners():
@@ -143,16 +146,20 @@ def _do_audit(model_id: str) -> Dict[str, Any]:
             findings_list = []
             if hasattr(result, "findings"):
                 for f in result.findings:
-                    findings_list.append({
-                        "severity": getattr(f, "severity", "medium"),
-                        "description": getattr(f, "description", str(f)),
-                        "category": getattr(f, "category", "general"),
-                    })
-            scan_results.append({
-                "scanner_name": name,
-                "findings": findings_list,
-                **({"score": result.score} if hasattr(result, "score") else {}),
-            })
+                    findings_list.append(
+                        {
+                            "severity": getattr(f, "severity", "medium"),
+                            "description": getattr(f, "description", str(f)),
+                            "category": getattr(f, "category", "general"),
+                        }
+                    )
+            scan_results.append(
+                {
+                    "scanner_name": name,
+                    "findings": findings_list,
+                    **({"score": result.score} if hasattr(result, "score") else {}),
+                }
+            )
         except Exception as e:
             log.warning("Scanner '%s' failed: %s", name, e)
 
@@ -217,17 +224,20 @@ def _generate_trend_history() -> List[Dict[str, Any]]:
             noise = random.uniform(-8, 8)
             drift = i * random.uniform(-1.5, 1.5)
             scores[dim] = round(max(0, min(100, base + noise + drift)), 1)
-        history.append({
-            "timestamp": ts.isoformat(),
-            "scores": scores,
-            "snapshot_id": f"snap_{i}",
-        })
+        history.append(
+            {
+                "timestamp": ts.isoformat(),
+                "scores": scores,
+                "snapshot_id": f"snap_{i}",
+            }
+        )
     return history
 
 
 def _get_trends(model_id: str) -> Dict[str, Any]:
     try:
         from community_ai_audit.core.evaluation.trends import AuditTrendTracker
+
         tracker = AuditTrendTracker(storage_dir="/tmp/community-ai-audit-demo/trends")
         report = tracker.trend_report(model_id)
         hist = tracker.get_history(model_id, limit=0)
@@ -274,6 +284,7 @@ async def list_scanners():
     from community_ai_audit.plugins.alignment import list_alignment_scanners
     from community_ai_audit.plugins.mechinterp import list_mechinterp_analyzers
     from community_ai_audit.core.registry import plugins
+
     plugins.discover()
     return {
         "builtin": plugins.list_scanners(),
@@ -287,17 +298,33 @@ async def list_scanners():
 async def dashboard(model_id: str):
     data = _run_sync_audit(model_id)
     score = data["score"]
-    rating = "Excellent" if score["overall_score"] >= 90 else \
-             "Good" if score["overall_score"] >= 80 else \
-             "Fair" if score["overall_score"] >= 70 else \
-             "Poor" if score["overall_score"] >= 60 else \
-             "Critical"
+    rating = (
+        "Excellent"
+        if score["overall_score"] >= 90
+        else (
+            "Good"
+            if score["overall_score"] >= 80
+            else (
+                "Fair"
+                if score["overall_score"] >= 70
+                else "Poor" if score["overall_score"] >= 60 else "Critical"
+            )
+        )
+    )
     return {
         "score": score,
         "rating": rating,
         "model_id": model_id,
         "radar": {
-            "labels": ["Security", "Reliability", "Compliance", "Agent Risk", "Alignment", "Red Team", "Interpretability"],
+            "labels": [
+                "Security",
+                "Reliability",
+                "Compliance",
+                "Agent Risk",
+                "Alignment",
+                "Red Team",
+                "Interpretability",
+            ],
             "values": [
                 score["security_score"],
                 score["reliability_score"],

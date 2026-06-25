@@ -937,22 +937,33 @@ def _cmd_scan(engine, args) -> int:
             findings = getattr(r, "findings", [])
             finding_dicts = []
             for f in findings:
-                finding_dicts.append({
-                    "severity": getattr(f, "severity", "unknown"),
-                    "description": getattr(f, "description", str(f)),
-                    "category": getattr(f, "category", "general"),
-                })
+                finding_dicts.append(
+                    {
+                        "severity": getattr(f, "severity", "unknown"),
+                        "description": getattr(f, "description", str(f)),
+                        "category": getattr(f, "category", "general"),
+                    }
+                )
             if finding_dicts:
                 ui.print_findings(finding_dicts, title=f"{r.scanner_name} Findings")
             else:
                 ui.success(f"{r.scanner_name}: no findings")
 
     if args.save:
-        _save_report(report if args.output == "json" else reporter.render_scan_results(results, fmt=args.output), args.save)
+        _save_report(
+            (
+                report
+                if args.output == "json"
+                else reporter.render_scan_results(results, fmt=args.output)
+            ),
+            args.save,
+        )
 
     if args.connectors:
         connector_configs = _build_connector_configs(args, engine.config)
-        connector_results = engine._push_to_connectors(results, [], args.connectors, connector_configs)
+        connector_results = engine._push_to_connectors(
+            results, [], args.connectors, connector_configs
+        )
         for name, status in connector_results.items():
             ui.info(f"Connector {name}: {status}")
 
@@ -1009,7 +1020,14 @@ def _cmd_interpret(engine, args) -> int:
             )
 
     if args.save:
-        _save_report(report if args.output == "json" else reporter.render_interpret_results(results, fmt=args.output), args.save)
+        _save_report(
+            (
+                report
+                if args.output == "json"
+                else reporter.render_interpret_results(results, fmt=args.output)
+            ),
+            args.save,
+        )
 
     return 0
 
@@ -1044,7 +1062,9 @@ def _cmd_audit(engine, args) -> int:
     run_metadata = _build_run_metadata(args, scanner_overrides)
     connector_configs = _build_connector_configs(args, engine.config)
 
-    ui.info(f"Running {len(selected_scanners)} scanners and {len(selected_interpreters)} interpreters...")
+    ui.info(
+        f"Running {len(selected_scanners)} scanners and {len(selected_interpreters)} interpreters..."
+    )
     session = engine.audit(
         scanners=selected_scanners,
         interpreters=selected_interpreters,
@@ -1534,11 +1554,17 @@ def _cmd_regression(args: Any) -> int:
         ui.print_json(report.to_dict())
     else:
         ui.header("Regression Report")
-        ui.info(f"Baseline: {report.baseline.benchmark_name} ({report.baseline.started_at.isoformat()[:10]})")
-        ui.info(f"Current:  {report.current.benchmark_name} ({report.current.started_at.isoformat()[:10]})")
+        ui.info(
+            f"Baseline: {report.baseline.benchmark_name} ({report.baseline.started_at.isoformat()[:10]})"
+        )
+        ui.info(
+            f"Current:  {report.current.benchmark_name} ({report.current.started_at.isoformat()[:10]})"
+        )
         delta = report.accuracy_delta
         delta_color = "green" if delta >= 0 else "red"
-        ui.info(f"Accuracy: {report.baseline.accuracy:.3f} -> {report.current.accuracy:.3f} ([{delta_color}]{delta:+.3f}[/])")
+        ui.info(
+            f"Accuracy: {report.baseline.accuracy:.3f} -> {report.current.accuracy:.3f} ([{delta_color}]{delta:+.3f}[/])"
+        )
         if report.regressions:
             ui.divider()
             for r in report.regressions:
@@ -1572,7 +1598,13 @@ def _cmd_datasets(args: Any) -> int:
         tbl.add_column("Categories")
         tbl.add_column("Description")
         for ds in datasets:
-            tbl.add_row(ds.name, str(ds.version), str(ds.num_samples), ", ".join(ds.categories), ds.description)
+            tbl.add_row(
+                ds.name,
+                str(ds.version),
+                str(ds.num_samples),
+                ", ".join(ds.categories),
+                ds.description,
+            )
         ui._console().print(tbl)
 
     return 0
@@ -1593,7 +1625,15 @@ def _cmd_agent_audit(args: Any) -> int:
 
     ui.header(f"Agent Audit: {session.agent_id}")
     ui.info(f"Session: {session.session_id[:8]}")
-    tool_count = len([s for s in session.steps if hasattr(s, 'step_type') and hasattr(s.step_type, 'value') and s.step_type.value == 'tool_call'])
+    tool_count = len(
+        [
+            s
+            for s in session.steps
+            if hasattr(s, "step_type")
+            and hasattr(s.step_type, "value")
+            and s.step_type.value == "tool_call"
+        ]
+    )
     ui.info(f"Tools used: {tool_count}")
 
     results = run_agent_scanners(scanners=args.scanners, session=session)
@@ -1601,7 +1641,9 @@ def _cmd_agent_audit(args: Any) -> int:
     if args.output == "json":
         ui.print_json(results)
     else:
-        ui.print_results_table(results, title="Agent Audit Results", score_keys=["score"], extra_keys=[])
+        ui.print_results_table(
+            results, title="Agent Audit Results", score_keys=["score"], extra_keys=[]
+        )
 
         for result in results:
             findings = result.get("findings", [])
