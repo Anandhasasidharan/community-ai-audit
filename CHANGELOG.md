@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.5.0...v0.6.0) (2026-06-25)
+
+
+### Features
+
+* **cli:** migrate all command handlers to Rich-based UI ([32e91c3](https://github.com/Anandhasasidharan/community-ai-audit/commit/32e91c3e77e019cf901047f1504ed9aa8cbcfe8e))
+* v0.7.0 - Red Team, Mech Interp, Alignment, Scoring Engine, Dashboard, Trend Tracking ([061aa8e](https://github.com/Anandhasasidharan/community-ai-audit/commit/061aa8e41d1888356677d0d068b0d7609ca1866a))
+
 ## [0.5.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.4.0...v0.5.0) (2026-06-25)
 
 
