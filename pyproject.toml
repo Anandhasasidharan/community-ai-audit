@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "community-ai-audit"
-version = "0.6.0"
+version = "0.5.1"
 description = "Community-driven AI security audit tool using interpretability techniques"
 readme = "README.md"
 license = {text = "MIT"}
