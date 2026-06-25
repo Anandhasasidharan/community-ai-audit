@@ -9,7 +9,7 @@ import json
 import os
 import time
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from community_ai_audit.cli import ui
 

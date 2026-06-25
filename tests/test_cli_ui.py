@@ -3,9 +3,7 @@
 import unittest
 import subprocess
 import sys
-import json
 import io
-import os
 from unittest import mock
 
 

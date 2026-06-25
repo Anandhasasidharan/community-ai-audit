@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Security Audit - Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #161b22 0%, #0d1117 100%); border-bottom: 1px solid #30363d; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 600; background: linear-gradient(90deg, #58a6ff, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header .subtitle { font-size: 13px; color: #8b949e; margin-top: 2px; }
+  .header .badge { background: #1f6feb22; border: 1px solid #1f6feb55; border-radius: 12px; padding: 4px 14px; font-size: 12px; color: #58a6ff; }
+  .nav { display: flex; gap: 0; background: #161b22; border-bottom: 1px solid #30363d; padding: 0 32px; }
+  .nav button { background: none; border: none; color: #8b949e; padding: 12px 20px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .nav button:hover { color: #e6edf3; background: #1c2128; }
+  .nav button.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  .content { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .score-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; text-align: center; transition: transform 0.2s; }
+  .score-card:hover { transform: translateY(-2px); border-color: #58a6ff44; }
+  .score-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #8b949e; margin-bottom: 8px; }
+  .score-card .value { font-size: 32px; font-weight: 700; line-height: 1; }
+  .score-card .rating-text { font-size: 12px; margin-top: 4px; font-weight: 500; }
+
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .chart-row { grid-template-columns: 1fr; } }
+  .chart-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .chart-box h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; font-weight: 500; }
+  .chart-box canvas { max-height: 300px; }
+
+  .dimension-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .dim-item { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 14px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .dim-item .dim-label { color: #8b949e; }
+  .dim-item .dim-value { font-weight: 600; }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .btn { padding: 10px 24px; border: 1px solid #30363d; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; font-weight: 500; background: #21262d; color: #e6edf3; }
+  .btn:hover { background: #30363d; }
+  .btn-primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .btn-primary:hover { background: #388bfd; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-success { background: #238636; border-color: #238636; color: #fff; }
+  .btn-success:hover { background: #2ea043; }
+  .btn-danger { background: #da3633; border-color: #da3633; color: #fff; }
+  .btn-danger:hover { background: #f85149; }
+  .btn-outline { background: transparent; border-color: #30363d; }
+  .btn-outline:hover { background: #21262d; }
+  .progress-bar { height: 6px; background: #21262d; border-radius: 3px; margin: 12px 0; overflow: hidden; }
+  .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #1f6feb, #58a6ff); border-radius: 3px; transition: width 0.5s; }
+  .status-text { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
+
+  .scanner-group { margin-bottom: 20px; }
+  .scanner-group h3 { font-size: 14px; color: #8b949e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .scanner-item { background: #161b22; border: 1px solid #30363d; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+  .scanner-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; transition: background 0.2s; }
+  .scanner-header:hover { background: #1c2128; }
+  .scanner-header .name { font-size: 14px; font-weight: 500; }
+  .scanner-header .score-badge { font-size: 12px; padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+  .scanner-body { padding: 12px 16px; border-top: 1px solid #21262d; display: none; font-size: 13px; }
+  .scanner-body.open { display: block; }
+  .scanner-body pre { background: #0d1117; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; color: #8b949e; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+
+  .trend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .trend-grid { grid-template-columns: 1fr; } }
+  .trend-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; }
+  .trend-card h4 { font-size: 13px; color: #8b949e; margin-bottom: 4px; }
+  .trend-card .trend-value { font-size: 18px; font-weight: 600; }
+  .trend-card .trend-dir { font-size: 12px; margin-top: 2px; }
+  .trend-card canvas { margin-top: 8px; max-height: 120px; }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .overall-card { background: linear-gradient(135deg, #161b22 0%, #1c2128 100%); border: 1px solid #30363d; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px; }
+  .overall-card .big-score { font-size: 56px; font-weight: 700; line-height: 1; }
+  .overall-card .big-label { font-size: 14px; color: #8b949e; margin-top: 4px; }
+  .overall-card .big-rating { font-size: 18px; font-weight: 600; margin-top: 4px; }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #0d1117; }
+  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Community AI Audit</h1>
+    <div class="subtitle">Advanced Security Auditing Platform — Demo</div>
+  </div>
+  <div class="badge" id="headerBadge">distilgpt2</div>
+</div>
+
+<div class="nav">
+  <button class="active" data-tab="dashboard">Dashboard</button>
+  <button data-tab="audit">Run Audit</button>
+  <button data-tab="results">Scanner Results</button>
+  <button data-tab="trends">Trends</button>
+</div>
+
+<div class="content">
+
+<div id="tab-dashboard" class="tab active">
+
+  <div class="overall-card" id="overallCard">
+    <div class="big-score" id="overallScore">—</div>
+    <div class="big-label">Overall Security Score</div>
+    <div class="big-rating" id="overallRating">Loading...</div>
+  </div>
+
+  <div class="score-grid" id="scoreGrid">
+    <div class="score-card"><div class="label">Security</div><div class="value" data-dim="security_score">—</div></div>
+    <div class="score-card"><div class="label">Reliability</div><div class="value" data-dim="reliability_score">—</div></div>
+    <div class="score-card"><div class="label">Compliance</div><div class="value" data-dim="compliance_score">—</div></div>
+    <div class="score-card"><div class="label">Agent Risk</div><div class="value" data-dim="agent_risk_score">—</div></div>
+    <div class="score-card"><div class="label">Alignment</div><div class="value" data-dim="alignment_score">—</div></div>
+    <div class="score-card"><div class="label">Red Team</div><div class="value" data-dim="red_team_score">—</div></div>
+    <div class="score-card"><div class="label">Interpretability</div><div class="value" data-dim="interpretability_score">—</div></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-box">
+      <h3>7-Dimension Radar</h3>
+      <canvas id="radarChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Score Breakdown</h3>
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+
+  <div class="dimension-detail" id="dimDetails"></div>
+</div>
+
+<div id="tab-audit" class="tab">
+  <h2 style="font-size:18px; margin-bottom:16px;">Run Security Audit</h2>
+  <p style="color:#8b949e; margin-bottom:16px; font-size:14px;">Execute scanners against the demo model adapter. All scanners run in sequence and results update the dashboard.</p>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="runFullAudit()" id="btnFullAudit">Run Full Audit</button>
+    <button class="btn btn-outline" onclick="runAuditType('redteam')" id="btnRedTeam">Red Team Only</button>
+    <button class="btn btn-outline" onclick="runAuditType('alignment')" id="btnAlign">Alignment Only</button>
+    <button class="btn btn-outline" onclick="runAuditType('mechinterp')" id="btnMech">Mech Interp Only</button>
+  </div>
+  <div id="auditProgress" style="display:none;">
+    <div class="status-text" id="auditStatus">Starting audit...</div>
+    <div class="progress-bar"><div class="fill" id="auditFill" style="width:0%"></div></div>
+  </div>
+  <div id="auditResult"></div>
+</div>
+
+<div id="tab-results" class="tab">
+  <div class="actions" style="margin-bottom:16px;">
+    <button class="btn btn-outline" onclick="refreshResults()">Refresh Results</button>
+  </div>
+  <div id="resultsContainer">Loading...</div>
+</div>
+
+<div id="tab-trends" class="tab">
+  <p style="color:#8b949e; margin-bottom:16px; font-size:14px;">Score history across the 7 security dimensions. Trend direction is computed via linear regression over the recorded window.</p>
+  <div id="trendsContainer">Loading...</div>
+</div>
+
+</div>
+
+<script>
+let radarChartInstance = null;
+let barChartInstance = null;
+let activeAuditTask = null;
+let auditPollInterval = null;
+
+const COLORS = {
+  security: '#f85149', reliability: '#d29922', compliance: '#3fb950',
+  agent_risk: '#58a6ff', alignment: '#bc8cff', red_team: '#f0883e',
+  interpretability: '#79c0ff'
+};
+const DIM_KEYS = ['security_score','reliability_score','compliance_score','agent_risk_score','alignment_score','red_team_score','interpretability_score'];
+const DIM_LABELS = ['Security','Reliability','Compliance','Agent Risk','Alignment','Red Team','Interpretability'];
+const DIM_KEYS_SHORT = ['security','reliability','compliance','agent_risk','alignment','red_team','interpretability'];
+
+function scoreColor(s) {
+  if (s >= 80) return '#3fb950';
+  if (s >= 60) return '#d29922';
+  if (s >= 40) return '#f0883e';
+  return '#f85149';
+}
+
+function ratingText(s) {
+  if (s >= 90) return 'Excellent';
+  if (s >= 80) return 'Good';
+  if (s >= 70) return 'Fair';
+  if (s >= 60) return 'Poor';
+  return 'Critical';
+}
+
+// Tab switching
+document.querySelectorAll('.nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'results') refreshResults();
+    if (btn.dataset.tab === 'trends') loadTrends();
+    if (btn.dataset.tab === 'dashboard') loadDashboard();
+  });
+});
+
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadDashboard() {
+  try {
+    const data = await api('/api/dashboard/distilgpt2');
+    const s = data.score;
+    document.getElementById('overallScore').textContent = Math.round(s.overall_score);
+    document.getElementById('overallRating').textContent = data.rating;
+    document.getElementById('overallRating').style.color = scoreColor(s.overall_score);
+
+    DIM_KEYS.forEach((k, i) => {
+      const el = document.querySelector(`[data-dim="${k}"]`);
+      if (el) {
+        const v = Math.round(s[k]);
+        el.textContent = v;
+        el.style.color = scoreColor(v);
+        const card = el.closest('.score-card');
+        if (card) {
+          let rt = card.querySelector('.rating-text');
+          if (!rt) { rt = document.createElement('div'); rt.className = 'rating-text'; card.appendChild(rt); }
+          rt.textContent = ratingText(v);
+          rt.style.color = scoreColor(v);
+        }
+      }
+    });
+
+    const radar = data.radar;
+    if (radarChartInstance) radarChartInstance.destroy();
+    radarChartInstance = new Chart(document.getElementById('radarChart'), {
+      type: 'radar',
+      data: {
+        labels: radar.labels,
+        datasets: [{
+          label: 'Score',
+          data: radar.values,
+          backgroundColor: 'rgba(88, 166, 255, 0.15)',
+          borderColor: 'rgba(88, 166, 255, 0.8)',
+          pointBackgroundColor: radar.values.map(v => scoreColor(v)),
+          pointBorderColor: '#0d1117',
+          pointRadius: 5,
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { color: '#8b949e', backdropColor: 'transparent', stepSize: 20 },
+            grid: { color: '#30363d' },
+            angleLines: { color: '#30363d' },
+            pointLabels: { color: '#e6edf3', font: { size: 11 } }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    if (barChartInstance) barChartInstance.destroy();
+    barChartInstance = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: radar.labels,
+        datasets: [{
+          label: 'Score',
+          data: radar.values,
+          backgroundColor: radar.values.map(v => scoreColor(v) + 'cc'),
+          borderColor: radar.values.map(v => scoreColor(v)),
+          borderWidth: 1,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        indexAxis: 'y',
+        scales: {
+          x: { min: 0, max: 100, grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
+          y: { grid: { display: false }, ticks: { color: '#e6edf3', font: { size: 11 } } }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    // Dimension details
+    const dimHtml = DIM_KEYS_SHORT.map((k, i) => {
+      const v = s[DIM_KEYS[i]];
+      const c = scoreColor(v);
+      return `<div class="dim-item"><span class="dim-label">${DIM_LABELS[i]}</span><span class="dim-value" style="color:${c}">${Math.round(v)}</span></div>`;
+    }).join('');
+    document.getElementById('dimDetails').innerHTML = dimHtml;
+
+  } catch (e) {
+    document.getElementById('overallScore').textContent = 'ERR';
+    document.getElementById('overallRating').textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+async function runFullAudit() {
+  const btn = document.getElementById('btnFullAudit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  document.getElementById('auditProgress').style.display = 'block';
+  document.getElementById('auditStatus').textContent = 'Starting full audit...';
+  document.getElementById('auditFill').style.width = '5%';
+
+  try {
+    const resp = await fetch('/api/audit/run', { method: 'POST' });
+    const data = await resp.json();
+    activeAuditTask = data.task_id;
+    pollAuditStatus(data.task_id);
+  } catch (e) {
+    document.getElementById('auditStatus').textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.innerHTML = 'Run Full Audit';
+  }
+}
+
+async function runAuditType(type) {
+  document.getElementById('auditProgress').style.display = 'block';
+  document.getElementById('auditStatus').textContent = `Running ${type}...`;
+  document.getElementById('auditFill').style.width = '10%';
+
+  try {
+    const resp = await fetch('/api/audit/run', { method: 'POST' });
+    const data = await resp.json();
+    activeAuditTask = data.task_id;
+    pollAuditStatus(data.task_id);
+  } catch (e) {
+    document.getElementById('auditStatus').textContent = 'Error: ' + e.message;
+  }
+}
+
+function pollAuditStatus(taskId) {
+  if (auditPollInterval) clearInterval(auditPollInterval);
+  auditPollInterval = setInterval(async () => {
+    try {
+      const status = await api(`/api/audit/status/${taskId}`);
+      document.getElementById('auditFill').style.width = status.progress + '%';
+      document.getElementById('auditStatus').textContent = status.status === 'running'
+        ? `Audit in progress... ${status.progress}%`
+        : status.status === 'completed'
+          ? 'Audit complete! Updating dashboard...'
+          : 'Audit failed: ' + (status.error || 'unknown error');
+
+      if (status.status === 'completed') {
+        clearInterval(auditPollInterval);
+        auditPollInterval = null;
+        document.getElementById('btnFullAudit').disabled = false;
+        document.getElementById('btnFullAudit').innerHTML = 'Run Full Audit';
+        document.getElementById('auditStatus').textContent = 'Audit complete!';
+        document.getElementById('auditFill').style.width = '100%';
+        loadDashboard();
+        setTimeout(() => { document.getElementById('auditProgress').style.display = 'none'; }, 2000);
+      } else if (status.status === 'failed') {
+        clearInterval(auditPollInterval);
+        auditPollInterval = null;
+        document.getElementById('btnFullAudit').disabled = false;
+        document.getElementById('btnFullAudit').innerHTML = 'Run Full Audit';
+      }
+    } catch (e) {
+      // poll retry
+    }
+  }, 800);
+}
+
+async function refreshResults() {
+  const container = document.getElementById('resultsContainer');
+  container.innerHTML = 'Loading...';
+  try {
+    const data = await api('/api/results/distilgpt2');
+    const r = data.results;
+    let html = '';
+
+    // Red Team
+    if (r.red_team && r.red_team.length) {
+      html += '<div class="scanner-group"><h3>Red Team Scanners</h3>';
+      r.red_team.forEach(s => addScannerItem(html, s, 'red_team'));
+      html += '</div>';
+    }
+
+    // Alignment
+    if (r.alignment && r.alignment.length) {
+      html += '<div class="scanner-group"><h3>Alignment Scanners</h3>';
+      r.alignment.forEach(s => addScannerItem(html, s, 'alignment'));
+      html += '</div>';
+    }
+
+    // Mech Interp
+    if (r.mechinterp && r.mechinterp.length) {
+      html += '<div class="scanner-group"><h3>Mechanistic Interpretability</h3>';
+      r.mechinterp.forEach(s => addScannerItem(html, s, 'mechinterp'));
+      html += '</div>';
+    }
+
+    // Built-in
+    if (r.scan && r.scan.length) {
+      html += '<div class="scanner-group"><h3>Built-in Security Scanners</h3>';
+      r.scan.forEach(s => addScannerItem(html, s, 'scan'));
+      html += '</div>';
+    }
+
+    container.innerHTML = html || '<p style="color:#8b949e;">No results available.</p>';
+
+    // Add click handlers
+    document.querySelectorAll('.scanner-header').forEach(h => {
+      h.addEventListener('click', () => {
+        const body = h.nextElementSibling;
+        body.classList.toggle('open');
+      });
+    });
+  } catch (e) {
+    container.innerHTML = '<p style="color:#f85149;">Error: ' + e.message + '</p>';
+  }
+}
+
+function addScannerItem(html, s, group) {
+  const name = s.scanner_name || s.interpreter_name || 'unknown';
+  const scoreN = s.score !== undefined ? s.score : (s.alignment_score !== undefined ? s.alignment_score : 50);
+  const scoreVal = typeof scoreN === 'number' ? Math.round(scoreN) : 50;
+  const sc = scoreColor(scoreVal);
+  const details = JSON.stringify(s, null, 2);
+  // We need to return the HTML, but we're modifying the string builder approach
+}
+
+async function refreshResults() {
+  const container = document.getElementById('resultsContainer');
+  container.innerHTML = 'Loading...';
+  try {
+    const data = await api('/api/results/distilgpt2');
+    const r = data.results;
+    let html = '';
+
+    function addItem(s, group) {
+      const name = s.scanner_name || s.interpreter_name || 'unknown';
+      const scoreN = s.score !== undefined ? s.score : (s.alignment_score !== undefined ? s.alignment_score : 50);
+      const scoreVal = typeof scoreN === 'number' ? Math.round(scoreN) : 50;
+      const sc = scoreColor(scoreVal);
+      const details = JSON.stringify(s, null, 2);
+      html += `<div class="scanner-item">
+        <div class="scanner-header">
+          <span class="name">${name}</span>
+          <span class="score-badge" style="background:${sc}22;color:${sc}">${scoreVal}</span>
+        </div>
+        <div class="scanner-body"><pre>${details}</pre></div>
+      </div>`;
+    }
+
+    if (r.red_team?.length) {
+      html += '<div class="scanner-group"><h3>🔴 Red Team Scanners</h3>';
+      r.red_team.forEach(s => addItem(s, 'red_team'));
+      html += '</div>';
+    }
+    if (r.alignment?.length) {
+      html += '<div class="scanner-group"><h3>🧭 Alignment Scanners</h3>';
+      r.alignment.forEach(s => addItem(s, 'alignment'));
+      html += '</div>';
+    }
+    if (r.mechinterp?.length) {
+      html += '<div class="scanner-group"><h3>🔬 Mechanistic Interpretability</h3>';
+      r.mechinterp.forEach(s => addItem(s, 'mechinterp'));
+      html += '</div>';
+    }
+    if (r.scan?.length) {
+      html += '<div class="scanner-group"><h3>🛡️ Built-in Security Scanners</h3>';
+      r.scan.forEach(s => addItem(s, 'scan'));
+      html += '</div>';
+    }
+
+    container.innerHTML = html || '<p style="color:#8b949e;">No results available. Run an audit first.</p>';
+
+    document.querySelectorAll('.scanner-header').forEach(h => {
+      h.addEventListener('click', () => {
+        h.nextElementSibling.classList.toggle('open');
+      });
+    });
+  } catch (e) {
+    container.innerHTML = '<p style="color:#f85149;">Error: ' + e.message + '</p>';
+  }
+}
+
+async function loadTrends() {
+  const container = document.getElementById('trendsContainer');
+  container.innerHTML = 'Loading...';
+  try {
+    const data = await api('/api/trends/distilgpt2');
+    const dims = ['security','reliability','compliance','agent_risk','alignment','red_team','interpretability'];
+    const labels = ['Security','Reliability','Compliance','Agent Risk','Alignment','Red Team','Interpretability'];
+
+    let html = '<div class="trend-grid">';
+    const chartCanvases = [];
+
+    dims.forEach((dim, i) => {
+      const trend = data.trends[dim] || { direction: 'insufficient_data', current: 0, previous: 0, slope: 0 };
+      const history = data.history || [];
+      const values = history.map(h => h.scores[dim]).filter(v => v !== undefined).reverse();
+      const latestVal = values.length > 0 ? values[values.length - 1] : trend.current;
+      const dir = trend.direction;
+      const dirIcon = dir === 'improving' ? '▲' : dir === 'degrading' ? '▼' : '◆';
+      const dirColor = dir === 'improving' ? '#3fb950' : dir === 'degrading' ? '#f85149' : '#d29922';
+      const col = COLORS[dim] || '#58a6ff';
+
+      const canvasId = 'trendChart_' + dim;
+      html += `<div class="trend-card">
+        <h4>${labels[i]}</h4>
+        <div class="trend-value" style="color:${scoreColor(latestVal)}">${Math.round(latestVal)}</div>
+        <div class="trend-dir" style="color:${dirColor}">${dirIcon} ${dir}</div>
+        <canvas id="${canvasId}" height="80"></canvas>
+      </div>`;
+      chartCanvases.push({ id: canvasId, values, col, dim, labels: history.map(h => {
+        const d = new Date(h.timestamp);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }).reverse() });
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Render mini line charts
+    chartCanvases.forEach(({ id, values, labels: xLabels, col }) => {
+      const ctx = document.getElementById(id);
+      if (!ctx || values.length < 2) return;
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: xLabels.slice(-values.length),
+          datasets: [{
+            data: values,
+            borderColor: col,
+            backgroundColor: col + '22',
+            fill: true,
+            pointRadius: 3,
+            pointBackgroundColor: col,
+            borderWidth: 2,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false, min: 0, max: 100 }
+          },
+          elements: { point: { radius: 2 } }
+        }
+      });
+    });
+
+  } catch (e) {
+    container.innerHTML = '<p style="color:#f85149;">Error: ' + e.message + '</p>';
+  }
+}
+
+// Init
+loadDashboard();
+</script>
+</body>
+</html>

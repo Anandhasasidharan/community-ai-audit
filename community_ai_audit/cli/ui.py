@@ -2,16 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from contextlib import contextmanager
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
 try:
-    from rich.console import Console, Group
+    from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
     from rich.progress import (
