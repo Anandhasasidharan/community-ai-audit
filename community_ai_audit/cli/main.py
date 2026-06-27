@@ -9,6 +9,7 @@ import json
 import os
 import time
 import logging
+import signal
 from typing import Any, List, Optional
 
 from community_ai_audit.cli import ui
@@ -16,17 +17,25 @@ from community_ai_audit.cli import ui
 from community_ai_audit.core.rbac import PermissionError as RBACPermError
 
 # ─────────────────────────────────────────────────────────────
-# Logging setup
+# Logging setup + signal handling
 # ─────────────────────────────────────────────────────────────
 
 
+_shutdown_requested = False
+
+
+def _handle_signal(signum: int, frame: Any) -> None:
+    global _shutdown_requested
+    _shutdown_requested = True
+    logging.getLogger("cli").warning("Signal %d received, shutting down gracefully...", signum)
+
+
 def _setup_logging(verbose: bool = False):
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    from community_ai_audit.cli.logging import setup_logging as _sl
+
+    _sl(verbose)
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -735,6 +744,11 @@ Environment:
         help="Output format",
     )
 
+    # ── health command ─────────────────────────────────────────
+    health_parser = subparsers.add_parser(
+        "health", help="Health check — returns status and version"
+    )
+
     # ── RBAC global flags ─────────────────────────────────────
     for sub in (sched_parser, eval_parser, bench_parser):
         sub.add_argument("--user", help="Username for RBAC authentication")
@@ -834,6 +848,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "mcp-scan":
         return _cmd_mcp_scan(args)
+
+    if args.command == "health":
+        print(json.dumps({"status": "ok", "version": "0.6.1"}))
+        return 0
 
     return 0
 
