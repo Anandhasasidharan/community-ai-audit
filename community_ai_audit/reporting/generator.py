@@ -187,15 +187,17 @@ class ReportGenerator:
 
         profile = run_meta.get("profile", "standard")
         provider = run_meta.get("provider", "unknown")
-        lines.extend([
-            "## Intended Use",
-            "",
-            f"Audited using the **{profile}** profile via {provider}.",
-            "This model card is auto-generated from security audit results.",
-            "",
-            "## Factors",
-            "",
-        ])
+        lines.extend(
+            [
+                "## Intended Use",
+                "",
+                f"Audited using the **{profile}** profile via {provider}.",
+                "This model card is auto-generated from security audit results.",
+                "",
+                "## Factors",
+                "",
+            ]
+        )
         if run_meta:
             for k, v in run_meta.items():
                 lines.append(f"- **{k}**: {self._truncate_text(str(v), 200)}")
@@ -219,74 +221,94 @@ class ReportGenerator:
             if sev_counts.get(sev_name, 0) > 0:
                 lines.append(f"| {sev_name.title()} Findings | {sev_counts[sev_name]} |")
 
-        lines.extend([
-            "",
-            "## Evaluation Data",
-            "",
-            f"{len(session.scan_results)} scanner(s) executed, "
-            f"{n_findings} finding(s) across all scanners.",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Evaluation Data",
+                "",
+                f"{len(session.scan_results)} scanner(s) executed, "
+                f"{n_findings} finding(s) across all scanners.",
+                "",
+            ]
+        )
         for sr in session.scan_results:
-            lines.append(f"- **{sr.scanner_name}** v{sr.scanner_version}: "
-                         f"{len(sr.findings)} finding(s), "
-                         f"severity {sr.overall_severity.value if isinstance(sr.overall_severity, Severity) else sr.overall_severity}")
+            lines.append(
+                f"- **{sr.scanner_name}** v{sr.scanner_version}: "
+                f"{len(sr.findings)} finding(s), "
+                f"severity {sr.overall_severity.value if isinstance(sr.overall_severity, Severity) else sr.overall_severity}"
+            )
 
-        lines.extend([
-            "",
-            "## Quantitative Analyses",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Quantitative Analyses",
+                "",
+            ]
+        )
         if session.scan_results:
             for sr in session.scan_results:
                 lines.append(f"### {sr.scanner_name}")
                 if sr.error:
                     lines.append(f"- **Error**: {sr.error}")
                     continue
-                lines.append(f"- **Overall Severity**: {sr.overall_severity.value if isinstance(sr.overall_severity, Severity) else sr.overall_severity}")
+                lines.append(
+                    f"- **Overall Severity**: {sr.overall_severity.value if isinstance(sr.overall_severity, Severity) else sr.overall_severity}"
+                )
                 lines.append(f"- **Findings**: {len(sr.findings)}")
                 for f in sr.findings:
                     cwe = f" ({f.cwe_id})" if f.cwe_id else ""
                     mitre = f" (MITRE: {f.mitre_id})" if f.mitre_id else ""
                     nist = f" (NIST: {f.nist_id})" if f.nist_id else ""
                     refs = cwe + mitre + nist
-                    lines.append(f"  - **{f.title}** [{f.severity.value if isinstance(f.severity, Severity) else f.severity}]{refs}")
+                    lines.append(
+                        f"  - **{f.title}** [{f.severity.value if isinstance(f.severity, Severity) else f.severity}]{refs}"
+                    )
                     lines.append(f"    - {f.description}")
                     if f.recommendation:
                         lines.append(f"    - *Recommendation*: {f.recommendation}")
         else:
             lines.append("No scanner data available.")
 
-        lines.extend([
-            "",
-            "## Ethical Considerations",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Ethical Considerations",
+                "",
+            ]
+        )
         ethics_findings = [
-            f for sr in session.scan_results for f in sr.findings
+            f
+            for sr in session.scan_results
+            for f in sr.findings
             if f.title.lower().startswith(("bias", "toxicity", "fairness", "ethical"))
         ]
         if ethics_findings:
             for f in ethics_findings:
-                lines.append(f"- **{f.title}** [{f.severity.value if isinstance(f.severity, Severity) else f.severity}]: {f.description}")
+                lines.append(
+                    f"- **{f.title}** [{f.severity.value if isinstance(f.severity, Severity) else f.severity}]: {f.description}"
+                )
         else:
             lines.append("No ethics-specific scans were run, or no ethics findings were detected.")
         lines.append("")
 
         interp_summaries = [r.summary for r in session.interpret_results if r.summary]
         if interp_summaries:
-            lines.extend([
-                "## Interpretability",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## Interpretability",
+                    "",
+                ]
+            )
             for summary in interp_summaries:
                 lines.append(f"- {summary}")
             lines.append("")
 
-        lines.extend([
-            "## Caveats and Recommendations",
-            "",
-        ])
+        lines.extend(
+            [
+                "## Caveats and Recommendations",
+                "",
+            ]
+        )
         recommendations = []
         for sr in session.scan_results:
             for f in sr.findings:

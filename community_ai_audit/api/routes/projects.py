@@ -1,4 +1,5 @@
 """Project CRUD and project-scoped audit submission."""
+
 import json
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -62,6 +63,4 @@ def list_project_audits(project_id: str):
     db = get_session()
     jobs = db.query(AuditJob).filter(AuditJob.project_id == project_id).all()
     db.close()
-    return [
-        {"id": j.id, "status": j.status, "created_at": str(j.created_at)} for j in jobs
-    ]
+    return [{"id": j.id, "status": j.status, "created_at": str(j.created_at)} for j in jobs]

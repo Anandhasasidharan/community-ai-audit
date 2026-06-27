@@ -37,9 +37,7 @@ def safe_import(module_name: str, package: Optional[str] = None) -> Any:
 def is_text_model(model: Any) -> bool:
     """Check if a model is a text/language model by probing for common attributes."""
     return (
-        hasattr(model.config, "vocab_size")
-        or hasattr(model, "vocab_size")
-        or hasattr(model, "wte")
+        hasattr(model.config, "vocab_size") or hasattr(model, "vocab_size") or hasattr(model, "wte")
     )
 
 
@@ -58,7 +56,9 @@ def query_model(adapter: Any, model: Any, prompt: str, **kwargs) -> str:
     if hasattr(adapter, "generate") and callable(getattr(adapter, "generate")):
         return adapter.generate(model, prompt, **kwargs)
     if hasattr(adapter, "predict") and callable(getattr(adapter, "predict")):
-        result = adapter.predict(model, {"prompt": prompt, "max_tokens": kwargs.get("max_tokens", 256), **kwargs})
+        result = adapter.predict(
+            model, {"prompt": prompt, "max_tokens": kwargs.get("max_tokens", 256), **kwargs}
+        )
         if isinstance(result, str):
             return result
         if isinstance(result, dict):

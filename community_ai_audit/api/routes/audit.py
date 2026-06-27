@@ -1,4 +1,5 @@
 """Audit job submission and status endpoints."""
+
 import json
 from fastapi import APIRouter, Depends
 from community_ai_audit.api.models import AuditRequest, AuditResponse, JobStatus
@@ -31,6 +32,7 @@ async def get_audit(job_id: str, user: dict = Depends(current_user)):
     db.close()
     if not job:
         from fastapi import HTTPException
+
         raise HTTPException(404, "Job not found")
     return JobStatus(
         job_id=job.id,

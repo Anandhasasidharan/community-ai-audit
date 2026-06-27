@@ -1,4 +1,5 @@
 """Registration and login endpoints."""
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from community_ai_audit.api.auth import hash_password, verify_password, create_jwt, generate_api_key

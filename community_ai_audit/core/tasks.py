@@ -1,4 +1,5 @@
 """ARQ background tasks — audit, webhook delivery, schedule check."""
+
 import json
 import logging
 from datetime import datetime, timezone
@@ -10,7 +11,9 @@ from community_ai_audit.api.routes.webhooks import deliver_webhook
 log = logging.getLogger(__name__)
 
 
-async def run_audit_task(ctx: dict, job_id: str, model: str, provider: str, scanners: list[str] | None = None) -> dict:
+async def run_audit_task(
+    ctx: dict, job_id: str, model: str, provider: str, scanners: list[str] | None = None
+) -> dict:
     db = get_session()
     job = db.query(AuditJob).filter(AuditJob.id == job_id).first()
     if not job:
@@ -30,9 +33,12 @@ async def run_audit_task(ctx: dict, job_id: str, model: str, provider: str, scan
         db.commit()
         # fire webhooks
         if job.project_id:
-            _fire_webhooks(db, job.project_id, "audit.completed", {
-                "job_id": job_id, "status": "done", "model": model
-            })
+            _fire_webhooks(
+                db,
+                job.project_id,
+                "audit.completed",
+                {"job_id": job_id, "status": "done", "model": model},
+            )
     except Exception as e:
         job.status = "failed"
         job.error = str(e)
@@ -65,9 +71,13 @@ async def check_schedules(ctx: dict) -> None:
 
 
 def _fire_webhooks(db, project_id: str, event: str, payload: dict) -> None:
-    webhooks = db.query(Webhook).filter(
-        Webhook.project_id == project_id,
-    ).all()
+    webhooks = (
+        db.query(Webhook)
+        .filter(
+            Webhook.project_id == project_id,
+        )
+        .all()
+    )
     for w in webhooks:
         events = json.loads(w.events)
         if event in events:

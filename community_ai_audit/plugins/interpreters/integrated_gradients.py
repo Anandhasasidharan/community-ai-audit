@@ -113,7 +113,12 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
         if isinstance(inputs, dict):
             if "tensor" in inputs:
                 tensor_data = inputs["tensor"]
-                if text_model and isinstance(tensor_data, (list, tuple)) and tensor_data and isinstance(tensor_data[0], int):
+                if (
+                    text_model
+                    and isinstance(tensor_data, (list, tuple))
+                    and tensor_data
+                    and isinstance(tensor_data[0], int)
+                ):
                     return torch.tensor(tensor_data, dtype=torch.long, device=device)
                 return torch.tensor(tensor_data, dtype=torch.float32, device=device)
             if "input" in inputs and isinstance(inputs["input"], (list, tuple)):

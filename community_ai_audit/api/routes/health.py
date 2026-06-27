@@ -1,4 +1,5 @@
 """Health check endpoints."""
+
 from fastapi import APIRouter
 from community_ai_audit.api.database import engine
 

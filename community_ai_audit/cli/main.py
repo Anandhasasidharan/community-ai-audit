@@ -549,13 +549,9 @@ Environment:
     )
 
     # ── mcp-scan command ────────────────────────────────────────
-    mcp_parser = subparsers.add_parser(
-        "mcp-scan", help="Scan an MCP server for vulnerabilities"
-    )
+    mcp_parser = subparsers.add_parser("mcp-scan", help="Scan an MCP server for vulnerabilities")
     mcp_parser.add_argument("url", help="MCP server URL (e.g. http://localhost:8080/mcp)")
-    mcp_parser.add_argument(
-        "--timeout", type=int, default=10, help="Connection timeout in seconds"
-    )
+    mcp_parser.add_argument("--timeout", type=int, default=10, help="Connection timeout in seconds")
 
     # ── agent-trace command ──────────────────────────────────
     agent_trace_parser = subparsers.add_parser(
@@ -745,9 +741,7 @@ Environment:
     )
 
     # ── health command ─────────────────────────────────────────
-    subparsers.add_parser(
-        "health", help="Health check — returns status and version"
-    )
+    subparsers.add_parser("health", help="Health check — returns status and version")
 
     # ── RBAC global flags ─────────────────────────────────────
     for sub in (sched_parser, eval_parser, bench_parser):
@@ -2147,22 +2141,31 @@ def _cmd_compare(engine: Any, args: Any) -> int:
         sev = session.highest_severity
         sev_str = sev.value if hasattr(sev, "value") else str(sev)
         scores = [
-            {"critical": 100, "high": 75, "medium": 50, "low": 25, "none": 0}
-            .get(r.overall_severity.value.lower(), 0)
-            for r in session.scan_results if hasattr(r, "overall_severity") and hasattr(r.overall_severity, "value")
+            {"critical": 100, "high": 75, "medium": 50, "low": 25, "none": 0}.get(
+                r.overall_severity.value.lower(), 0
+            )
+            for r in session.scan_results
+            if hasattr(r, "overall_severity") and hasattr(r.overall_severity, "value")
         ]
         risk = sum(scores) / len(scores) if scores else 0
-        rows.append({
-            "model": model_id,
-            "risk_score": risk,
-            "severity": sev_str,
-            "findings": sum(len(r.findings) for r in session.scan_results),
-        })
+        rows.append(
+            {
+                "model": model_id,
+                "risk_score": risk,
+                "severity": sev_str,
+                "findings": sum(len(r.findings) for r in session.scan_results),
+            }
+        )
     if args.output == "json":
         ui.print_json(json.dumps(rows, indent=2))
     else:
-        ui.table([(r["model"], f"{r['risk_score']:.1f}", r["severity"], str(r["findings"])) for r in rows],
-                 header=["Model", "Risk", "Severity", "Findings"])
+        ui.table(
+            [
+                (r["model"], f"{r['risk_score']:.1f}", r["severity"], str(r["findings"]))
+                for r in rows
+            ],
+            header=["Model", "Risk", "Severity", "Findings"],
+        )
     return 0
 
 
@@ -2175,7 +2178,9 @@ def _cmd_mcp_scan(args: Any) -> int:
     for method in ("tools/list", "resources/list"):
         payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": {}}).encode()
         try:
-            req = urllib.request.Request(args.url, data=payload, headers={"Content-Type": "application/json"})
+            req = urllib.request.Request(
+                args.url, data=payload, headers={"Content-Type": "application/json"}
+            )
             with urllib.request.urlopen(req, timeout=args.timeout) as resp:
                 data = json.loads(resp.read())
         except Exception:
@@ -2184,10 +2189,23 @@ def _cmd_mcp_scan(args: Any) -> int:
             text = f"{item.get('name', item.get('uri', ''))} {item.get('description', '')}".lower()
             label = item.get("name", item.get("uri", ""))
             # ponytail: naive pattern match, no NLP. Upgrade if false-positive rate bites.
-            if any(k in text for k in ("exec(", "subprocess", "eval(", "secret", "token", "password", "cred")):
-                findings.append({"title": f"Suspicious {method.split('/')[0][:-1]}: {label}", "severity": "high"})
+            if any(
+                k in text
+                for k in ("exec(", "subprocess", "eval(", "secret", "token", "password", "cred")
+            ):
+                findings.append(
+                    {
+                        "title": f"Suspicious {method.split('/')[0][:-1]}: {label}",
+                        "severity": "high",
+                    }
+                )
             elif any(k in text for k in ("sudo", "delete", "drop", "shutdown", "bypass")):
-                findings.append({"title": f"Suspicious {method.split('/')[0][:-1]}: {label}", "severity": "medium"})
+                findings.append(
+                    {
+                        "title": f"Suspicious {method.split('/')[0][:-1]}: {label}",
+                        "severity": "medium",
+                    }
+                )
     ui.print_json({"url": args.url, "findings": findings, "count": len(findings)})
     return 1 if findings else 0
 

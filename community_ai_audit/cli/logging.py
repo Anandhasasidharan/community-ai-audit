@@ -1,4 +1,5 @@
 """Configure logging with optional JSON output."""
+
 import logging
 import os
 import sys

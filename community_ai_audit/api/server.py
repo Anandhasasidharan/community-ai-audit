@@ -1,11 +1,20 @@
 """FastAPI application — wraps AuditEngine behind an async HTTP API."""
+
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from community_ai_audit.api.routes import health, audit, scanners, auth, projects, schedules, webhooks
+from community_ai_audit.api.routes import (
+    health,
+    audit,
+    scanners,
+    auth,
+    projects,
+    schedules,
+    webhooks,
+)
 from community_ai_audit.api.database import init_db
 
 

@@ -1,4 +1,5 @@
 """Pydantic request/response models for the API."""
+
 from typing import Any, Optional
 from pydantic import BaseModel
 

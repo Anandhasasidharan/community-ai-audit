@@ -1,4 +1,5 @@
 """Dependencies — JWT + API key auth."""
+
 import os
 from fastapi import Header, HTTPException
 from community_ai_audit.api.auth import decode_jwt

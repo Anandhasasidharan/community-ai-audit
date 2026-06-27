@@ -4,6 +4,7 @@ ponytail: stdlib PBKDF2-HMAC-SHA256 (no passlib). stdlib hmac JWT (no PyJWT).
 Ceilings: no token refresh, no kid header, no RS256. Upgrade to passlib+PyJWT if
 any of those are needed.
 """
+
 import hashlib
 import hmac
 import json
@@ -38,7 +39,9 @@ def _unb64(s: str) -> bytes:
 
 def create_jwt(payload: dict[str, Any], ttl: int = 86400) -> str:
     header = _b64(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
-    body = _b64(json.dumps({**payload, "iat": int(time.time()), "exp": int(time.time()) + ttl}).encode())
+    body = _b64(
+        json.dumps({**payload, "iat": int(time.time()), "exp": int(time.time()) + ttl}).encode()
+    )
     sig = hmac.new(SECRET.encode(), f"{header}.{body}".encode(), "sha256").digest()
     return f"{header}.{body}.{_b64(sig)}"
 

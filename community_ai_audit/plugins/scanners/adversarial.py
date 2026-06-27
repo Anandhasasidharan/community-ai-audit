@@ -13,7 +13,11 @@ from community_ai_audit.core.interfaces import (
     Severity,
     ModelAdapter,
 )
-from community_ai_audit.adapters.base import is_text_model, get_model_device, severity_from_threshold
+from community_ai_audit.adapters.base import (
+    is_text_model,
+    get_model_device,
+    severity_from_threshold,
+)
 
 log = logging.getLogger(__name__)
 
@@ -126,7 +130,11 @@ class AdversarialScanner(ScannerPlugin):
             pgd_success = float((pgd_pred != clean_pred).float().mean().item())
             max_success = max(fgsm_success, pgd_success)
 
-            severity = severity_from_threshold(max_success, cfg.get("severity_thresholds"), {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1})
+            severity = severity_from_threshold(
+                max_success,
+                cfg.get("severity_thresholds"),
+                {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1},
+            )
             finding = Finding(
                 title=f"Adversarial vulnerability score: {max_success:.1%}",
                 description=(

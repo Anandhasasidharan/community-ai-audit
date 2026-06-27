@@ -1,4 +1,5 @@
 """SQLAlchemy engine, session, and models."""
+
 import os
 import uuid
 from datetime import datetime, timezone
@@ -7,7 +8,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///data/jobs.db")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 

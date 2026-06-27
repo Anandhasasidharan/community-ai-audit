@@ -267,11 +267,36 @@ class TestAdversarialScanner(unittest.TestCase):
         from community_ai_audit.core.interfaces import Severity
         from community_ai_audit.adapters.base import severity_from_threshold
 
-        self.assertEqual(severity_from_threshold(0.9, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.CRITICAL)
-        self.assertEqual(severity_from_threshold(0.7, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.HIGH)
-        self.assertEqual(severity_from_threshold(0.4, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.MEDIUM)
-        self.assertEqual(severity_from_threshold(0.2, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.LOW)
-        self.assertEqual(severity_from_threshold(0.05, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.INFO)
+        self.assertEqual(
+            severity_from_threshold(
+                0.9, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}
+            ),
+            Severity.CRITICAL,
+        )
+        self.assertEqual(
+            severity_from_threshold(
+                0.7, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}
+            ),
+            Severity.HIGH,
+        )
+        self.assertEqual(
+            severity_from_threshold(
+                0.4, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}
+            ),
+            Severity.MEDIUM,
+        )
+        self.assertEqual(
+            severity_from_threshold(
+                0.2, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}
+            ),
+            Severity.LOW,
+        )
+        self.assertEqual(
+            severity_from_threshold(
+                0.05, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}
+            ),
+            Severity.INFO,
+        )
 
     def test_fgsm_runs(self):
         class _DummyModel(nn.Module):
