@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from .base import ReliabilityScanner
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -77,10 +78,7 @@ class HallucinationScanner(ReliabilityScanner):
             prompt = probe["prompt"]
             expected = probe.get("expected", "")
             try:
-                if hasattr(adapter, "generate"):
-                    output = adapter.generate(model, prompt)
-                else:
-                    output = str(adapter.predict(model, prompt))
+                output = query_model(adapter, model, prompt)
             except Exception as e:
                 log.warning("Hallucination probe failed: %s", e)
                 output = ""

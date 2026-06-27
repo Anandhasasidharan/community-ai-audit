@@ -557,7 +557,7 @@ class AuditEngine:
 
         Args:
             session: AuditSession from audit().
-            format: One of 'markdown', 'json', 'html'.
+            format: One of 'markdown', 'json', 'html', 'modelcard'.
 
         Returns:
             Formatted report string.
@@ -566,6 +566,8 @@ class AuditEngine:
         from community_ai_audit.reporting import ReportGenerator
 
         reporter = ReportGenerator()
+        if format == "modelcard":
+            return reporter.render_modelcard(session)
         return reporter.render_session(session, fmt=format)
 
     # ── Utility ─────────────────────────────────────────────────

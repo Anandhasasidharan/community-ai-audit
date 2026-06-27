@@ -37,16 +37,6 @@ class AttackGenerator(ABC):
         raise NotImplementedError
 
 
-class AttackExecutor(ABC):
-    name: str = "base_attack_executor"
-    description: str = ""
-
-    @abstractmethod
-    def execute(self, prompt: str, model: Any, adapter: Any) -> str:
-        """Send an attack prompt to the model and return the output."""
-        raise NotImplementedError
-
-
 class AttackEvaluator(ABC):
     name: str = "base_attack_evaluator"
     description: str = ""

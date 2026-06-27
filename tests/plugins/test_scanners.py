@@ -16,6 +16,8 @@ except ImportError:
 
 skip_if_no_torch = unittest.skipIf(not HAS_TORCH, "torch not installed")
 
+from community_ai_audit.adapters.base import get_model_device
+
 
 class _DummyAdapter:
     name = "local"
@@ -112,7 +114,7 @@ class TestBackdoorScanner(unittest.TestCase):
                 return self.fc(x.float() if x.dtype == torch.long else x)
 
         model = _DummyModel()
-        device = self.scanner._get_device(model)
+        device = get_model_device(model)
         self.assertEqual(device, torch.device("cpu"))
 
     def test_flatten_data_with_tensor(self):
@@ -263,12 +265,13 @@ class TestAdversarialScanner(unittest.TestCase):
 
     def test_severity_from_success(self):
         from community_ai_audit.core.interfaces import Severity
+        from community_ai_audit.adapters.base import severity_from_threshold
 
-        self.assertEqual(self.scanner._severity_from_success(0.9), Severity.CRITICAL)
-        self.assertEqual(self.scanner._severity_from_success(0.7), Severity.HIGH)
-        self.assertEqual(self.scanner._severity_from_success(0.4), Severity.MEDIUM)
-        self.assertEqual(self.scanner._severity_from_success(0.2), Severity.LOW)
-        self.assertEqual(self.scanner._severity_from_success(0.05), Severity.INFO)
+        self.assertEqual(severity_from_threshold(0.9, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.CRITICAL)
+        self.assertEqual(severity_from_threshold(0.7, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.HIGH)
+        self.assertEqual(severity_from_threshold(0.4, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.MEDIUM)
+        self.assertEqual(severity_from_threshold(0.2, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.LOW)
+        self.assertEqual(severity_from_threshold(0.05, None, {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1}), Severity.INFO)
 
     def test_fgsm_runs(self):
         class _DummyModel(nn.Module):

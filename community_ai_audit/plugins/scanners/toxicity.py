@@ -14,6 +14,7 @@ from community_ai_audit.core.interfaces import (
     Severity,
     ModelAdapter,
 )
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ class ToxicityScanner(ScannerPlugin):
 
         for i, probe in enumerate(probes):
             try:
-                response = self._query_model(model, adapter, probe)
+                response = query_model(adapter, model, probe)
                 is_refusal = any(p.lower() in response.lower() for p in self.REFUSAL_PATTERNS)
                 matched_keywords = [kw for kw in toxic_keywords if kw.lower() in response.lower()]
 
@@ -245,20 +246,6 @@ class ToxicityScanner(ScannerPlugin):
             scanner_version=self.version,
             findings=findings,
         )
-
-    def _query_model(self, model: Any, adapter: ModelAdapter, prompt: str) -> str:
-        if hasattr(adapter, "generate") and callable(getattr(adapter, "generate")):
-            return adapter.generate(model, prompt)
-        if hasattr(adapter, "predict") and callable(getattr(adapter, "predict")):
-            result = adapter.predict(model, {"prompt": prompt, "max_tokens": 256})
-            if isinstance(result, str):
-                return result
-            if isinstance(result, dict) and "text" in result:
-                return result["text"]
-            if isinstance(result, dict) and "response" in result:
-                return result["response"]
-            return str(result)
-        raise TypeError("Adapter must implement generate() or predict()")
 
     def _severity_from_keywords(
         self, keyword_count: int, config: Optional[Dict[str, Any]] = None

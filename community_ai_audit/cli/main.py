@@ -102,6 +102,17 @@ Environment:
         help="Report output format",
     )
     scan_parser.add_argument(
+        "--ci",
+        action="store_true",
+        help="CI mode: JSON output, GitHub annotations, non-zero exit on findings",
+    )
+    scan_parser.add_argument(
+        "--threshold",
+        default="medium",
+        choices=["low", "medium", "high", "critical"],
+        help="Minimum severity for non-zero exit in CI mode (default: medium)",
+    )
+    scan_parser.add_argument(
         "--save",
         type=str,
         default=None,
@@ -236,8 +247,19 @@ Environment:
         "--output",
         "-o",
         default="markdown",
-        choices=["markdown", "json", "html"],
+        choices=["markdown", "json", "html", "modelcard"],
         help="Report output format",
+    )
+    audit_parser.add_argument(
+        "--ci",
+        action="store_true",
+        help="CI mode: JSON output, GitHub annotations, non-zero exit on findings",
+    )
+    audit_parser.add_argument(
+        "--threshold",
+        default="medium",
+        choices=["low", "medium", "high", "critical"],
+        help="Minimum severity for non-zero exit in CI mode (default: medium)",
     )
     audit_parser.add_argument(
         "--connectors",
@@ -314,7 +336,7 @@ Environment:
     )
     sched_add.add_argument(
         "--output",
-        choices=["markdown", "json", "html"],
+        choices=["markdown", "json", "html", "modelcard"],
         default="markdown",
         help="Report output format",
     )
@@ -493,6 +515,37 @@ Environment:
         type=str,
         default=None,
         help="Save results to file path",
+    )
+    agent_audit_parser.add_argument(
+        "--pipe",
+        action="store_true",
+        help="Read session JSON from stdin instead of --session-file",
+    )
+
+    # ── compare command ────────────────────────────────────────
+    compare_parser = subparsers.add_parser(
+        "compare", help="Compare audit results across multiple models"
+    )
+    compare_parser.add_argument(
+        "models",
+        nargs="+",
+        help="Model identifiers, optionally with provider (e.g. model1:openai model2:huggingface)",
+    )
+    compare_parser.add_argument(
+        "--output",
+        "-o",
+        default="json",
+        choices=["json", "table"],
+        help="Output format",
+    )
+
+    # ── mcp-scan command ────────────────────────────────────────
+    mcp_parser = subparsers.add_parser(
+        "mcp-scan", help="Scan an MCP server for vulnerabilities"
+    )
+    mcp_parser.add_argument("url", help="MCP server URL (e.g. http://localhost:8080/mcp)")
+    mcp_parser.add_argument(
+        "--timeout", type=int, default=10, help="Connection timeout in seconds"
     )
 
     # ── agent-trace command ──────────────────────────────────
@@ -776,6 +829,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "audit-score":
         return _cmd_audit_score(args)
 
+    if args.command == "compare":
+        return _cmd_compare(engine, args)
+
+    if args.command == "mcp-scan":
+        return _cmd_mcp_scan(args)
+
     return 0
 
 
@@ -929,8 +988,24 @@ def _cmd_scan(engine, args) -> int:
     results = engine.scan(scanners=selected_scanners, config_overrides=scanner_overrides)
 
     reporter = ReportGenerator()
+    ci_mode = getattr(args, "ci", False)
+    if ci_mode and args.output == "markdown":
+        args.output = "json"
+
     if args.output == "json":
         report = _json.dumps([r.to_dict() for r in results], indent=2)
+
+        if ci_mode:
+            all_findings = []
+            for r in results:
+                scanner_name = getattr(r, "scanner_name", "unknown")
+                for f in getattr(r, "findings", []):
+                    all_findings.append(f)
+                    title = f"scan/{scanner_name}"
+                    _print_github_annotations([f], title=title)
+            ui.print_json(report)
+            return _ci_exit_code(all_findings, args.threshold)
+
         ui.print_json(report)
     else:
         for r in results:
@@ -1076,12 +1151,27 @@ def _cmd_audit(engine, args) -> int:
     )
 
     reporter = ReportGenerator()
+    ci_mode = getattr(args, "ci", False)
+    if ci_mode and args.output == "markdown":
+        args.output = "json"
+
     if args.output == "json":
         report = _json.dumps(session.to_dict(), indent=2, default=str)
         ui.print_json(report)
+    elif args.output == "modelcard":
+        report = reporter.render_modelcard(session)
+        ui.text(report)
     else:
         report = reporter.render_session(session, fmt=args.output)
         ui.success(f"Audit complete: {session.summary()}")
+
+    if ci_mode:
+        all_findings = []
+        for sr in session.scan_results:
+            for f in getattr(sr, "findings", []):
+                all_findings.append(f)
+                _print_github_annotations([f], title=f"audit/{sr.scanner_name}")
+        return _ci_exit_code(all_findings, args.threshold)
 
     if args.save:
         _save_report(report, args.save)
@@ -1376,6 +1466,28 @@ def _severity_rank(sev) -> int:
     return order.get(value, -1)
 
 
+def _ci_exit_code(findings: List, threshold: str) -> int:
+    min_rank = _severity_rank(threshold)
+    max_rank = 0
+    for f in findings:
+        sev = getattr(f, "severity", "unknown")
+        rank = _severity_rank(sev)
+        if rank > max_rank:
+            max_rank = rank
+    return 2 if max_rank >= 4 else 1 if max_rank >= min_rank else 0
+
+
+def _print_github_annotations(findings: List, title: str = "security-audit"):
+    for f in findings:
+        sev = getattr(f, "severity", "unknown")
+        sev_str = getattr(sev, "value", str(sev)).lower()
+        level = "error" if sev_str == "critical" else "warning"
+        desc = getattr(f, "description", str(f)[:200])
+        msg = getattr(f, "title", "").strip()
+        label = f"{msg}: {desc}" if msg else desc
+        print(f"::{level} file=model,title={title}::{label}", file=__import__("sys").stderr)
+
+
 def _cmd_eval(engine: Any, args: Any) -> int:
     """Run a full evaluation."""
     try:
@@ -1615,7 +1727,10 @@ def _cmd_agent_audit(args: Any) -> int:
     from community_ai_audit.core.agent_session import AgentAuditSession
     from community_ai_audit.plugins.agents import run_agent_scanners
 
-    if args.session_file:
+    if args.pipe:
+        data = json.load(sys.stdin)
+        session = AgentAuditSession.from_dict(data)
+    elif args.session_file:
         with open(args.session_file) as f:
             data = json.load(f)
         session = AgentAuditSession.from_dict(data)
@@ -2002,6 +2117,60 @@ def _cmd_audit_score(args: Any) -> int:
         ui.info(f"Weights: {risk.weights}")
 
     return 0
+
+
+def _cmd_compare(engine: Any, args: Any) -> int:
+    """Compare audit results across multiple models."""
+    rows = []
+    for entry in args.models:
+        model_id, provider = entry.rsplit(":", 1) if ":" in entry else (entry, "huggingface")
+        engine.load_model(model_id, provider=provider)
+        session = engine.audit()
+        sev = session.highest_severity
+        sev_str = sev.value if hasattr(sev, "value") else str(sev)
+        scores = [
+            {"critical": 100, "high": 75, "medium": 50, "low": 25, "none": 0}
+            .get(r.overall_severity.value.lower(), 0)
+            for r in session.scan_results if hasattr(r, "overall_severity") and hasattr(r.overall_severity, "value")
+        ]
+        risk = sum(scores) / len(scores) if scores else 0
+        rows.append({
+            "model": model_id,
+            "risk_score": risk,
+            "severity": sev_str,
+            "findings": sum(len(r.findings) for r in session.scan_results),
+        })
+    if args.output == "json":
+        ui.print_json(json.dumps(rows, indent=2))
+    else:
+        ui.table([(r["model"], f"{r['risk_score']:.1f}", r["severity"], str(r["findings"])) for r in rows],
+                 header=["Model", "Risk", "Severity", "Findings"])
+    return 0
+
+
+def _cmd_mcp_scan(args: Any) -> int:
+    """Scan an MCP server for vulnerabilities."""
+    import urllib.request, urllib.error
+
+    findings = []
+    for method in ("tools/list", "resources/list"):
+        payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": {}}).encode()
+        try:
+            req = urllib.request.Request(args.url, data=payload, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=args.timeout) as resp:
+                data = json.loads(resp.read())
+        except Exception:
+            continue
+        for item in (data.get("result", {}) or {}).get(method.split("/")[0], []):
+            text = f"{item.get('name', item.get('uri', ''))} {item.get('description', '')}".lower()
+            label = item.get("name", item.get("uri", ""))
+            # ponytail: naive pattern match, no NLP. Upgrade if false-positive rate bites.
+            if any(k in text for k in ("exec(", "subprocess", "eval(", "secret", "token", "password", "cred")):
+                findings.append({"title": f"Suspicious {method.split('/')[0][:-1]}: {label}", "severity": "high"})
+            elif any(k in text for k in ("sudo", "delete", "drop", "shutdown", "bypass")):
+                findings.append({"title": f"Suspicious {method.split('/')[0][:-1]}: {label}", "severity": "medium"})
+    ui.print_json({"url": args.url, "findings": findings, "count": len(findings)})
+    return 1 if findings else 0
 
 
 if __name__ == "__main__":

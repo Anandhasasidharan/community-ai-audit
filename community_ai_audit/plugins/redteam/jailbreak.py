@@ -5,6 +5,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from .base import AttackGenerator, AttackEvaluator, AttackResult
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -98,10 +99,7 @@ class JailbreakScanner:
 
         for prompt in prompts:
             try:
-                if hasattr(adapter, "generate"):
-                    output = adapter.generate(model, prompt)
-                else:
-                    output = str(adapter.predict(model, prompt))
+                output = query_model(adapter, model, prompt)
             except Exception as e:
                 log.warning("Jailbreak attack failed: %s", e)
                 output = ""

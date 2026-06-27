@@ -11,6 +11,7 @@ from community_ai_audit.core.interfaces import (
     InterpretationResult,
     ModelAdapter,
 )
+from community_ai_audit.adapters.base import is_text_model, get_model_device
 
 log = logging.getLogger(__name__)
 
@@ -42,14 +43,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
                 error="Integrated Gradients requires white-box gradient access.",
             )
 
-        # Check if model is a text/language model
-        is_text_model = (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
-
-        if is_text_model:
+        if is_text_model(model):
             return InterpretationResult(
                 interpreter_name=self.name,
                 interpreter_version=self.version,
@@ -62,7 +56,7 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
 
         try:
 
-            x = self._to_tensor_input(inputs, device=self._get_device(model), model=model)
+            x = self._to_tensor_input(inputs, device=get_model_device(model), model=model)
             if x is None:
                 return InterpretationResult(
                     interpreter_name=self.name,
@@ -104,64 +98,38 @@ class IntegratedGradientsInterpreter(InterpreterPlugin):
     def _to_tensor_input(self, inputs: Any, device, model=None):
         import torch
 
-        # Check if model is a text/language model
-        is_text_model = model is not None and (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
+        text_model = model is not None and is_text_model(model)
 
         if isinstance(inputs, torch.Tensor):
-            if is_text_model and inputs.dtype.is_floating_point:
+            if text_model and inputs.dtype.is_floating_point:
                 return inputs.detach().clone().to(device).long()
             return inputs.detach().clone().to(device).float()
 
         if isinstance(inputs, (list, tuple)):
-            if is_text_model:
-                # Check if it's token IDs (integers)
-                if inputs and isinstance(inputs[0], int):
-                    return torch.tensor(inputs, dtype=torch.long, device=device)
+            if text_model and inputs and isinstance(inputs[0], int):
+                return torch.tensor(inputs, dtype=torch.long, device=device)
             return torch.tensor(inputs, dtype=torch.float32, device=device)
 
         if isinstance(inputs, dict):
-            # explicit tensor wrapper
             if "tensor" in inputs:
                 tensor_data = inputs["tensor"]
-                if (
-                    is_text_model
-                    and isinstance(tensor_data, (list, tuple))
-                    and tensor_data
-                    and isinstance(tensor_data[0], int)
-                ):
+                if text_model and isinstance(tensor_data, (list, tuple)) and tensor_data and isinstance(tensor_data[0], int):
                     return torch.tensor(tensor_data, dtype=torch.long, device=device)
                 return torch.tensor(tensor_data, dtype=torch.float32, device=device)
             if "input" in inputs and isinstance(inputs["input"], (list, tuple)):
                 input_data = inputs["input"]
-                if is_text_model and input_data and isinstance(input_data[0], int):
+                if text_model and input_data and isinstance(input_data[0], int):
                     return torch.tensor(input_data, dtype=torch.long, device=device)
                 return torch.tensor(input_data, dtype=torch.float32, device=device)
 
         return None
 
-    def _get_device(self, model: Any):
-        import torch
-
-        try:
-            return next(model.parameters()).device
-        except Exception:
-            return torch.device("cpu")
-
     def _build_baseline(self, x, mode: str, model=None):
         import torch
 
-        # Check if model is a text/language model
-        is_text_model = model is not None and (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
+        text_model = model is not None and is_text_model(model)
 
-        if is_text_model:
+        if text_model:
             # For text models, use padding token (0) or special token as baseline
             if mode == "random":
                 # Random tokens near padding

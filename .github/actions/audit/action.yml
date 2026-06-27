@@ -1,0 +1,48 @@
+name: 'Community AI Audit'
+description: 'Run AI model security audit in CI pipelines'
+branding:
+  icon: 'shield'
+  color: 'blue'
+inputs:
+  model:
+    description: 'Model identifier (HF repo, API model name, or local path)'
+    required: true
+  provider:
+    description: 'Model provider (huggingface, openai, anthropic, aws_bedrock, local, ollama)'
+    required: true
+    default: 'huggingface'
+  profile:
+    description: 'Audit profile (quick, standard, deep, custom)'
+    default: 'standard'
+  threshold:
+    description: 'Minimum severity for non-zero exit (low, medium, high, critical)'
+    default: 'medium'
+  python-version:
+    description: 'Python version for the audit'
+    default: '3.11'
+outputs:
+  exit-code:
+    description: 'Exit code from the audit (0 = pass, 1 = findings above threshold, 2 = critical)'
+    value: ${{ steps.audit.outputs.exit-code }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install community-ai-audit
+      run: pip install community-ai-audit
+      shell: bash
+
+    - name: Run audit
+      id: audit
+      run: |
+        community-ai-audit audit "${{ inputs.model }}" \
+          --provider "${{ inputs.provider }}" \
+          --profile "${{ inputs.profile }}" \
+          --threshold "${{ inputs.threshold }}" \
+          --ci
+        echo "exit-code=$?" >> "$GITHUB_OUTPUT"
+      shell: bash

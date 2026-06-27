@@ -15,17 +15,9 @@ from community_ai_audit.core.interfaces import (
     InterpretationResult,
     ModelAdapter,
 )
+from community_ai_audit.adapters.base import safe_import, is_text_model
 
 log = logging.getLogger(__name__)
-
-
-def safe_import(name, package=None):
-    import importlib
-
-    try:
-        return importlib.import_module(name, package=package)
-    except ImportError:
-        return None
 
 
 class LIMEInterpreter(InterpreterPlugin):
@@ -78,14 +70,7 @@ class LIMEInterpreter(InterpreterPlugin):
         if config:
             self.config = {**self.config, **config}
 
-        # Check if model is a text/language model
-        is_text_model = (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
-
-        if not is_text_model:
+        if not is_text_model(model):
             return InterpretationResult(
                 interpreter_name=self.name,
                 interpreter_version=self.version,

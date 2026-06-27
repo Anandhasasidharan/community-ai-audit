@@ -13,6 +13,7 @@ from community_ai_audit.core.interfaces import (
     Severity,
     ModelAdapter,
 )
+from community_ai_audit.adapters.base import is_text_model, get_model_device, severity_from_threshold
 
 log = logging.getLogger(__name__)
 
@@ -60,14 +61,9 @@ class AdversarialScanner(ScannerPlugin):
                 ],
             )
 
-        # Check if model is a text/language model - adversarial attacks on token IDs don't work
-        is_text_model = (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
+        text_model = is_text_model(model)
 
-        if is_text_model:
+        if text_model:
             return ScanResult(
                 scanner_name=self.name,
                 scanner_version=self.version,
@@ -94,7 +90,7 @@ class AdversarialScanner(ScannerPlugin):
         try:
             import torch
 
-            device = self._get_device(model)
+            device = get_model_device(model)
             x = self._build_probe_batch(
                 model, cfg, num_samples=num_samples, device=device, adapter=adapter
             )
@@ -130,7 +126,7 @@ class AdversarialScanner(ScannerPlugin):
             pgd_success = float((pgd_pred != clean_pred).float().mean().item())
             max_success = max(fgsm_success, pgd_success)
 
-            severity = self._severity_from_success(max_success, config=cfg)
+            severity = severity_from_threshold(max_success, cfg.get("severity_thresholds"), {"critical": 0.8, "high": 0.6, "medium": 0.3, "low": 0.1})
             finding = Finding(
                 title=f"Adversarial vulnerability score: {max_success:.1%}",
                 description=(
@@ -182,26 +178,12 @@ class AdversarialScanner(ScannerPlugin):
             return False
         return hasattr(model, "parameters")
 
-    def _get_device(self, model: Any):
-        import torch
-
-        try:
-            p = next(model.parameters())
-            return p.device
-        except Exception:
-            return torch.device("cpu")
-
     def _build_probe_batch(
         self, model: Any, cfg: Dict[str, Any], num_samples: int, device, adapter=None
     ):
         import torch
 
-        # Check if model is a text/language model (has vocab_size or uses token IDs)
-        is_text_model = (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
+        text_model = is_text_model(model)
 
         if "probe_inputs" in cfg:
             probe = cfg["probe_inputs"]
@@ -224,8 +206,7 @@ class AdversarialScanner(ScannerPlugin):
                 full_shape = tuple(shape)
             else:
                 full_shape = (num_samples, *shape)
-            if is_text_model:
-                # For text models, create random token IDs
+            if text_model:
                 vocab_size = getattr(model.config, "vocab_size", 50257)
                 return torch.randint(0, vocab_size, full_shape, device=device, dtype=torch.long)
             return torch.randn(full_shape, device=device)
@@ -239,8 +220,7 @@ class AdversarialScanner(ScannerPlugin):
         if in_features is not None:
             return torch.randn((num_samples, in_features), device=device)
 
-        # Default: if text model, use token IDs
-        if is_text_model:
+        if text_model:
             vocab_size = getattr(model.config, "vocab_size", 50257)
             return torch.randint(0, vocab_size, (num_samples, 16), device=device, dtype=torch.long)
 
@@ -287,25 +267,6 @@ class AdversarialScanner(ScannerPlugin):
             x_adv = (x_orig + delta).detach()
 
         return x_adv
-
-    def _severity_from_success(
-        self, success_rate: float, config: Optional[Dict[str, Any]] = None
-    ) -> Severity:
-        thresholds = (config or {}).get("severity_thresholds", {})
-        critical = thresholds.get("critical", 0.8)
-        high = thresholds.get("high", 0.6)
-        medium = thresholds.get("medium", 0.3)
-        low = thresholds.get("low", 0.1)
-
-        if success_rate >= critical:
-            return Severity.CRITICAL
-        if success_rate >= high:
-            return Severity.HIGH
-        if success_rate >= medium:
-            return Severity.MEDIUM
-        if success_rate >= low:
-            return Severity.LOW
-        return Severity.INFO
 
     @classmethod
     def get_config_schema(cls) -> Dict[str, Any]:

@@ -17,6 +17,7 @@ from community_ai_audit.core.interfaces import (
     Severity,
     ModelAdapter,
 )
+from community_ai_audit.adapters.base import is_text_model, get_model_device
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +161,7 @@ class BackdoorScanner(ScannerPlugin):
     def _extract_activations(self, model: Any, cfg: Dict[str, Any], adapter=None) -> Dict[str, Any]:
         import torch
 
-        device = self._get_device(model)
+        device = get_model_device(model)
         probe = self._build_probe_batch(model, cfg, device=device, adapter=adapter)
         if probe is None:
             return {}
@@ -206,12 +207,7 @@ class BackdoorScanner(ScannerPlugin):
     def _build_probe_batch(self, model: Any, cfg: Dict[str, Any], device, adapter=None):
         import torch
 
-        # Check if model is a text/language model (has vocab_size or uses token IDs)
-        is_text_model = (
-            hasattr(model.config, "vocab_size")
-            or hasattr(model, "vocab_size")
-            or hasattr(model, "wte")  # GPT-2 style
-        )
+        text_model = is_text_model(model)
 
         if "probe_inputs" in cfg:
             probe = cfg["probe_inputs"]
@@ -234,8 +230,7 @@ class BackdoorScanner(ScannerPlugin):
                 full = tuple(input_shape)
             else:
                 full = (num_samples, *input_shape)
-            if is_text_model:
-                # For text models, create random token IDs
+            if text_model:
                 vocab_size = getattr(model.config, "vocab_size", 50257)
                 return torch.randint(0, vocab_size, full, device=device, dtype=torch.long)
             return torch.randn(full, device=device)
@@ -249,20 +244,11 @@ class BackdoorScanner(ScannerPlugin):
         if in_features is not None:
             return torch.randn((num_samples, in_features), device=device)
 
-        # Default: if text model, use token IDs
-        if is_text_model:
+        if text_model:
             vocab_size = getattr(model.config, "vocab_size", 50257)
             return torch.randint(0, vocab_size, (num_samples, 16), device=device, dtype=torch.long)
 
         return None
-
-    def _get_device(self, model: Any):
-        import torch
-
-        try:
-            return next(model.parameters()).device
-        except Exception:
-            return torch.device("cpu")
 
     def _flatten_data(self, data: Any) -> List[List[float]]:
         import numpy as np

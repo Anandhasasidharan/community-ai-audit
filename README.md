@@ -7,6 +7,7 @@
     <a href="https://pypi.org/project/community-ai-audit/"><img src="https://img.shields.io/pypi/v/community-ai-audit.svg" alt="PyPI"></a>
     <a href="https://github.com/anomalyco/community-ai-audit/actions"><img src="https://img.shields.io/github/actions/workflow/status/anomalyco/community-ai-audit/ci.yml?branch=main" alt="CI"></a>
     <a href="https://codecov.io/gh/anomalyco/community-ai-audit"><img src="https://img.shields.io/codecov/c/github/anomalyco/community-ai-audit" alt="Coverage"></a>
+    <a href="https://github.com/anomalyco/community-ai-audit/pkgs/container/community-ai-audit"><img src="https://img.shields.io/github/v/release/anomalyco/community-ai-audit?label=ghcr&logo=docker" alt="GHCR"></a>
   </p>
   <br>
 </div>
@@ -181,6 +182,43 @@ pip install -e .[dev]
 | `schedule add/list/remove/run` | Manage recurring audits |
 
 Exit codes: `0` = ok, `1` = HIGH/MEDIUM findings, `2` = CRITICAL findings.
+
+---
+
+## 🤖 CI/CD Integration
+
+### GitHub Action
+
+Add to `.github/workflows/audit.yml`:
+
+```yaml
+jobs:
+  audit:
+    steps:
+      - uses: anomalyco/community-ai-audit/.github/actions/audit@main
+        with:
+          model: distilgpt2
+          provider: huggingface
+          profile: quick
+          threshold: medium
+```
+
+### Pre-commit (manual)
+
+```yaml
+repos:
+  - repo: https://github.com/anomalyco/community-ai-audit
+    rev: v0.6.0
+    hooks:
+      - id: community-ai-audit-scan
+```
+
+### Docker
+
+```bash
+docker pull ghcr.io/anomalyco/community-ai-audit:latest
+docker run ghcr.io/anomalyco/community-ai-audit audit distilgpt2 --provider huggingface --profile quick
+```
 
 ---
 

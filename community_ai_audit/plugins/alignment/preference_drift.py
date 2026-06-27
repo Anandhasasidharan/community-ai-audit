@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from .base import AlignmentScanner
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -60,10 +61,7 @@ class PreferenceDriftScanner(AlignmentScanner):
 
         for core_prompt in self.core_prompts:
             try:
-                if hasattr(adapter, "generate"):
-                    core_output = adapter.generate(model, core_prompt)
-                else:
-                    core_output = str(adapter.predict(model, core_prompt))
+                core_output = query_model(adapter, model, core_prompt)
             except Exception as e:
                 log.warning("Preference drift core prompt failed: %s", e)
                 core_output = ""
@@ -74,10 +72,7 @@ class PreferenceDriftScanner(AlignmentScanner):
             variants = self.variants.get(core_prompt, [])
             for variant in variants:
                 try:
-                    if hasattr(adapter, "generate"):
-                        var_output = adapter.generate(model, variant)
-                    else:
-                        var_output = str(adapter.predict(model, variant))
+                    var_output = query_model(adapter, model, variant)
                 except Exception as e:
                     log.warning("Preference drift variant failed: %s", e)
                     var_output = ""

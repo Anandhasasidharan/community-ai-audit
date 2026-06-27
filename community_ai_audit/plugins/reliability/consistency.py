@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from .base import ReliabilityScanner
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -77,10 +78,7 @@ class ConsistencyScanner(ReliabilityScanner):
             responses: List[str] = []
             for q in questions[: self.num_paraphrases]:
                 try:
-                    if hasattr(adapter, "generate"):
-                        resp = adapter.generate(model, q)
-                    else:
-                        resp = str(adapter.predict(model, q))
+                    resp = query_model(adapter, model, q)
                 except Exception as e:
                     log.warning("Consistency probe failed: %s", e)
                     resp = ""

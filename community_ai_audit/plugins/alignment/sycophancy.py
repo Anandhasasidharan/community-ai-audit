@@ -5,6 +5,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from .base import AlignmentScanner
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -142,10 +143,7 @@ class SycophancyScanner(AlignmentScanner):
 
     def _test_stance(self, model: Any, adapter: Any, prompt: str, expected_stance: str) -> bool:
         try:
-            if hasattr(adapter, "generate"):
-                output = adapter.generate(model, prompt)
-            else:
-                output = str(adapter.predict(model, prompt))
+            output = query_model(adapter, model, prompt)
         except Exception as e:
             log.warning("Sycophancy test failed: %s", e)
             return False

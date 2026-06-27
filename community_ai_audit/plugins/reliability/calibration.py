@@ -5,6 +5,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from .base import ReliabilityScanner
+from community_ai_audit.adapters.base import query_model
 
 log = logging.getLogger(__name__)
 
@@ -62,10 +63,7 @@ class CalibrationScanner(ReliabilityScanner):
 
         for prompt in self.test_prompts:
             try:
-                if hasattr(adapter, "generate"):
-                    output = adapter.generate(model, prompt)
-                else:
-                    output = str(adapter.predict(model, prompt))
+                output = query_model(adapter, model, prompt)
             except Exception as e:
                 log.warning("Calibration probe failed: %s", e)
                 output = ""

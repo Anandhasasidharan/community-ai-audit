@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from .base import AttackGenerator, AttackExecutor, AttackEvaluator, AttackResult
+from .base import AttackGenerator, AttackEvaluator, AttackResult
 from .jailbreak import JailbreakScanner, JailbreakAttackGenerator, JailbreakAttackEvaluator
 from .multi_turn import MultiTurnAttackScanner
 from .obfuscation import PromptObfuscationScanner
@@ -80,7 +80,6 @@ def run_redteam_scanners(
 
 __all__ = [
     "AttackGenerator",
-    "AttackExecutor",
     "AttackEvaluator",
     "AttackResult",
     "JailbreakScanner",
