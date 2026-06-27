@@ -2,38 +2,61 @@
   <h1>🛡️ Community AI Audit</h1>
   <p><strong>Enterprise-Grade AI Security Auditing · Open Source · Community-Driven</strong></p>
   <p>
-    <a href="https://pypi.org/project/community-ai-audit/"><img src="https://img.shields.io/pypi/pyversions/community-ai-audit.svg" alt="Python versions"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/anomalyco/community-ai-audit.svg" alt="License"></a>
-    <a href="https://pypi.org/project/community-ai-audit/"><img src="https://img.shields.io/pypi/v/community-ai-audit.svg" alt="PyPI"></a>
-    <a href="https://github.com/anomalyco/community-ai-audit/actions"><img src="https://img.shields.io/github/actions/workflow/status/anomalyco/community-ai-audit/ci.yml?branch=main" alt="CI"></a>
-    <a href="https://codecov.io/gh/anomalyco/community-ai-audit"><img src="https://img.shields.io/codecov/c/github/anomalyco/community-ai-audit" alt="Coverage"></a>
-    <a href="https://github.com/anomalyco/community-ai-audit/pkgs/container/community-ai-audit"><img src="https://img.shields.io/github/v/release/anomalyco/community-ai-audit?label=ghcr&logo=docker" alt="GHCR"></a>
+    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.9%2B-blue?logo=python" alt="Python 3.9+"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/Anandhasasidharan/community-ai-audit?label=license&logo=opensourceinitiative" alt="MIT"></a>
+    <a href="https://github.com/Anandhasasidharan/community-ai-audit/actions"><img src="https://img.shields.io/github/actions/workflow/status/Anandhasasidharan/community-ai-audit/ci.yml?branch=master&logo=github" alt="CI"></a>
+    <a href="https://github.com/Anandhasasidharan/community-ai-audit"><img src="https://img.shields.io/github/last-commit/Anandhasasidharan/community-ai-audit?logo=git" alt="Last Commit"></a>
+    <a href="https://github.com/Anandhasasidharan/community-ai-audit"><img src="https://img.shields.io/github/repo-size/Anandhasasidharan/community-ai-audit?logo=github" alt="Repo Size"></a>
   </p>
   <br>
 </div>
 
-**Community AI Audit** is a unified security auditing platform for AI/ML models. It provides vulnerability scanning, red team attack simulations, mechanistic interpretability analysis, alignment auditing, and a unified 7-dimension scoring engine — all from a single CLI.
+---
+
+## 📋 Table of Contents
+
+- [What is Community AI Audit?](#-what-is-community-ai-audit)
+- [Quickstart](#-quickstart)
+- [Use Cases](#-use-cases)
+- [Architecture](#️-architecture)
+- [API Server](#-api-server)
+- [Installation](#-installation)
+- [CLI Reference](#-cli-reference)
+- [Configuration](#-configuration)
+- [Docker Deployment](#-docker-deployment)
+- [SDK](#-sdk)
+- [Testing](#-testing)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
-## 🔍 What You Can Do
+## 🧠 What is Community AI Audit?
 
-| Use Case | What It Solves |
-|----------|----------------|
-| **🛡️ Vulnerability Scanning** | Detect adversarial susceptibility, backdoors, prompt injection, data extraction, toxicity, watermark detectability |
-| **⚔️ Red Team Testing** | Simulate jailbreak, multi-turn, obfuscation, roleplay, and tool exploitation attacks |
-| **🧠 Mechanistic Interpretability** | Probe representations, attention patterns, feature attribution, and layer behavior |
-| **🎯 Alignment Auditing** | Measure sycophancy, preference drift, value alignment, and objective robustness |
-| **📊 Unified Scoring** | Aggregate 7 security dimensions into a single risk score with configurable weights |
-| **📈 Trend Tracking** | Monitor score evolution across time and detect regressions |
-| **📡 SIEM Integration** | Push findings to Splunk, Elastic, Datadog, Sentinel, and 9+ other platforms |
+**Community AI Audit** is a unified security auditing platform for AI/ML models. It provides vulnerability scanning, red team attack simulations, mechanistic interpretability analysis, alignment auditing, and a unified 7-dimension scoring engine — all from a single CLI or REST API.
+
+```mermaid
+graph LR
+    A[CLI] --> B[Audit Engine]
+    C[API] --> B
+    B --> D[Scanners]
+    B --> E[Interpreters]
+    B --> F[Reporters]
+    D --> G[Risk Score]
+    E --> G
+    F --> G
+```
 
 ---
 
 ## ⚡ Quickstart
 
 ```bash
+# Install (core)
 pip install community-ai-audit
+
+# Install with API server
+pip install community-ai-audit[api]
 
 # Discover available plugins
 community-ai-audit discover
@@ -61,9 +84,42 @@ community-ai-audit audit-score \
 
 ---
 
-## 🧩 Capabilities
+## 🎯 Use Cases
 
-### Model Support — 9 Adapters
+| Capability | What It Solves |
+|------------|----------------|
+| **🛡️ Vulnerability Scanning** | Detect adversarial susceptibility, backdoors, prompt injection, data extraction, toxicity, watermark detectability |
+| **⚔️ Red Team Testing** | Simulate jailbreak, multi-turn, obfuscation, roleplay, and tool exploitation attacks |
+| **🧠 Mechanistic Interpretability** | Probe representations, attention patterns, feature attribution, and layer behavior |
+| **🎯 Alignment Auditing** | Measure sycophancy, preference drift, value alignment, and objective robustness |
+| **📊 Unified Scoring** | Aggregate 7 security dimensions into a single risk score with configurable weights |
+| **📈 Trend Tracking** | Monitor score evolution across time and detect regressions |
+| **📡 SIEM Integration** | Push findings to Splunk, Elastic, Datadog, Sentinel, and 9+ other platforms |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     CLI / API Layer                       │
+├────────────┬────────────┬──────────────┬─────────────────┤
+│   scan     │   audit    │   redteam    │   alignment     │
+│   discover │ mechinterp │ audit-score  │   health        │
+├────────────┴────────────┴──────────────┴─────────────────┤
+│                   Audit Engine                            │
+├────────────┬────────────┬──────────────┬─────────────────┤
+│  Scanners  │ Red Team   │ Mech Interp  │   Alignment     │
+│  (7)       │ (5)        │ (5)          │   (4)           │
+├────────────┴────────────┴──────────────┴─────────────────┤
+│              Scoring Engine (7 Dimensions)                │
+├────────────┬────────────┬──────────────┬─────────────────┤
+│  Reporters │ Connectors │   Adapters   │   Interpreters  │
+│  (3)       │ (13)       │ (9)          │   (2)           │
+└────────────┴────────────┴──────────────┴─────────────────┘
+```
+
+### Model Adapters — 9 Supported
 
 | Provider | Adapter | Auto-Detect |
 |----------|---------|-------------|
@@ -77,7 +133,7 @@ community-ai-audit audit-score \
 | VertexAI | `vertexai` | — |
 | Groq | `groq` | — |
 
-### Security Scanning — 7 Scanners
+### Security Scanners — 7
 
 | Scanner | What It Detects | Technique |
 |---------|----------------|-----------|
@@ -89,7 +145,7 @@ community-ai-audit audit-score \
 | `watermark` | Watermark detectability | Statistical pattern analysis |
 | `dsl` | User-defined rules | YAML rule engine |
 
-### Red Team — 5 Attack Scanners
+### Red Team Attack Simulators — 5
 
 | Scanner | Attack Surface | Evaluation |
 |---------|---------------|------------|
@@ -121,33 +177,92 @@ community-ai-audit audit-score \
 ### Scoring — 7 Dimensions
 
 ```
-┌─────────────────────────────────────────────┐
-│           Unified Audit Score                │
-├──────────────┬──────────────────────────────┤
-│ Security     │   ████████████████░░ 82.0     │
-│ Reliability  │   ██████████████░░░░ 72.0     │
-│ Compliance   │   ██████████████████ 90.0     │
-│ Agent Risk   │   ████████████████░░ 80.0     │
-│ Alignment    │   ████████████████░░ 85.0     │
-│ Red Team     │   ████████████░░░░░░ 60.0     │
-│ Interpretability │ ████████████░░░░░░ 65.0   │
-├──────────────┴──────────────────────────────┤
-│ Overall: 77.6 (Good)                        │
-│ Weights: security=0.2, reliability=0.1, ... │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│           Unified Audit Score                 │
+├──────────────┬───────────────────────────────┤
+│ Security     │   ████████████████░░ 82.0      │
+│ Reliability  │   ██████████████░░░░ 72.0      │
+│ Compliance   │   ██████████████████ 90.0      │
+│ Agent Risk   │   ████████████████░░ 80.0      │
+│ Alignment    │   ████████████████░░ 85.0      │
+│ Red Team     │   ████████████░░░░░░ 60.0      │
+│ Interpretability│ ████████████░░░░░░ 65.0     │
+├──────────────┴───────────────────────────────┤
+│ Overall: 77.6 (Good)                         │
+│ Weights: security=0.2, reliability=0.1, ...  │
+└──────────────────────────────────────────────┘
 ```
-
-### Executive Dashboard
-
-Real-time HTML dashboard served via `dashboard_v2/server.py`:
-- 7 color-coded score cards (critical → excellent)
-- JSON overlay endpoint for programmatic updates
-- Configurable refresh interval
-- Responsive CSS grid layout
 
 ---
 
-## 🔧 Installation
+## 🌐 API Server
+
+The platform ships with a **FastAPI-based REST API** and **ARQ background worker** for async audit jobs.
+
+### Quick Start
+
+```bash
+# Install with API extras
+pip install community-ai-audit[api]
+
+# Start the API server
+uvicorn community_ai_audit.api.server:app --host 0.0.0.0 --port 8080
+
+# In another terminal, start the worker
+python3 -m community_ai_audit.core.worker
+
+# Or use docker-compose
+docker compose up -d
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/health` | Health check | None |
+| `GET` | `/health/ready` | Readiness probe | None |
+| `POST` | `/audit` | Submit audit job | API key |
+| `GET` | `/audit/{id}` | Get job status/results | API key |
+| `GET` | `/scanners` | List available scanners | API key |
+| `POST` | `/auth/register` | Create account + API key | None |
+| `POST` | `/auth/login` | Get JWT token | None |
+| `POST` | `/projects` | Create project | JWT/API key |
+| `GET` | `/projects` | List projects | JWT/API key |
+| `POST` | `/projects/{id}/audits` | Project-scoped audit | JWT/API key |
+| `GET` | `/projects/{id}/audits` | List project audits | JWT/API key |
+| `POST` | `/schedules` | Create cron schedule | JWT/API key |
+| `GET` | `/schedules` | List schedules | JWT/API key |
+| `DELETE` | `/schedules/{id}` | Delete schedule | JWT/API key |
+| `POST` | `/webhooks` | Register webhook | JWT/API key |
+| `GET` | `/webhooks` | List webhooks | JWT/API key |
+| `DELETE` | `/webhooks/{id}` | Delete webhook | JWT/API key |
+
+### Architecture
+
+```
+┌─────────┐     ┌──────────┐     ┌──────────────┐
+│ Client  │────▶│  FastAPI │────▶│   Redis Queue │
+└─────────┘     └──────────┘     └──────┬───────┘
+                                        │
+                                 ┌──────▼───────┐
+                                 │ ARQ Worker   │
+                                 │ (background) │
+                                 └──────┬───────┘
+                                        │
+                                 ┌──────▼───────┐
+                                 │  SQLite/Postgres │
+                                 └──────────────┘
+```
+
+### Authentication
+
+- **API Key**: Pass via `X-API-Key` header (set `COMMUNITY_AI_AUDIT_API_KEY` env var)
+- **JWT**: Obtain via `POST /auth/login`, pass as `Bearer <token>`
+- **Rate Limiting**: 60 req/min per IP (configurable)
+
+---
+
+## 📦 Installation
 
 ```bash
 # Core (numpy, pyyaml, scikit-learn)
@@ -158,9 +273,11 @@ pip install community-ai-audit[torch]      # Torch-based scanners
 pip install community-ai-audit[scheduler]  # Cron scheduling
 pip install community-ai-audit[hf]         # HuggingFace transformers
 pip install community-ai-audit[tf]         # TensorFlow
+pip install community-ai-audit[api]        # FastAPI server + worker
+pip install community-ai-audit[all]        # Everything
 
 # Development
-git clone https://github.com/anomalyco/community-ai-audit
+git clone https://github.com/Anandhasasidharan/community-ai-audit
 cd community-ai-audit
 pip install -e .[dev]
 ```
@@ -171,81 +288,28 @@ pip install -e .[dev]
 
 | Command | Description |
 |---------|-------------|
-| `scan <model> -p <provider>` | Run vulnerability scanners |
-| `interpret <model> -p <provider>` | Run interpretability methods |
-| `audit <model> -p <provider>` | Full pipeline: scan + interpret + report + push |
-| `redteam <model> -p <provider>` | Red team attack simulations |
-| `mechinterp <model> -p <provider>` | Mechanistic interpretability analysis |
-| `alignment <model> -p <provider>` | Alignment auditing |
+| `scan <model>` | Run vulnerability scanners |
+| `interpret <model>` | Run interpretability methods |
+| `audit <model>` | Full pipeline: scan + interpret + report + push |
+| `redteam <model>` | Red team attack simulations |
+| `mechinterp <model>` | Mechanistic interpretability analysis |
+| `alignment <model>` | Alignment auditing |
 | `audit-score` | Compute unified 7-dimension score |
 | `discover` | List all discovered plugins |
 | `schedule add/list/remove/run` | Manage recurring audits |
+| `health` | Health check — returns status and version |
 
-Exit codes: `0` = ok, `1` = HIGH/MEDIUM findings, `2` = CRITICAL findings.
-
----
-
-## 🤖 CI/CD Integration
-
-### GitHub Action
-
-Add to `.github/workflows/audit.yml`:
-
-```yaml
-jobs:
-  audit:
-    steps:
-      - uses: anomalyco/community-ai-audit/.github/actions/audit@main
-        with:
-          model: distilgpt2
-          provider: huggingface
-          profile: quick
-          threshold: medium
-```
-
-### Pre-commit (manual)
-
-```yaml
-repos:
-  - repo: https://github.com/anomalyco/community-ai-audit
-    rev: v0.6.0
-    hooks:
-      - id: community-ai-audit-scan
-```
-
-### Docker
-
-```bash
-docker pull ghcr.io/anomalyco/community-ai-audit:latest
-docker run ghcr.io/anomalyco/community-ai-audit audit distilgpt2 --provider huggingface --profile quick
-```
+**Exit codes**: `0` = clean, `1` = HIGH/MEDIUM findings, `2` = CRITICAL findings, `128+N` = signal termination.
 
 ---
 
-## 📚 Documentation
-
-| Resource | Description |
-|----------|-------------|
-| [Architecture & Reference](docs/ARCHITECTURE.md) | Full component docs, API, CLI, config, deployment |
-| [Plugin Guide](docs/PLUGIN_GUIDE.md) | Writing custom adapters, scanners, interpreters |
-| [Scanner Guide](docs/SCANNER_GUIDE.md) | Details on each vulnerability scanner |
-| [Adapter Guide](docs/ADAPTER_GUIDE.md) | Details on each model adapter |
-| [Connector Guide](docs/CONNECTOR_GUIDE.md) | SIEM and storage connector details |
-| [Red Team](docs/ARCHITECTURE.md#pluginsredteam--red-team-testing-5-scanners) | Attack framework and scanner reference |
-| [Mech Interp](docs/ARCHITECTURE.md#pluginsmechinterp--mechanistic-interpretability-5-analyzers) | Analyzer reference and methodology |
-| [Alignment](docs/ARCHITECTURE.md#pluginsalignment--alignment-auditing-4-scanners) | Alignment scanner reference |
-| [Scoring Engine](docs/ARCHITECTURE.md#corescoring--unified-scoring-engine) | 7-dimension scoring details |
-| [Dashboard](docs/ARCHITECTURE.md#dashboard_v2--executive-dashboard) | Executive dashboard server |
-
----
-
-## 📋 Configuration
+## ⚙️ Configuration
 
 ```yaml
-cache:
-  enabled: true
-  max_size: 1000
-  ttl_seconds: 3600
+# config/default.yaml
+model:
+  cache_dir: ~/.cache/community_ai_audit/models
+  device: auto      # auto, cpu, cuda, mps
 
 scanners:
   adversarial:
@@ -254,43 +318,79 @@ scanners:
   backdoor:
     sample_size: 128
 
+api:
+  host: 0.0.0.0
+  port: 8080
+  rate_limit: 60    # requests per minute
+
+auth:
+  jwt_secret: change-me-in-production
+  jwt_ttl: 86400     # 24 hours
+
+database:
+  url: sqlite:///data/jobs.db
+
 connectors:
   splunk:
     url: "${SPLUNK_URL}"
     token: "${SPLUNK_TOKEN}"
-  elastic:
-    url: "${ELASTIC_URL}"
-    api_key: "${ELASTIC_API_KEY}"
 ```
 
-Config values can also be set via environment variables: `COMMUNITY_AI_AUDIT_CONNECTORS_SPLUNK_URL`.
+Config values can also be set via environment variables: `COMMUNITY_AI_AUDIT_API_HOST=0.0.0.0`.
 
-Precedence (lowest → highest): `default.yaml` → `--config PATH` → env vars → CLI args.
-
-### API Key Safety
-
-1. `COMMUNITY_AI_AUDIT_API_KEY` env var **(recommended)**
-2. `--api-key-file PATH` (reads from file, not visible in ps)
-3. `--api-key VALUE` (⚠️ visible in process list)
+**Precedence**: `default.yaml` → `--config PATH` → env vars → CLI args.
 
 ---
 
-## 🚀 Deployment
+## 🐳 Docker Deployment
 
 ```bash
-# Docker
+# Build
 docker build -t community-ai-audit .
+
+# CLI
 docker run -v $(pwd)/config:/app/config community-ai-audit scan model.pt -p local
 
-# Docker Compose
-docker-compose up -d
+# API + Worker (docker compose)
+docker compose up -d
+# Starts: redis, api (:8080), worker
+```
 
-# Helm (Kubernetes)
-helm install community-ai-audit ./charts/community-ai-audit
+### Docker Compose Services
 
-# Air-Gapped
-./scripts/airgap-bundle.sh   # On connected machine
-./scripts/offline-install.sh  # On air-gapped machine
+| Service | Image | Description |
+|---------|-------|-------------|
+| `redis` | `redis:7-alpine` | Message queue |
+| `api` | local build | FastAPI server on `:8080` |
+| `worker` | local build | ARQ background worker |
+
+---
+
+## 📚 SDK (Python)
+
+```python
+from community_ai_audit.sdk import AuditClient
+
+client = AuditClient("http://localhost:8080", api_key="devkey")
+
+# Submit an audit job
+job = client.submit_audit("gpt2", "huggingface")
+print(job["job_id"])  # e.g. "a1b2c3d4"
+
+# Get results
+status = client.get_job(job["job_id"])
+print(status["status"])  # "pending" | "running" | "done" | "failed"
+
+# User registration (returns API key)
+result = client.register("user@example.com", "securepass123")
+print(result["api_key"])
+
+# Project-scoped audit
+project = client.create_project("production-models")
+audit = client.submit_audit("gpt2", "huggingface", project_id=project["project_id"])
+
+# List scanners
+scanners = client.list_scanners()
 ```
 
 ---
@@ -305,7 +405,20 @@ pytest tests/
 pytest --cov=community_ai_audit tests/
 ```
 
-**508+ tests** covering unit, integration, CLI, connectors, red team, mechanistic interpretability, alignment, trend tracking, and drift analysis.
+**570+ tests** covering unit, integration, CLI, connectors, red team, mechanistic interpretability, alignment, trend tracking, and drift analysis.
+
+---
+
+## 🔗 Documentation
+
+| Resource | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | Full component docs, API, CLI, config, deployment |
+| [Plugin Guide](docs/PLUGIN_GUIDE.md) | Writing custom adapters, scanners, interpreters |
+| [Scanner Guide](docs/SCANNER_GUIDE.md) | Details on each vulnerability scanner |
+| [Adapter Guide](docs/ADAPTER_GUIDE.md) | Details on each model adapter |
+| [Connector Guide](docs/CONNECTOR_GUIDE.md) | SIEM and storage connector details |
+| [Exit Codes](docs/exit-codes.md) | Exit code contract |
 
 ---
 
@@ -313,8 +426,25 @@ pytest --cov=community_ai_audit tests/
 
 We welcome contributions! See our [Plugin Guide](docs/PLUGIN_GUIDE.md) to get started writing custom scanners, adapters, or connectors.
 
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/amazing`)
+3. Commit your changes (`git commit -m "feat: add amazing feature"`)
+4. Push to the branch (`git push origin feature/amazing`)
+5. Open a Pull Request
+
 ---
 
 ## 📄 License
 
-[MIT](LICENSE) © Anomaly Co.
+[MIT](LICENSE) © Anandhasasidharan
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by the community · Secure your AI, protect the future</sub>
+  <br>
+  <sub>
+    <a href="https://github.com/Anandhasasidharan/community-ai-audit/issues">Report Bug</a> ·
+    <a href="https://github.com/Anandhasasidharan/community-ai-audit/discussions">Feature Request</a>
+  </sub>
+</div>
