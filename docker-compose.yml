@@ -1,15 +1,32 @@
 version: '3.8'
 
 services:
-  community-ai-audit:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build: .
+    command: ["api", "--host", "0.0.0.0", "--port", "8080"]
+    ports: ["8080:8080"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite:///data/jobs.db
+      - COMMUNITY_AI_AUDIT_API_KEY=${API_KEY:-devkey}
+      - COMMUNITY_AI_AUDIT_CONFIG=/app/config/default.yaml
+    depends_on: [redis]
     volumes:
       - ./config:/app/config
-      - ./output:/app/output
+      - ./data:/app/data
+
+  worker:
+    build: .
+    command: python3 -m community_ai_audit.core.worker
     environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite:///data/jobs.db
       - COMMUNITY_AI_AUDIT_CONFIG=/app/config/default.yaml
-    command: tail -f /dev/null
-    ports:
-      - "8080:8080"
+    depends_on: [redis]
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
