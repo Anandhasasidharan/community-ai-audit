@@ -14,9 +14,9 @@ except ImportError:
     nn = None
 
 
-skip_if_no_torch = unittest.skipIf(not HAS_TORCH, "torch not installed")
-
 from community_ai_audit.adapters.base import get_model_device
+
+skip_if_no_torch = unittest.skipIf(not HAS_TORCH, "torch not installed")
 
 
 class _DummyAdapter:

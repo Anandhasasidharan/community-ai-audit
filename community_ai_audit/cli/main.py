@@ -745,7 +745,7 @@ Environment:
     )
 
     # ── health command ─────────────────────────────────────────
-    health_parser = subparsers.add_parser(
+    subparsers.add_parser(
         "health", help="Health check — returns status and version"
     )
 
@@ -2168,7 +2168,8 @@ def _cmd_compare(engine: Any, args: Any) -> int:
 
 def _cmd_mcp_scan(args: Any) -> int:
     """Scan an MCP server for vulnerabilities."""
-    import urllib.request, urllib.error
+    import urllib.request
+    import urllib.error
 
     findings = []
     for method in ("tools/list", "resources/list"):

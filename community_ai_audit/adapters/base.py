@@ -3,7 +3,7 @@ Base utilities for model adapters.
 Subclasses should inherit from the appropriate core interface directly.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 import logging
 
 from community_ai_audit.core.interfaces import Severity

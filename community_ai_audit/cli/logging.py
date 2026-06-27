@@ -1,5 +1,7 @@
 """Configure logging with optional JSON output."""
-import logging, os, sys
+import logging
+import os
+import sys
 
 
 def setup_logging(verbose: bool = False) -> None:
