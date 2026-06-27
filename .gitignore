@@ -1,40 +1,10 @@
-# Python
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-
-# Virtualenv
-.venv/
-venv/
-env/
-
-# Packaging
+*.pyc
+*.egg-info/
 dist/
 build/
-*.egg-info/
-
-# Test/cache
-.pytest_cache/
-.coverage
-htmlcov/
-
-# IDEs
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log.ruffvenv/
-dist/
-__pycache__/
-*.png
-*.jpg
-*.jpeg
-*.egg-info/
-tesing enviroment/
+.venv/
+.ruffvenv/
+data/
+output/
 my notes .docx
