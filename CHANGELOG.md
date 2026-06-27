@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.6.1...v0.7.0) (2026-06-27)
+
+
+### Features
+
+* **api:** audit submission and scanner listing endpoints ([987d2d0](https://github.com/Anandhasasidharan/community-ai-audit/commit/987d2d0091f5c1a215911f78eab79d6ac2e1472b))
+* **api:** FastAPI server scaffold with health check routes ([249c956](https://github.com/Anandhasasidharan/community-ai-audit/commit/249c95681d12b447838926c8f6f0c6dc013846c9))
+* **api:** FastAPI server wiring all routes with rate limiting middleware ([f5962a3](https://github.com/Anandhasasidharan/community-ai-audit/commit/f5962a34afb4c4c2d23457cbcc93feff09645c88))
+* **api:** user registration and login endpoints ([efa243f](https://github.com/Anandhasasidharan/community-ai-audit/commit/efa243fa60ac7afdf44a20a5a1dec5659d09a344))
+* **auth:** JWT, password hashing, and API key management ([9e67c76](https://github.com/Anandhasasidharan/community-ai-audit/commit/9e67c7618b0d9c5f706bc0f86f96e342903752a1))
+* CI/CD integration, model card output, ponytail cleanup, and three new subcommands ([9c858fe](https://github.com/Anandhasasidharan/community-ai-audit/commit/9c858fecc9f983f251dff51baf4bc31558cedfdb))
+* **cli:** structured logging, graceful shutdown, health subcommand ([6f8e782](https://github.com/Anandhasasidharan/community-ai-audit/commit/6f8e7826c4df74cd6922cec478038ef981cd4816))
+* **db:** SQLAlchemy models and Alembic migration scaffold ([01fae4b](https://github.com/Anandhasasidharan/community-ai-audit/commit/01fae4bdfd5d20e87a7573a8f5747efc713eacdd))
+* **docker:** multi-service docker-compose with api, worker, redis ([af4d7ef](https://github.com/Anandhasasidharan/community-ai-audit/commit/af4d7effde825e18a979c34b2b8b718b863d4305))
+* **projects:** project CRUD and scoped audit submissions ([a7613ba](https://github.com/Anandhasasidharan/community-ai-audit/commit/a7613baefc1f5874463e6a48107f23e42b6109ea))
+* **scheduler:** cron-based recurring audit scheduling ([36efe02](https://github.com/Anandhasasidharan/community-ai-audit/commit/36efe027137e4031a4b1679e8c6569bcaddcc1d7))
+* **sdk:** Python client library for the audit API ([ffa3314](https://github.com/Anandhasasidharan/community-ai-audit/commit/ffa33141e49c2e9fc923c6c22322fc0700bfdee0))
+* **webhooks:** deliver audit results to external URLs ([4241348](https://github.com/Anandhasasidharan/community-ai-audit/commit/42413482542e48041a0badd3697f1bf1712f2f0e))
+* **worker:** ARQ worker with periodic schedule check and webhook delivery ([ccf3783](https://github.com/Anandhasasidharan/community-ai-audit/commit/ccf37837991193ebe3bc9687bfd891411d508a4f))
+
+
+### Documentation
+
+* add exit code contract ([af0354d](https://github.com/Anandhasasidharan/community-ai-audit/commit/af0354d4fe52138f19e759dfa483f26266397e4f))
+
 ## [0.6.1](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.6.0...v0.6.1) (2026-06-25)
 
 
