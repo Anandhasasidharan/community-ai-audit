@@ -43,8 +43,17 @@ hf = [
 cli = [
     "rich>=13.0",
 ]
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "arq>=0.26",
+    "redis>=5.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic>=2.0",
+]
 all = [
-    "community-ai-audit[tf,hf,dev,cli]",
+    "community-ai-audit[tf,hf,dev,cli,api]",
 ]
 
 [project.scripts]
