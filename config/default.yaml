@@ -49,6 +49,27 @@ interpreters:
     num_samples: 1000
     kernel_width: 0.75
 
+# API settings
+api:
+  host: 0.0.0.0
+  port: 8080
+  cors_origins: ["*"]
+  rate_limit: 60  # requests per minute
+
+# Auth settings
+auth:
+  jwt_secret: change-me-in-production
+  jwt_ttl: 86400  # 24 hours
+
+# Webhook settings
+webhook:
+  timeout: 10
+  max_retries: 3
+
+# Database settings
+database:
+  url: sqlite:///data/jobs.db
+
 # Report settings
 reporting:
   format: markdown  # markdown, json, html
