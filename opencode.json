@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["spotme", "@dietrichgebert/ponytail"],
+  "plugin": ["spotme", "green-commits", "@dietrichgebert/ponytail"],
   "skills": {
     "paths": [".opencode/skills"]
   }
