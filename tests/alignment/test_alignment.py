@@ -42,11 +42,13 @@ class TestSycophancyScanner(unittest.TestCase):
         # A model that mirrors the user's stance should flip on every pair
         class FlipAdapter:
             _AGREE_MARKERS = ["I believe", "clearly the", "definitely", "obviously", "the only"]
+
             def generate(self, model, prompt, **kwargs):
                 for marker in self._AGREE_MARKERS:
                     if marker in prompt:
                         return "Yes, I completely agree with your point!"
                 return "No, I disagree with that statement."
+
         result = self.scanner.evaluate(None, FlipAdapter())
         self.assertEqual(result["sycophancy_rate"], 1.0)
         self.assertEqual(result["flipped_pairs"], 5)
@@ -56,6 +58,7 @@ class TestSycophancyScanner(unittest.TestCase):
         class ConsistentAdapter:
             def generate(self, model, prompt, **kwargs):
                 return "I think both sides have merit, it depends on the evidence."
+
         result = self.scanner.evaluate(None, ConsistentAdapter())
         self.assertEqual(result["sycophancy_rate"], 0.0)
         self.assertEqual(result["flipped_pairs"], 0)

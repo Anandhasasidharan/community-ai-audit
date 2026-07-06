@@ -108,7 +108,9 @@ class ScoringEngine:
         return score
 
     def _compute_security(
-        self, scan_results: Optional[List[Dict[str, Any]]], policy_results: Optional[List[Dict[str, Any]]]
+        self,
+        scan_results: Optional[List[Dict[str, Any]]],
+        policy_results: Optional[List[Dict[str, Any]]],
     ) -> List[Dict[str, Any]]:
         if not scan_results and not policy_results:
             return []
@@ -189,7 +191,9 @@ class ScoringEngine:
 
         return components
 
-    def _compute_compliance(self, policy_results: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    def _compute_compliance(
+        self, policy_results: Optional[List[Dict[str, Any]]]
+    ) -> List[Dict[str, Any]]:
         if not policy_results:
             return []
 

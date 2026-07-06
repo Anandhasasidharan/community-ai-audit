@@ -37,33 +37,49 @@ class RiskScore:
             "coverage": self.coverage,
             "weights": self.weights,
         }
-        for key in ("security", "reliability", "compliance", "agent_risk", "alignment", "red_team", "interpretability"):
+        for key in (
+            "security",
+            "reliability",
+            "compliance",
+            "agent_risk",
+            "alignment",
+            "red_team",
+            "interpretability",
+        ):
             val = getattr(self, f"{key}_score")
             d[f"{key}_score"] = round(val, 1) if val is not None else None
         return d
 
     @property
     def max_score(self) -> Optional[float]:
-        scores = [s for s in [
-            self.security_score,
-            self.reliability_score,
-            self.compliance_score,
-            self.agent_risk_score,
-            self.alignment_score,
-            self.red_team_score,
-        ] if s is not None]
+        scores = [
+            s
+            for s in [
+                self.security_score,
+                self.reliability_score,
+                self.compliance_score,
+                self.agent_risk_score,
+                self.alignment_score,
+                self.red_team_score,
+            ]
+            if s is not None
+        ]
         return max(scores) if scores else None
 
     @property
     def min_score(self) -> Optional[float]:
-        scores = [s for s in [
-            self.security_score,
-            self.reliability_score,
-            self.compliance_score,
-            self.agent_risk_score,
-            self.alignment_score,
-            self.red_team_score,
-        ] if s is not None]
+        scores = [
+            s
+            for s in [
+                self.security_score,
+                self.reliability_score,
+                self.compliance_score,
+                self.agent_risk_score,
+                self.alignment_score,
+                self.red_team_score,
+            ]
+            if s is not None
+        ]
         return min(scores) if scores else None
 
     def interpret_overall(self) -> str:
@@ -82,9 +98,21 @@ class RiskScore:
             f"Overall: {self.overall_score:.1f} ({self.interpret_overall()})",
             f"Coverage: {', '.join(self.coverage) if self.coverage else 'none'}",
         ]
-        for key in ("security", "reliability", "compliance", "agent_risk", "alignment", "red_team", "interpretability"):
+        for key in (
+            "security",
+            "reliability",
+            "compliance",
+            "agent_risk",
+            "alignment",
+            "red_team",
+            "interpretability",
+        ):
             val = getattr(self, f"{key}_score")
-            parts.append(f"{key.replace('_', ' ').title()}: {val:.1f}" if val is not None else f"{key.replace('_', ' ').title()}: N/A")
+            parts.append(
+                f"{key.replace('_', ' ').title()}: {val:.1f}"
+                if val is not None
+                else f"{key.replace('_', ' ').title()}: N/A"
+            )
         return " | ".join(parts)
 
 
@@ -101,7 +129,15 @@ class OverallAuditScore:
 
     def to_dict(self) -> Dict[str, Any]:
         d: Dict[str, Any] = {"overall": round(self.overall, 1)}
-        for key in ("security", "reliability", "compliance", "agent_risk", "alignment", "red_team", "interpretability"):
+        for key in (
+            "security",
+            "reliability",
+            "compliance",
+            "agent_risk",
+            "alignment",
+            "red_team",
+            "interpretability",
+        ):
             val = getattr(self, key)
             d[key] = round(val, 1) if val is not None else None
         return d

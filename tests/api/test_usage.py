@@ -1,5 +1,7 @@
 """Tests for usage metering endpoint."""
+
 import os
+
 os.environ["DATABASE_URL"] = "sqlite://"
 
 from fastapi.testclient import TestClient

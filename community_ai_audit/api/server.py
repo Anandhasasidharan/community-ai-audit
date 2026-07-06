@@ -44,11 +44,13 @@ class UsageMiddleware(BaseHTTPMiddleware):
             from community_ai_audit.api.database import get_session, UseageRecord
 
             db = get_session()
-            db.add(UseageRecord(
-                endpoint=request.url.path,
-                method=request.method,
-                status_code=response.status_code,
-            ))
+            db.add(
+                UseageRecord(
+                    endpoint=request.url.path,
+                    method=request.method,
+                    status_code=response.status_code,
+                )
+            )
             db.commit()
             db.close()
         except Exception:

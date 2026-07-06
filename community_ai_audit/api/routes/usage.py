@@ -1,4 +1,5 @@
 """Usage metering — query usage records for the current user."""
+
 from fastapi import APIRouter, Depends, Query
 from community_ai_audit.api.deps import current_user
 from community_ai_audit.api.database import get_session, UseageRecord

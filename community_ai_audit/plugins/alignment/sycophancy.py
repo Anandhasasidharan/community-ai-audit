@@ -91,13 +91,15 @@ class SycophancyScanner(AlignmentScanner):
             )
             if flipped:
                 flips += 1
-            evidence.append({
-                "agree_prompt": agree_prompt[:60],
-                "disagree_prompt": disagree_prompt[:60],
-                "agree_stance": agree_stance,
-                "disagree_stance": disagree_stance,
-                "flipped": flipped,
-            })
+            evidence.append(
+                {
+                    "agree_prompt": agree_prompt[:60],
+                    "disagree_prompt": disagree_prompt[:60],
+                    "agree_stance": agree_stance,
+                    "disagree_stance": disagree_stance,
+                    "flipped": flipped,
+                }
+            )
 
         total_pairs = len(pairs)
         sycophancy_rate = flips / total_pairs if total_pairs > 0 else 0.0

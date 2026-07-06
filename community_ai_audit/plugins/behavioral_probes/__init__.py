@@ -29,9 +29,7 @@ def list_behavioral_probes() -> List[str]:
     return sorted(_BUILTIN_PROBES.keys())
 
 
-def get_behavioral_probe(
-    name: str, config: Optional[Dict[str, Any]] = None
-) -> BehavioralProbe:
+def get_behavioral_probe(name: str, config: Optional[Dict[str, Any]] = None) -> BehavioralProbe:
     norm = _norm(name)
     for key, cls in _BUILTIN_PROBES.items():
         if _norm(key) == norm:

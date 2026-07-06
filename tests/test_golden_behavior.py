@@ -34,6 +34,7 @@ class MockAdapterByPrompt:
 
 # ── Redteam: Jailbreak ──────────────────────────────────────────────────────
 
+
 class TestJailbreakGoldenBehavior(unittest.TestCase):
     def setUp(self):
         self.scanner = JailbreakScanner()
@@ -55,6 +56,7 @@ class TestJailbreakGoldenBehavior(unittest.TestCase):
 
 # ── Redteam: Multi-Turn ──────────────────────────────────────────────────────
 
+
 class TestMultiTurnGoldenBehavior(unittest.TestCase):
     def setUp(self):
         self.scanner = MultiTurnAttackScanner()
@@ -73,6 +75,7 @@ class TestMultiTurnGoldenBehavior(unittest.TestCase):
 
 
 # ── Scanner: Prompt Injection ────────────────────────────────────────────────
+
 
 class TestPromptInjectionGoldenBehavior(unittest.TestCase):
     def setUp(self):
@@ -100,6 +103,7 @@ class TestPromptInjectionGoldenBehavior(unittest.TestCase):
 
 # ── Scanner: Toxicity ────────────────────────────────────────────────────────
 
+
 class TestToxicityGoldenBehavior(unittest.TestCase):
     def setUp(self):
         self.scanner = ToxicityScanner()
@@ -113,9 +117,7 @@ class TestToxicityGoldenBehavior(unittest.TestCase):
         self.assertGreater(toxic_findings[0].severity.value, Severity.INFO.value)
 
     def test_refusal_not_marked_toxic(self):
-        adapter = MockAdapter(
-            "I cannot help with that. As an AI assistant, I should decline."
-        )
+        adapter = MockAdapter("I cannot help with that. As an AI assistant, I should decline.")
         result = self.scanner.scan(None, adapter)
         toxic_findings = [f for f in result.findings if "toxic" in f.title.lower()]
         # Either no toxic finding or it's severity INFO
@@ -125,21 +127,25 @@ class TestToxicityGoldenBehavior(unittest.TestCase):
 
 # ── Reliability: Hallucination ───────────────────────────────────────────────
 
+
 class TestHallucinationGoldenBehavior(unittest.TestCase):
     def setUp(self):
         self.scanner = HallucinationScanner()
 
     def test_all_correct_answers_zero_hallucination(self):
-        adapter = MockAdapterByPrompt({
-            "chemical symbol for water": "The answer is H2O.",
-            "Romeo and Juliet": "Romeo and Juliet was written by William Shakespeare.",
-            "largest planet": "The largest planet is Jupiter.",
-            "World War II end": "World War II ended in 1945.",
-            "capital of France": "The capital of France is Paris.",
-            "boiling point of water": "The boiling point of water is 100 degrees Celsius.",
-            "general relativity": "General relativity was developed by Albert Einstein.",
-            "speed of light": "The speed of light is 299792458 meters per second.",
-        }, default="I don't know the answer to that.")
+        adapter = MockAdapterByPrompt(
+            {
+                "chemical symbol for water": "The answer is H2O.",
+                "Romeo and Juliet": "Romeo and Juliet was written by William Shakespeare.",
+                "largest planet": "The largest planet is Jupiter.",
+                "World War II end": "World War II ended in 1945.",
+                "capital of France": "The capital of France is Paris.",
+                "boiling point of water": "The boiling point of water is 100 degrees Celsius.",
+                "general relativity": "General relativity was developed by Albert Einstein.",
+                "speed of light": "The speed of light is 299792458 meters per second.",
+            },
+            default="I don't know the answer to that.",
+        )
         result = self.scanner.scan(None, adapter)
         self.assertEqual(result["hallucination_rate"], 0.0)
         self.assertEqual(result["score"], 100.0)
@@ -152,6 +158,7 @@ class TestHallucinationGoldenBehavior(unittest.TestCase):
 
 
 # ── Alignment: Preference Drift ──────────────────────────────────────────────
+
 
 class TestPreferenceDriftGoldenBehavior(unittest.TestCase):
     def setUp(self):
@@ -167,23 +174,28 @@ class TestPreferenceDriftGoldenBehavior(unittest.TestCase):
         class FlipFlopAdapter:
             def __init__(self):
                 self._call_count = 0
+
             def generate(self, model, prompt, **kwargs):
                 self._call_count += 1
-                return "Yes I agree that is good and ethical." if self._call_count % 2 == 1 else "No I disagree that is wrong and unethical."
+                return (
+                    "Yes I agree that is good and ethical."
+                    if self._call_count % 2 == 1
+                    else "No I disagree that is wrong and unethical."
+                )
+
         result = self.scanner.evaluate(None, FlipFlopAdapter())
         self.assertGreater(result["drift_rate"], 0.0)
 
 
 # ── Alignment: Value Alignment ───────────────────────────────────────────────
 
+
 class TestValueAlignmentGoldenBehavior(unittest.TestCase):
     def setUp(self):
         self.scanner = ValueAlignmentScanner()
 
     def test_always_refuses_partial_alignment(self):
-        adapter = MockAdapter(
-            "I cannot help with that as it would be unethical and harmful."
-        )
+        adapter = MockAdapter("I cannot help with that as it would be unethical and harmful.")
         result = self.scanner.evaluate(None, adapter)
         # 4 of 8 probes expect "refuse", the rest expect "encourage"/"helpful"
         self.assertAlmostEqual(result["alignment_rate"], 0.5, delta=0.1)
