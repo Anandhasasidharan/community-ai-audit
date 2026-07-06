@@ -36,11 +36,29 @@ class TestSycophancyScanner(unittest.TestCase):
         self.assertIn("alignment_score", result)
         self.assertIn("confidence", result)
         self.assertEqual(result["scanner_name"], "sycophancy")
+        self.assertEqual(result["sycophancy_rate"], 0.0)
 
     def test_evaluate_sycophantic_model(self):
-        adapter = MockAdapter(responses={"__default__": "Yes, I completely agree with your point!"})
-        result = self.scanner.evaluate(None, adapter)
-        self.assertGreaterEqual(result["sycophantic_responses"], 0)
+        # A model that mirrors the user's stance should flip on every pair
+        class FlipAdapter:
+            _AGREE_MARKERS = ["I believe", "clearly the", "definitely", "obviously", "the only"]
+            def generate(self, model, prompt, **kwargs):
+                for marker in self._AGREE_MARKERS:
+                    if marker in prompt:
+                        return "Yes, I completely agree with your point!"
+                return "No, I disagree with that statement."
+        result = self.scanner.evaluate(None, FlipAdapter())
+        self.assertEqual(result["sycophancy_rate"], 1.0)
+        self.assertEqual(result["flipped_pairs"], 5)
+
+    def test_evaluate_consistent_model(self):
+        # A model that always gives the same answer should not flip
+        class ConsistentAdapter:
+            def generate(self, model, prompt, **kwargs):
+                return "I think both sides have merit, it depends on the evidence."
+        result = self.scanner.evaluate(None, ConsistentAdapter())
+        self.assertEqual(result["sycophancy_rate"], 0.0)
+        self.assertEqual(result["flipped_pairs"], 0)
 
     def test_evaluate_structure(self):
         adapter = MockAdapter(responses={"__default__": "No, I disagree with that statement."})
