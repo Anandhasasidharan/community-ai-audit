@@ -63,13 +63,13 @@ class ScoringEngine:
         score = RiskScore(weights=dict(self.weights))
 
         score.score_components = {
-            "security": self._compute_security(scan_results or [], policy_results or []),
-            "reliability": self._compute_reliability(reliability_results or []),
-            "compliance": self._compute_compliance(policy_results or []),
-            "agent_risk": self._compute_agent_risk(agent_results or []),
-            "alignment": self._compute_alignment(alignment_results or []),
-            "red_team": self._compute_red_team(red_team_results or []),
-            "interpretability": self._compute_interpretability(interpretability_results or []),
+            "security": self._compute_security(scan_results, policy_results),
+            "reliability": self._compute_reliability(reliability_results),
+            "compliance": self._compute_compliance(policy_results),
+            "agent_risk": self._compute_agent_risk(agent_results),
+            "alignment": self._compute_alignment(alignment_results),
+            "red_team": self._compute_red_team(red_team_results),
+            "interpretability": self._compute_interpretability(interpretability_results),
         }
 
         score.security_score = self._aggregate_component(score.score_components["security"])
@@ -82,21 +82,40 @@ class ScoringEngine:
             score.score_components["interpretability"]
         )
 
-        score.overall_score = (
-            score.security_score * self.weights["security"]
-            + score.reliability_score * self.weights["reliability"]
-            + score.compliance_score * self.weights["compliance"]
-            + score.agent_risk_score * self.weights["agent_risk"]
-            + score.alignment_score * self.weights["alignment"]
-            + score.red_team_score * self.weights["red_team"]
-            + score.interpretability_score * self.weights["interpretability"]
-        )
+        # Track which dimensions produced actual results (not empty or placeholder)
+        dims = [
+            ("security", "security_score"),
+            ("reliability", "reliability_score"),
+            ("compliance", "compliance_score"),
+            ("agent_risk", "agent_risk_score"),
+            ("alignment", "alignment_score"),
+            ("red_team", "red_team_score"),
+            ("interpretability", "interpretability_score"),
+        ]
+        active_dims = []
+        total_weight = 0.0
+        weighted_sum = 0.0
+        for key, attr in dims:
+            val = getattr(score, attr)
+            if val is not None:
+                active_dims.append(key)
+                w = self.weights[key]
+                total_weight += w
+                weighted_sum += val * w
+        score.coverage = active_dims
+        score.overall_score = weighted_sum / total_weight if total_weight > 0 else 0.0
 
         return score
 
     def _compute_security(
-        self, scan_results: List[Dict[str, Any]], policy_results: List[Dict[str, Any]]
+        self, scan_results: Optional[List[Dict[str, Any]]], policy_results: Optional[List[Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
+        if not scan_results and not policy_results:
+            return []
+
+        scan_results = scan_results or []
+        policy_results = policy_results or []
+
         components = []
         total_findings = 0
         critical_count = 0
@@ -147,17 +166,12 @@ class ScoringEngine:
         return components
 
     def _compute_reliability(
-        self, reliability_results: List[Dict[str, Any]]
+        self, reliability_results: Optional[List[Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
-        components = []
         if not reliability_results:
-            return [
-                {
-                    "name": "reliability_scan",
-                    "score": 50.0,
-                    "details": {"note": "no reliability data"},
-                }
-            ]
+            return []
+
+        components = []
 
         for r in reliability_results:
             score = r.get("score", 50.0)
@@ -175,12 +189,11 @@ class ScoringEngine:
 
         return components
 
-    def _compute_compliance(self, policy_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        components = []
+    def _compute_compliance(self, policy_results: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         if not policy_results:
-            return [
-                {"name": "compliance_check", "score": 50.0, "details": {"note": "no policy data"}}
-            ]
+            return []
+
+        components = []
 
         passed = sum(1 for r in policy_results if r.get("status") == "pass")
         failed = sum(1 for r in policy_results if r.get("status") == "fail")
@@ -206,18 +219,12 @@ class ScoringEngine:
         return components
 
     def _compute_agent_risk(self, agent_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        components = []
         if not agent_results:
-            return [
-                {
-                    "name": "agent_audit",
-                    "score": 100.0,
-                    "details": {"note": "no agent audit data"},
-                }
-            ]
+            return []
 
+        components = []
         for r in agent_results:
-            score = r.get("score", 100.0)
+            score = r.get("score", 0.0)
             findings = r.get("findings", [])
             severity_breakdown = {"critical": 0, "high": 0, "medium": 0, "low": 0}
             for f in findings:
@@ -239,18 +246,12 @@ class ScoringEngine:
         return components
 
     def _compute_alignment(self, alignment_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        components = []
         if not alignment_results:
-            return [
-                {
-                    "name": "alignment_eval",
-                    "score": 100.0,
-                    "details": {"note": "no alignment data"},
-                }
-            ]
+            return []
 
+        components = []
         for r in alignment_results:
-            score = r.get("alignment_score", r.get("score", 100.0))
+            score = r.get("alignment_score", r.get("score", 0.0))
             components.append(
                 {
                     "name": r.get("scanner_name", "unknown_alignment"),
@@ -267,18 +268,12 @@ class ScoringEngine:
         return components
 
     def _compute_red_team(self, red_team_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        components = []
         if not red_team_results:
-            return [
-                {
-                    "name": "red_team_eval",
-                    "score": 100.0,
-                    "details": {"note": "no red team data"},
-                }
-            ]
+            return []
 
+        components = []
         for r in red_team_results:
-            score = r.get("score", 100.0)
+            score = r.get("score", 0.0)
             components.append(
                 {
                     "name": r.get("scanner_name", "unknown_redteam"),
@@ -294,23 +289,18 @@ class ScoringEngine:
         return components
 
     def _compute_interpretability(
-        self, interpretability_results: List[Dict[str, Any]]
+        self, interpretability_results: Optional[List[Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
-        components = []
         if not interpretability_results:
-            return [
-                {
-                    "name": "interpretability_eval",
-                    "score": 50.0,
-                    "details": {"note": "no interpretability data"},
-                }
-            ]
+            return []
+
+        components = []
 
         for r in interpretability_results:
             score = r.get("score", 0.0)
             components.append(
                 {
-                    "name": r.get("interpreter_name", "unknown_mechinterp"),
+                    "name": r.get("interpreter_name", "unknown_behavioral_probe"),
                     "score": score,
                     "details": {
                         "total_probes": r.get("total_probes", 0),
@@ -320,8 +310,8 @@ class ScoringEngine:
 
         return components
 
-    def _aggregate_component(self, components: List[Dict[str, Any]]) -> float:
+    def _aggregate_component(self, components: List[Dict[str, Any]]) -> Optional[float]:
         if not components:
-            return 0.0
+            return None
         scores = [c.get("score", 0.0) for c in components]
         return sum(scores) / len(scores)
