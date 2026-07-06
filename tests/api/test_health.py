@@ -1,5 +1,8 @@
 """Tests for health check endpoints."""
 
+import pytest
+
+pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 from community_ai_audit.api.server import app
 

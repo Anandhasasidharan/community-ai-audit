@@ -4,8 +4,10 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite://"
 
-from fastapi.testclient import TestClient
 import pytest
+
+pytest.importorskip("fastapi")
+from fastapi.testclient import TestClient
 from community_ai_audit.api.server import app
 from community_ai_audit.api.deps import current_user
 
