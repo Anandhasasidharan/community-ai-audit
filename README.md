@@ -421,7 +421,7 @@ pytest tests/
 pytest --cov=community_ai_audit tests/
 ```
 
-**570+ tests** covering unit, integration, CLI, connectors, red team, mechanistic interpretability, alignment, trend tracking, and drift analysis.
+**592+ tests** covering unit, integration, CLI, connectors, red team, behavioral heuristic probes, alignment, trend tracking, drift analysis, and API endpoints.
 
 ---
 

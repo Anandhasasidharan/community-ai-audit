@@ -854,7 +854,7 @@ pytest --cov=community_ai_audit tests/
 pytest tests/test_scheduler.py -v
 ```
 
-Test scope: 578+ tests covering unit, integration, CLI smoke, connector mock, red team, behavioral heuristic probes, alignment auditing, unified scoring, and API endpoint tests.
+Test scope: 592+ tests covering unit, integration, CLI smoke, connector mock, red team, behavioral heuristic probes, alignment auditing, unified scoring, and API endpoint tests.
 
 ---
 

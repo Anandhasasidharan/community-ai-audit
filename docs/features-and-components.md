@@ -223,20 +223,22 @@ FastAPI web app in `demo_app/`:
 
 ---
 
-## Tests — 570 tests across 31 files
+## Tests — 592 tests across 35 files
 
 | Area | Files |
 |------|-------|
 | Core | test_core, test_registry, test_rbac, test_scheduler, test_retry, test_cli, test_cli_ui, test_smoke |
 | Audit Engine | test_audit_engine |
+| Golden Behavior | test_golden_behavior |
+| API Endpoints | test_health, test_audit, test_usage |
 | Scanners | test_scanners, test_scanners_v040 |
-| Interpreters | test_interpreters |
+| Adapters | test_adapters |
 | Policies | test_policies |
 | Reliability | test_reliability |
 | Red Team | test_redteam, test_persistence |
 | Alignment | test_alignment |
 | Behavioral Probes | test_behavioral_probes |
-| Agents | test_agent_scanners |
+| Agents | test_agent_scanners, test_agent_session |
 | Connectors | test_connectors_smoke |
 | Reporting | test_report_generator |
 | Evaluation | test_evaluation_engine, test_models, test_trends |
