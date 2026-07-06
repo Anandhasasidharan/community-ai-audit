@@ -4,14 +4,14 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from .base import MechanisticInterpreter
+from .base import BehavioralProbe
 
 log = logging.getLogger(__name__)
 
 
-class FeatureAttribution(MechanisticInterpreter):
+class FeatureAttribution(BehavioralProbe):
     name = "feature_attribution"
-    description = "Estimates which input features drive model outputs"
+    description = "Black-box heuristic: measures output sentiment polarity against input sentiment. Does not compute actual feature attributions."
     version = "0.1.0"
 
     ATTRIBUTION_INPUTS = [

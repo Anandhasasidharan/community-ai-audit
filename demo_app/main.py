@@ -119,7 +119,7 @@ def _run_sync_audit(model_id: str) -> Dict[str, Any]:
 def _do_audit(model_id: str) -> Dict[str, Any]:
     from community_ai_audit.plugins.redteam import run_redteam_scanners
     from community_ai_audit.plugins.alignment import run_alignment_scanners
-    from community_ai_audit.plugins.mechinterp import run_mechinterp_analyzers
+    from community_ai_audit.plugins.behavioral_probes import run_behavioral_probes
     from community_ai_audit.core.scoring.engine import ScoringEngine
     from community_ai_audit.core.evaluation.trends import AuditTrendTracker
 
@@ -131,8 +131,8 @@ def _do_audit(model_id: str) -> Dict[str, Any]:
     log.info("Running alignment scanners (distilgpt2)...")
     alignment_results = run_alignment_scanners(model=None, adapter=adapter)
 
-    log.info("Running mechinterp analyzers (distilgpt2)...")
-    mechinterp_results = run_mechinterp_analyzers(model=None, adapter=adapter)
+    log.info("Running behavioral probes (distilgpt2)...")
+    behavioral_results = run_behavioral_probes(model=None, adapter=adapter)
 
     log.info("Running built-in scanners...")
     from community_ai_audit.core.registry import plugins
@@ -172,7 +172,7 @@ def _do_audit(model_id: str) -> Dict[str, Any]:
         agent_results=[],
         red_team_results=red_team_results,
         alignment_results=alignment_results,
-        interpretability_results=mechinterp_results,
+        interpretability_results=behavioral_results,
     )
 
     score_dict = score.to_dict()
@@ -197,7 +197,7 @@ def _do_audit(model_id: str) -> Dict[str, Any]:
         "score": score_dict,
         "red_team": red_team_results,
         "alignment": alignment_results,
-        "mechinterp": mechinterp_results,
+        "behavioral_probes": behavioral_results,
         "scan": scan_results,
         "model_id": model_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -282,7 +282,7 @@ async def server_status():
 async def list_scanners():
     from community_ai_audit.plugins.redteam import list_redteam_scanners
     from community_ai_audit.plugins.alignment import list_alignment_scanners
-    from community_ai_audit.plugins.mechinterp import list_mechinterp_analyzers
+    from community_ai_audit.plugins.behavioral_probes import list_behavioral_probes
     from community_ai_audit.core.registry import plugins
 
     plugins.discover()
@@ -290,7 +290,7 @@ async def list_scanners():
         "builtin": plugins.list_scanners(),
         "redteam": list_redteam_scanners(),
         "alignment": list_alignment_scanners(),
-        "mechinterp": list_mechinterp_analyzers(),
+        "behavioral_probes": list_behavioral_probes(),
     }
 
 

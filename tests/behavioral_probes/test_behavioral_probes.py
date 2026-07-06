@@ -1,15 +1,15 @@
-"""Tests for mechanistic interpretability plugins."""
+"""Tests for black-box behavioral heuristic probes."""
 
 import unittest
-from community_ai_audit.plugins.mechinterp import (
+from community_ai_audit.plugins.behavioral_probes import (
     ActivationProbes,
     RepresentationAnalysis,
     AttentionHeadAnalysis,
     FeatureAttribution,
     LayerAnalysis,
-    list_mechinterp_analyzers,
-    get_mechinterp_analyzer,
-    run_mechinterp_analyzers,
+    list_behavioral_probes,
+    get_behavioral_probe,
+    run_behavioral_probes,
 )
 
 
@@ -141,9 +141,9 @@ class TestLayerAnalysis(unittest.TestCase):
         self.assertEqual(dist["deep"], 1)
 
 
-class TestMechInterpFramework(unittest.TestCase):
+class TestBehavioralProbesFramework(unittest.TestCase):
     def test_list_analyzers(self):
-        analyzers = list_mechinterp_analyzers()
+        analyzers = list_behavioral_probes()
         expected = [
             "activation_probes",
             "attention_head_analysis",
@@ -155,20 +155,20 @@ class TestMechInterpFramework(unittest.TestCase):
             self.assertIn(name, analyzers)
 
     def test_get_analyzer(self):
-        analyzer = get_mechinterp_analyzer("activation_probes")
+        analyzer = get_behavioral_probe("activation_probes")
         self.assertIsInstance(analyzer, ActivationProbes)
 
     def test_get_analyzer_normalized(self):
-        analyzer = get_mechinterp_analyzer("Activation-Probes")
+        analyzer = get_behavioral_probe("Activation-Probes")
         self.assertIsInstance(analyzer, ActivationProbes)
 
     def test_get_analyzer_not_found(self):
         with self.assertRaises(KeyError):
-            get_mechinterp_analyzer("nonexistent")
+            get_behavioral_probe("nonexistent")
 
     def test_run_all_analyzers(self):
         adapter = MockAdapter()
-        results = run_mechinterp_analyzers(model=None, adapter=adapter)
+        results = run_behavioral_probes(model=None, adapter=adapter)
         self.assertEqual(len(results), 5)
         for r in results:
             self.assertIn("score", r)
@@ -176,7 +176,7 @@ class TestMechInterpFramework(unittest.TestCase):
 
     def test_run_selected_analyzers(self):
         adapter = MockAdapter()
-        results = run_mechinterp_analyzers(
+        results = run_behavioral_probes(
             analyzers=["activation_probes"],
             model=None,
             adapter=adapter,

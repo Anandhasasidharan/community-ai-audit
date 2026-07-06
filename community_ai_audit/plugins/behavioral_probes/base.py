@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 
-class MechanisticInterpreter(ABC):
-    name: str = "base_mech_interp"
+class BehavioralProbe(ABC):
+    name: str = "base_behavioral_probe"
     description: str = ""
     version: str = "0.1.0"
 
@@ -17,8 +17,9 @@ class MechanisticInterpreter(ABC):
         inputs: Optional[List[str]] = None,
         config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Run a mechanistic interpretability analysis.
+        """Run a black-box behavioral heuristic analysis.
 
+        Does not access model internals (weights, activations, attention).
         Returns dict with at minimum:
             - interpreter_name: str
             - score: float (0-100)

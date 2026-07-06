@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from .base import MechanisticInterpreter
+from .base import BehavioralProbe
 
 log = logging.getLogger(__name__)
 
 
-class AttentionHeadAnalysis(MechanisticInterpreter):
+class AttentionHeadAnalysis(BehavioralProbe):
     name = "attention_head_analysis"
-    description = "Estimates attention patterns and head specialization"
+    description = "Black-box heuristic: measures input-output word overlap as a proxy for attention complexity. Does not access attention weights."
     version = "0.1.0"
 
     ATTENTION_PROBES = [
@@ -78,8 +78,8 @@ class AttentionHeadAnalysis(MechanisticInterpreter):
             "max_attention_span": round(max_attention_span, 2),
             "probe_analyses": probe_analyses,
             "details": {
-                "estimated_num_attention_heads": None,
-                "head_specialization_estimate": round(avg_complexity, 2),
+                "method": "word_overlap_ratio",
+                "avg_complexity": round(avg_complexity, 2),
             },
         }
 

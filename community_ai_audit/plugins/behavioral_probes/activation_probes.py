@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from .base import MechanisticInterpreter
+from .base import BehavioralProbe
 
 log = logging.getLogger(__name__)
 
 
-class ActivationProbes(MechanisticInterpreter):
+class ActivationProbes(BehavioralProbe):
     name = "activation_probes"
-    description = "Analyzes model activations through probing tasks"
+    description = "Black-box heuristic: estimates response quality by output word count. Does not access model activations or internals."
     version = "0.1.0"
 
     PROBE_INPUTS = [
@@ -73,8 +73,8 @@ class ActivationProbes(MechanisticInterpreter):
             "avg_response_quality": round(avg_quality, 3),
             "probe_results": probe_results,
             "details": {
-                "activation_coverage": round(avg_quality, 3),
-                "num_layers_estimated": None,
+                "method": "word_count_heuristic",
+                "response_quality": round(avg_quality, 3),
             },
         }
 

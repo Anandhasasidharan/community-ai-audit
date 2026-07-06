@@ -641,28 +641,28 @@ Environment:
         help="Output format",
     )
 
-    # ── mechinterp command ────────────────────────────────────
-    mechinterp_parser = subparsers.add_parser(
-        "mechinterp", help="Run mechanistic interpretability analysis"
+    # ── behavioral-probes command ────────────────────────────────────
+    beh_probes_parser = subparsers.add_parser(
+        "behavioral-probes", help="Run black-box behavioral heuristic analysis"
     )
-    mechinterp_parser.add_argument("model", help="Model identifier")
-    mechinterp_parser.add_argument(
+    beh_probes_parser.add_argument("model", help="Model identifier")
+    beh_probes_parser.add_argument(
         "--provider",
         "-p",
         required=True,
         choices=["huggingface", "openai", "anthropic", "aws_bedrock", "local", "ollama"],
         help="Model provider",
     )
-    mechinterp_parser.add_argument(
+    beh_probes_parser.add_argument(
         "--analyzers",
         nargs="+",
         default=None,
         help="Analyzers to run (default: all)",
     )
-    mechinterp_parser.add_argument("--device", help="Device for local models")
-    mechinterp_parser.add_argument("--api-key", help="API key for cloud providers")
-    mechinterp_parser.add_argument("--api-key-file", help="Read API key from file")
-    mechinterp_parser.add_argument(
+    beh_probes_parser.add_argument("--device", help="Device for local models")
+    beh_probes_parser.add_argument("--api-key", help="API key for cloud providers")
+    beh_probes_parser.add_argument("--api-key-file", help="Read API key from file")
+    beh_probes_parser.add_argument(
         "--output",
         "-o",
         default="json",
@@ -722,7 +722,7 @@ Environment:
         "--alignment", type=str, default=None, help="Path to alignment results JSON"
     )
     audit_score_parser.add_argument(
-        "--mechinterp", type=str, default=None, help="Path to mechinterp results JSON"
+        "--behavioral-probes", type=str, default=None, help="Path to behavioral probes results JSON"
     )
     audit_score_parser.add_argument(
         "--weights",
@@ -828,8 +828,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "redteam":
         return _cmd_redteam(args)
 
-    if args.command == "mechinterp":
-        return _cmd_mechinterp(args)
+    if args.command == "behavioral-probes":
+        return _cmd_behavioral_probes(args)
 
     if args.command == "alignment":
         return _cmd_alignment(args)
@@ -1990,9 +1990,9 @@ def _cmd_redteam(args: Any) -> int:
     return 0
 
 
-def _cmd_mechinterp(args: Any) -> int:
-    """Run mechanistic interpretability analysis."""
-    from community_ai_audit.plugins.mechinterp import run_mechinterp_analyzers
+def _cmd_behavioral_probes(args: Any) -> int:
+    """Run black-box behavioral heuristic analysis."""
+    from community_ai_audit.plugins.behavioral_probes import run_behavioral_probes
     from community_ai_audit.core.audit import AuditEngine
 
     engine = AuditEngine(
@@ -2011,8 +2011,8 @@ def _cmd_mechinterp(args: Any) -> int:
         ui.error(f"Failed to load model: {e}")
         return 1
 
-    ui.info("Running mechanistic interpretability analysis...")
-    results = run_mechinterp_analyzers(
+    ui.info("Running behavioral heuristic analysis...")
+    results = run_behavioral_probes(
         analyzers=args.analyzers,
         model=engine._model,
         adapter=engine._adapter,
@@ -2091,7 +2091,7 @@ def _cmd_audit_score(args: Any) -> int:
     agent_results = _load_json(args.agent)
     red_team_results = _load_json(args.redteam)
     alignment_results = _load_json(args.alignment)
-    interpretability_results = _load_json(args.mechinterp)
+    interpretability_results = _load_json(args.behavioral_probes)
 
     weights = None
     if hasattr(args, "weights") and args.weights:

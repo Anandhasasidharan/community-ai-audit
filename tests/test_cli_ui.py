@@ -238,9 +238,9 @@ class TestCLIParsing(unittest.TestCase):
         args = self.parse("redteam", "my_model", "--provider", "openai")
         self.assertEqual(args.command, "redteam")
 
-    def test_mechinterp_command(self):
-        args = self.parse("mechinterp", "my_model", "--provider", "huggingface")
-        self.assertEqual(args.command, "mechinterp")
+    def test_behavioral_probes_command(self):
+        args = self.parse("behavioral-probes", "my_model", "--provider", "huggingface")
+        self.assertEqual(args.command, "behavioral-probes")
 
     def test_alignment_command(self):
         args = self.parse("alignment", "my_model", "--provider", "anthropic")
@@ -367,9 +367,9 @@ class TestCLISubprocess(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
 
-    def test_mechinterp_help(self):
+    def test_behavioral_probes_help(self):
         result = subprocess.run(
-            [sys.executable, "-m", self.CLI_MODULE, "mechinterp", "--help"],
+            [sys.executable, "-m", self.CLI_MODULE, "behavioral-probes", "--help"],
             capture_output=True,
             text=True,
             timeout=30,

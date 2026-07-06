@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from .base import MechanisticInterpreter
+from .base import BehavioralProbe
 
 log = logging.getLogger(__name__)
 
 
-class RepresentationAnalysis(MechanisticInterpreter):
+class RepresentationAnalysis(BehavioralProbe):
     name = "representation_analysis"
-    description = "Analyzes latent representations and feature clusters"
+    description = "Black-box heuristic: measures output similarity between paired probes (e.g. dog/cat, quantum/classical). Does not access internal representations."
     version = "0.1.0"
 
     REPRESENTATION_PROBES = [

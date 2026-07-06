@@ -11,7 +11,7 @@
 | `benchmark` | Run model against a benchmark dataset | json, table |
 | `regression` | Compare two benchmark runs for regression | json, table |
 | `redteam` | Red team security testing (jailbreak, roleplay, obfuscation, multi-turn, exploitation) | json, table |
-| `mechinterp` | Mechanistic interpretability analysis (activations, attention, features, layers, representations) | json, table |
+| `behavioral-probes` | Black-box behavioral heuristic analysis (word-overlap, output-similarity, sentiment) | json, table |
 | `alignment` | Alignment evaluation (sycophancy, value alignment, preference drift, objective robustness) | json, table |
 | `audit-score` | Compute unified audit score from all result dimensions | json, table |
 | `agent-audit` | Agent audit scanners on a session file | json, table |
@@ -235,7 +235,7 @@ FastAPI web app in `demo_app/`:
 | Reliability | test_reliability |
 | Red Team | test_redteam, test_persistence |
 | Alignment | test_alignment |
-| Mechinterp | test_mechinterp |
+| Behavioral Probes | test_behavioral_probes |
 | Agents | test_agent_scanners |
 | Connectors | test_connectors_smoke |
 | Reporting | test_report_generator |

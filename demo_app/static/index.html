@@ -145,7 +145,7 @@
     <button class="btn btn-primary" onclick="runFullAudit()" id="btnFullAudit">Run Full Audit</button>
     <button class="btn btn-outline" onclick="runAuditType('redteam')" id="btnRedTeam">Red Team Only</button>
     <button class="btn btn-outline" onclick="runAuditType('alignment')" id="btnAlign">Alignment Only</button>
-    <button class="btn btn-outline" onclick="runAuditType('mechinterp')" id="btnMech">Mech Interp Only</button>
+    <button class="btn btn-outline" onclick="runAuditType('behavioral_probes')" id="btnBeh">Behavioral Probes</button>
   </div>
   <div id="auditProgress" style="display:none;">
     <div class="status-text" id="auditStatus">Starting audit...</div>
@@ -406,10 +406,10 @@ async function refreshResults() {
       html += '</div>';
     }
 
-    // Mech Interp
-    if (r.mechinterp && r.mechinterp.length) {
-      html += '<div class="scanner-group"><h3>Mechanistic Interpretability</h3>';
-      r.mechinterp.forEach(s => addScannerItem(html, s, 'mechinterp'));
+    // Behavioral Probes
+    if (r.behavioral_probes && r.behavioral_probes.length) {
+      html += '<div class="scanner-group"><h3>Behavioral Heuristics</h3>';
+      r.behavioral_probes.forEach(s => addScannerItem(html, s, 'behavioral_probes'));
       html += '</div>';
     }
 
@@ -476,9 +476,9 @@ async function refreshResults() {
       r.alignment.forEach(s => addItem(s, 'alignment'));
       html += '</div>';
     }
-    if (r.mechinterp?.length) {
-      html += '<div class="scanner-group"><h3>🔬 Mechanistic Interpretability</h3>';
-      r.mechinterp.forEach(s => addItem(s, 'mechinterp'));
+    if (r.behavioral_probes?.length) {
+      html += '<div class="scanner-group"><h3> Behavioral Heuristics</h3>';
+      r.behavioral_probes.forEach(s => addItem(s, 'behavioral_probes'));
       html += '</div>';
     }
     if (r.scan?.length) {

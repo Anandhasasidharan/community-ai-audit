@@ -83,7 +83,7 @@ Model ──→ Alignment Scanner ──→ AlignmentResult(s)
 | **Alignment Auditing** | 4 scanners | sycophancy, preference_drift, value_alignment, objective_robustness |
 | **Scoring Engine** | 7 dimensions | security, reliability, compliance, agent_risk, alignment, red_team, interpretability |
 | **Executive Dashboard** | dashboard_v2 | Live 7-dimension score cards, configurable weights, JSON overlay |
-| **Reporting** | 5 reporters | markdown, html, json/dashboard, via CLI (redteam/mechinterp/alignment JSON/table) |
+| **Reporting** | 5 reporters | markdown, html, json/dashboard, via CLI (redteam/behavioral-probes/alignment JSON/table) |
 | **SIEM Connectors** | 6+ | Splunk, Elastic, Datadog, Microsoft Sentinel, QRadar, LogRhythm, SumoLogic, Webhook |
 | **Vector DB / Storage** | 5 | Pinecone, Weaviate, S3, GCS, Azure Blob |
 | **Scheduling** | cron-based | Add/list/remove/run schedules via `community-ai-audit schedule` |
@@ -326,25 +326,25 @@ def run(self, model, adapter) -> AttackResult
 
 ---
 
-### `plugins/mechinterp/` — Mechanistic Interpretability (5 analyzers)
+### `plugins/behavioral_probes/` — Black-Box Behavioral Heuristics (5 probes)
 
-Mechanistic interpretability analyzers probe model internals to understand representations, attention patterns, feature attribution, and layer behavior — without requiring actual model internals access (works via response analysis).
+Black-box behavioral heuristics that probe model outputs via response analysis. Does **not** access model internals (weights, activations, attention). All measurements are output-based heuristics.
 
-| Analyzer | File | Probes | What It Measures |
+| Probe | File | Probes | What It Measures |
 |----------|------|--------|------------------|
-| `ActivationProbes` | `activation_probes.py` | 5 probe inputs | Response quality, signal-to-noise ratio estimate |
-| `RepresentationAnalysis` | `representation.py` | 8 probes, 4 paired comparisons | Representation differentiation (Jaccard vocabulary overlap), vocabulary size estimate |
-| `AttentionHeadAnalysis` | `attention_head.py` | 5 syntactic probes | Attention complexity estimate via input/output token overlap |
-| `FeatureAttribution` | `feature_attribution.py` | 5 sentiment inputs | Word-level importance scores, sentiment-match detection |
-| `LayerAnalysis` | `layer_analysis.py` | 3 open-ended probes | Depth estimation via output/input length ratios, complexity distribution |
+| `ActivationProbes` | `activation_probes.py` | 5 probe inputs | Response quality via word-count heuristic |
+| `RepresentationAnalysis` | `representation.py` | 8 probes, 4 paired comparisons | Output similarity between paired concepts |
+| `AttentionHeadAnalysis` | `attention_head.py` | 5 syntactic probes | Input/output word overlap ratio |
+| `FeatureAttribution` | `feature_attribution.py` | 5 sentiment inputs | Output sentiment polarity |
+| `LayerAnalysis` | `layer_analysis.py` | 3 open-ended probes | Output/input length ratio |
 
 **Framework** (`base.py`):
-- `MechanisticInterpreter` ABC with `analyze(model, adapter)` → dict
+- `BehavioralProbe` ABC with `analyze(model, adapter)` → dict
 
 **Registry** (`__init__.py`):
-- `list_mechinterp_analyzers()` → list of all analyzer names
-- `get_mechinterp_analyzer(name)` → analyzer instance
-- `run_mechinterp_analyzers(model, adapter, analyzer_names=None)` → list of result dicts
+- `list_behavioral_probes()` → list of all probe names
+- `get_behavioral_probe(name)` → probe instance
+- `run_behavioral_probes(model, adapter, analyzer_names=None)` → list of result dicts
 
 ---
 
@@ -522,7 +522,7 @@ Commands:
   discover     List all discovered plugins and adapters
   schedule     Manage recurring audit schedules
   redteam      Run red team attack simulations
-  mechinterp   Run mechanistic interpretability analyzers
+  behavioral-probes   Run black-box behavioral heuristic analysis
   alignment    Run alignment auditing scanners
   audit-score  Compute unified audit score from result files
 ```
@@ -597,15 +597,15 @@ community-ai-audit redteam <model> --provider <provider> [options]
 | `--save PATH` | Save results to file |
 | `--api-key` / `--api-key-file` | API key |
 
-### `mechinterp` — Run mechanistic interpretability
+### `behavioral-probes` — Run black-box behavioral heuristics
 
 ```
-community-ai-audit mechinterp <model> --provider <provider> [options]
+community-ai-audit behavioral-probes <model> --provider <provider> [options]
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--analyzers` / `-a` | Analyzer names to run (default: all) |
+| `--analyzers` / `-a` | Probe names to run (default: all) |
 | `--output` / `-o` | json (default), table |
 | `--save PATH` | Save results to file |
 | `--api-key` / `--api-key-file` | API key |
@@ -637,7 +637,7 @@ community-ai-audit audit-score [options]
 | `--agent PATH` | Agent risk results JSON |
 | `--redteam PATH` | Red team results JSON |
 | `--alignment PATH` | Alignment results JSON |
-| `--mechinterp PATH` | Mechanistic interpretability results JSON |
+| `--behavioral-probes PATH` | Behavioral heuristic results JSON |
 | `--weights DIM VAL` | Weight override (repeatable), e.g. `--weights alignment 0.3 --weights red_team 0.2` |
 | `--output` / `-o` | json (default), table |
 
@@ -854,7 +854,7 @@ pytest --cov=community_ai_audit tests/
 pytest tests/test_scheduler.py -v
 ```
 
-Test scope: 477+ tests covering unit, integration, CLI smoke, connector mock, red team, mechanistic interpretability, alignment auditing, and unified scoring tests.
+Test scope: 578+ tests covering unit, integration, CLI smoke, connector mock, red team, behavioral heuristic probes, alignment auditing, unified scoring, and API endpoint tests.
 
 ---
 

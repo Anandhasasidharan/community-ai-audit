@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from .base import MechanisticInterpreter
+from .base import BehavioralProbe
 
 log = logging.getLogger(__name__)
 
 
-class LayerAnalysis(MechanisticInterpreter):
+class LayerAnalysis(BehavioralProbe):
     name = "layer_analysis"
-    description = "Analyzes model behavior across hypothetical transformer layers"
+    description = "Black-box heuristic: output-length ratio between related inputs as a proxy for depth. Does not measure actual layer behavior."
     version = "0.1.0"
 
     LAYER_PROBES = [
@@ -78,7 +78,7 @@ class LayerAnalysis(MechanisticInterpreter):
             "avg_depth_estimate": round(avg_depth, 3),
             "layer_insights": layer_insights,
             "details": {
-                "estimated_num_layers": None,
+                "method": "output_length_ratio",
                 "early_vs_late_ratio": round(self._early_vs_late(depth_estimates), 2),
                 "complexity_distribution": self._complexity_distribution(depth_estimates),
             },
