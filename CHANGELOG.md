@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.8.0...v0.9.0) (2026-07-06)
+
+
+### Features
+
+* **usage:** add usage metering middleware and GET /usage endpoint ([e153050](https://github.com/Anandhasasidharan/community-ai-audit/commit/e1530506ecb78d3566435d63081245f89568c239))
+
+
+### Bug Fixes
+
+* **adapters:** return str from predict() instead of raw SDK objects ([d23c9ab](https://github.com/Anandhasasidharan/community-ai-audit/commit/d23c9abeefa3c877980fd1f44dc6b8ea633f361d))
+* **scoring:** return None for missing dimensions, add coverage tracking ([449a271](https://github.com/Anandhasasidharan/community-ai-audit/commit/449a271053962881d7c33857ebe5dad9255658fb))
+* **sycophancy:** replace agreement/disagreement prompts with paired-topic flip detection ([7b2918e](https://github.com/Anandhasasidharan/community-ai-audit/commit/7b2918e39d0a996b1b8dcb6f940e4bd9e55de823))
+
+
+### Documentation
+
+* add Methodology and Limitations section to README ([292ffa5](https://github.com/Anandhasasidharan/community-ai-audit/commit/292ffa56e6d39c28c196696bcc06e5cf922f62b6))
+
 ## [0.8.0](https://github.com/Anandhasasidharan/community-ai-audit/compare/v0.7.0...v0.8.0) (2026-06-27)
 
 
