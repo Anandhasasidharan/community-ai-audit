@@ -115,18 +115,19 @@ class _ClaudeModelWrapper:
         self.model_id = model_id
         self._defaults = kwargs
 
-    def predict(self, inputs: Dict[str, Any], **kwargs) -> Any:
+    def predict(self, inputs: Dict[str, Any], **kwargs) -> str:
         merged = {**self._defaults, **kwargs}
-        # v0.x vs v1.x SDK compatibility
         if hasattr(self._client, "messages"):
-            return self._client.messages.create(
+            response = self._client.messages.create(
                 model=self.model_id,
                 messages=[{"role": "user", "content": inputs.get("prompt", "")}],
                 **merged,
             )
+            return "".join(block.text for block in response.content if hasattr(block, "text"))
         else:
-            return self._client.completions.create(
+            response = self._client.completions.create(
                 model=self.model_id,
                 prompt=inputs.get("prompt", ""),
                 **merged,
             )
+            return response.completion

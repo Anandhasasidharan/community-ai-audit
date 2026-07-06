@@ -149,8 +149,8 @@ class _VertexAIModelWrapper:
         self.model_id = model_id
         self._defaults = kwargs
 
-    def predict(self, inputs: Dict[str, Any], **kwargs) -> Any:
+    def predict(self, inputs: Dict[str, Any], **kwargs) -> str:
         merged = {**self._defaults, **kwargs}
         prompt = inputs.get("prompt", "")
         response = self._client.generate_content(prompt, **merged)
-        return response
+        return response.text

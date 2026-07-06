@@ -135,7 +135,7 @@ class _OpenAIModelWrapper:
         self.model_id = model_id
         self._defaults = kwargs
 
-    def predict(self, inputs: Dict[str, Any], **kwargs) -> Any:
+    def predict(self, inputs: Dict[str, Any], **kwargs) -> str:
         merged = {**self._defaults, **kwargs}
         messages = inputs.get("messages", [{"role": "user", "content": inputs.get("prompt", "")}])
         response = self._client.chat.completions.create(
@@ -143,4 +143,4 @@ class _OpenAIModelWrapper:
             messages=messages,
             **merged,
         )
-        return response
+        return response.choices[0].message.content or ""

@@ -119,10 +119,12 @@ class _ReplicateModelWrapper:
         self._timeout = timeout
         self._defaults = kwargs
 
-    def predict(self, inputs: Dict[str, Any], **kwargs) -> Any:
+    def predict(self, inputs: Dict[str, Any], **kwargs) -> str:
         input_data = inputs.get("input", inputs)
         prediction = self._client.run(
             self.model_id,
             input=input_data,
         )
-        return prediction
+        if isinstance(prediction, list):
+            return "".join(prediction)
+        return str(prediction)
