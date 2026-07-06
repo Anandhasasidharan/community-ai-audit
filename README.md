@@ -105,11 +105,11 @@ community-ai-audit audit-score \
 │                     CLI / API Layer                       │
 ├────────────┬────────────┬──────────────┬─────────────────┤
 │   scan     │   audit    │   redteam    │   alignment     │
-│   discover │ mechinterp │ audit-score  │   health        │
+│   discover │ behavioral-probes │ audit-score  │   health        │
 ├────────────┴────────────┴──────────────┴─────────────────┤
 │                   Audit Engine                            │
 ├────────────┬────────────┬──────────────┬─────────────────┤
-│  Scanners  │ Red Team   │ Mech Interp  │   Alignment     │
+│  Scanners  │ Red Team   │ Behavioral   │   Alignment     │
 │  (7)       │ (5)        │ (5)          │   (4)           │
 ├────────────┴────────────┴──────────────┴─────────────────┤
 │              Scoring Engine (7 Dimensions)                │
@@ -292,7 +292,7 @@ pip install -e .[dev]
 | `interpret <model>` | Run interpretability methods |
 | `audit <model>` | Full pipeline: scan + interpret + report + push |
 | `redteam <model>` | Red team attack simulations |
-| `mechinterp <model>` | Mechanistic interpretability analysis |
+| `behavioral-probes <model>` | Black-box behavioral heuristic analysis |
 | `alignment <model>` | Alignment auditing |
 | `audit-score` | Compute unified 7-dimension score |
 | `discover` | List all discovered plugins |
@@ -392,6 +392,22 @@ audit = client.submit_audit("gpt2", "huggingface", project_id=project["project_i
 # List scanners
 scanners = client.list_scanners()
 ```
+
+---
+
+## ⚠️ Methodology & Limitations
+
+**Community AI Audit v0.x** uses **black-box behavioral heuristics** for interpretability and alignment analysis — it does **not** access model internals (weights, activations, attention) for API-based providers. The following modules have known limitations:
+
+| Module | Method | Limitation |
+|--------|--------|------------|
+| `behavioral-probes` | Output text heuristics (word overlap, length ratios, sentiment) | Does not measure actual attention, activations, or layers — these are output-only proxies |
+| `alignment/sycophancy` | Stance detection via keyword signals | Detects crude agreement/disagreement patterns; misses nuanced or evasive responses |
+| `scanners/prompt_injection` | Fixed trigger-phrase list | Tests instruction-following on self-fulfilling prompts, not injection via untrusted third-party content |
+| `scanners/backdoor` | KMeans on random probe activations | Random Gaussian probes are a smoke test, not a statistically powered detector |
+| `reliability/hallucination` | 8 hard-coded trivia facts | Every frontier model scores 8/8 — zero discriminative signal |
+
+Probe sets (5–20 items per scanner) are smoke tests rather than statistically powered benchmarks. Results should be treated as **indicators, not definitive measurements**.
 
 ---
 
