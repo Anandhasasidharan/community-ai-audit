@@ -3,7 +3,7 @@
 import os
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import create_engine, Column, String, Text, Float, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, String, Integer, Text, Float, DateTime, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///data/jobs.db")
@@ -74,6 +74,17 @@ class Schedule(Base):
     model_id = Column(String)
     next_run = Column(DateTime)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class UseageRecord(Base):
+    __tablename__ = "usage_records"
+    id = Column(String, primary_key=True, default=new_id)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    org_id = Column(String, ForeignKey("organizations.id"), nullable=True)
+    endpoint = Column(String)
+    method = Column(String)
+    status_code = Column(Integer)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class AuditJob(Base):
